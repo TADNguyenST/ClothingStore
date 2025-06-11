@@ -13,7 +13,7 @@ public class DBContext {
     private final String dbURL = "jdbc:sqlserver://localhost:1433;"
             + "databaseName=Clothing;"
             + "user=sa;"
-            + "password=123;"
+            + "password=181104;"
             + "encrypt=true;trustServerCertificate=true;";
 
     public DBContext() {
