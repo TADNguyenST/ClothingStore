@@ -7,7 +7,6 @@ import java.sql.SQLException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-
 public class DBContext {
 
     protected Connection conn = null;
@@ -21,52 +20,52 @@ public class DBContext {
         connect();
     }
 
-    // Phương thức kết nối
+    // Connection method
     private void connect() {
         try {
-            // Đăng ký driver SQL Server
+            // Register SQL Server driver
             Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
 
-            // Thiết lập kết nối
+            // Establish connection
             conn = DriverManager.getConnection(dbURL);
 
-            // Kiểm tra kết nối
+            // Check connection
             if (conn != null) {
                 DatabaseMetaData dm = conn.getMetaData();
-                System.out.println("Kết nối thành công!");
+                System.out.println("Connection successful!");
                 System.out.println("Driver name: " + dm.getDriverName());
                 System.out.println("Driver version: " + dm.getDriverVersion());
                 System.out.println("Product name: " + dm.getDatabaseProductName());
                 System.out.println("Product version: " + dm.getDatabaseProductVersion());
             }
         } catch (SQLException ex) {
-            Logger.getLogger(DBContext.class.getName()).log(Level.SEVERE, "Lỗi kết nối cơ sở dữ liệu", ex);
+            Logger.getLogger(DBContext.class.getName()).log(Level.SEVERE, "Database connection error", ex);
         } catch (ClassNotFoundException ex) {
-            Logger.getLogger(DBContext.class.getName()).log(Level.SEVERE, "Không tìm thấy driver SQL Server", ex);
+            Logger.getLogger(DBContext.class.getName()).log(Level.SEVERE, "SQL Server driver not found", ex);
         }
     }
 
-    // Phương thức lấy kết nối (kiểm tra và mở lại nếu cần)
+    // Method to get connection (checks and reopens if needed)
     public Connection getConnection() throws SQLException {
         if (conn == null || conn.isClosed()) {
-            System.out.println("Kết nối đã bị đóng hoặc không tồn tại. Thử mở lại kết nối...");
+            System.out.println("Connection is closed or does not exist. Attempting to reconnect...");
             connect();
             if (conn == null || conn.isClosed()) {
-                throw new SQLException("Không thể mở lại kết nối cơ sở dữ liệu");
+                throw new SQLException("Unable to reopen database connection");
             }
         }
         return conn;
     }
 
-    // Phương thức đóng kết nối
+    // Method to close connection
     public void closeConnection() {
         try {
             if (conn != null && !conn.isClosed()) {
                 conn.close();
-                System.out.println("Kết nối đã được đóng.");
+                System.out.println("Connection has been closed.");
             }
         } catch (SQLException ex) {
-            Logger.getLogger(DBContext.class.getName()).log(Level.SEVERE, "Lỗi khi đóng kết nối", ex);
+            Logger.getLogger(DBContext.class.getName()).log(Level.SEVERE, "Error closing connection", ex);
         }
     }
 }
