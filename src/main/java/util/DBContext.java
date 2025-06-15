@@ -11,7 +11,7 @@ public class DBContext {
 
     protected Connection conn = null;
     private final String dbURL = "jdbc:sqlserver://localhost:1433;"
-            + "databaseName=Clothing;"
+            + "databaseName=ClothingStore;"
             + "user=sa;"
             + "password=123;"
             + "encrypt=true;trustServerCertificate=true;";
