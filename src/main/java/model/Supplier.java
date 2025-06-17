@@ -1,13 +1,5 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package model;
 
-/**
- *
- * @author Lenovo
- */
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
@@ -17,11 +9,10 @@ public class Supplier implements Serializable {
     private String name;
     private String contactEmail;
     private String phoneNumber;
-    private String address;
+    private String address; // NTEXT
     private Boolean isActive;
     private LocalDateTime createdAt;
 
-    // Constructor
     public Supplier() {}
 
     public Supplier(Long supplierId, String name, String contactEmail, String phoneNumber, String address, Boolean isActive, LocalDateTime createdAt) {
@@ -46,7 +37,7 @@ public class Supplier implements Serializable {
     public String getAddress() { return address; }
     public void setAddress(String address) { this.address = address; }
     public Boolean getIsActive() { return isActive; }
-    public void setIsActive(Boolean isActive) { this.isActive = isActive; }
+    public void setIsActive(Boolean active) { isActive = active; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 

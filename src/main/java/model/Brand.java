@@ -1,13 +1,5 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package model;
 
-/**
- *
- * @author Lenovo
- */
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
@@ -15,12 +7,11 @@ public class Brand implements Serializable {
     private static final long serialVersionUID = 1L;
     private Long brandId;
     private String name;
-    private String description;
+    private String description; // NTEXT
     private String logoUrl;
     private Boolean isActive;
     private LocalDateTime createdAt;
 
-    // Constructor
     public Brand() {}
 
     public Brand(Long brandId, String name, String description, String logoUrl, Boolean isActive, LocalDateTime createdAt) {
@@ -42,7 +33,7 @@ public class Brand implements Serializable {
     public String getLogoUrl() { return logoUrl; }
     public void setLogoUrl(String logoUrl) { this.logoUrl = logoUrl; }
     public Boolean getIsActive() { return isActive; }
-    public void setIsActive(Boolean isActive) { this.isActive = isActive; }
+    public void setIsActive(Boolean active) { isActive = active; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 

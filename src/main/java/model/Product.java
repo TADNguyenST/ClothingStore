@@ -1,13 +1,5 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package model;
 
-/**
- *
- * @author Lenovo
- */
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -16,10 +8,8 @@ public class Product implements Serializable {
     private static final long serialVersionUID = 1L;
     private Long productId;
     private String name;
-    private String description;
-    private BigDecimal price; // DECIMAL(18,2)
-    private Integer stockQuantity; // INT (Lưu ý: Bạn có thể loại bỏ hoặc dùng nó như tổng các variant quantity)
-    private Long supplierId; // FK
+    private String description; // NTEXT
+    private BigDecimal price;
     private Long categoryId; // FK
     private Long brandId; // FK
     private String material;
@@ -27,21 +17,13 @@ public class Product implements Serializable {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    // Nested objects (for convenience when retrieving product details)
-    private Category category;
-    private Brand brand;
-    private Supplier supplier;
-
-    // Constructor
     public Product() {}
 
-    public Product(Long productId, String name, String description, BigDecimal price, Integer stockQuantity, Long supplierId, Long categoryId, Long brandId, String material, String status, LocalDateTime createdAt, LocalDateTime updatedAt) {
+    public Product(Long productId, String name, String description, BigDecimal price, Long categoryId, Long brandId, String material, String status, LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.productId = productId;
         this.name = name;
         this.description = description;
         this.price = price;
-        this.stockQuantity = stockQuantity;
-        this.supplierId = supplierId;
         this.categoryId = categoryId;
         this.brandId = brandId;
         this.material = material;
@@ -59,10 +41,6 @@ public class Product implements Serializable {
     public void setDescription(String description) { this.description = description; }
     public BigDecimal getPrice() { return price; }
     public void setPrice(BigDecimal price) { this.price = price; }
-    public Integer getStockQuantity() { return stockQuantity; }
-    public void setStockQuantity(Integer stockQuantity) { this.stockQuantity = stockQuantity; }
-    public Long getSupplierId() { return supplierId; }
-    public void setSupplierId(Long supplierId) { this.supplierId = supplierId; }
     public Long getCategoryId() { return categoryId; }
     public void setCategoryId(Long categoryId) { this.categoryId = categoryId; }
     public Long getBrandId() { return brandId; }
@@ -76,21 +54,12 @@ public class Product implements Serializable {
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 
-    // Nested object getters and setters
-    public Category getCategory() { return category; }
-    public void setCategory(Category category) { this.category = category; }
-    public Brand getBrand() { return brand; }
-    public void setBrand(Brand brand) { this.brand = brand; }
-    public Supplier getSupplier() { return supplier; }
-    public void setSupplier(Supplier supplier) { this.supplier = supplier; }
-
     @Override
     public String toString() {
         return "Product{" +
                "productId=" + productId +
                ", name='" + name + '\'' +
                ", price=" + price +
-               ", stockQuantity=" + stockQuantity +
                '}';
     }
 }

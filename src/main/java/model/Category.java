@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package model;
 
 import java.io.Serializable;
@@ -11,12 +7,11 @@ public class Category implements Serializable {
     private static final long serialVersionUID = 1L;
     private Long categoryId;
     private String name;
-    private String description;
-    private Long parentCategoryId; // Self-referencing FK
+    private String description; // NTEXT
+    private Long parentCategoryId; // Nullable, FK
     private Boolean isActive;
     private LocalDateTime createdAt;
 
-    // Constructor
     public Category() {}
 
     public Category(Long categoryId, String name, String description, Long parentCategoryId, Boolean isActive, LocalDateTime createdAt) {
@@ -38,7 +33,7 @@ public class Category implements Serializable {
     public Long getParentCategoryId() { return parentCategoryId; }
     public void setParentCategoryId(Long parentCategoryId) { this.parentCategoryId = parentCategoryId; }
     public Boolean getIsActive() { return isActive; }
-    public void setIsActive(Boolean isActive) { this.isActive = isActive; }
+    public void setIsActive(Boolean active) { isActive = active; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 
