@@ -1,9 +1,3 @@
-<%-- 
-    Document   : login
-    Created on : Jun 14, 2025, 4:05:48 AM
-    Author     : Khoa
---%>
-
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <!DOCTYPE html>
@@ -14,106 +8,143 @@
         body {
             margin: 0;
             padding: 0;
-            background: linear-gradient(135deg, #5fb0bd, #a2d4e6);
+            background: linear-gradient(135deg, #008cff, #00d4ff);
             font-family: Arial, sans-serif;
             height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
         }
-
         .login-container {
             width: 350px;
-            background: rgba(255, 255, 255, 0.1);
+            background: #fff;
             border-radius: 15px;
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
             padding: 40px 30px;
-            color: #fff;
             text-align: center;
         }
-
-        .login-container .avatar {
-            background: #0d2b4e;
-            width: 80px;
-            height: 80px;
-            margin: 0 auto 20px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .login-container .avatar i {
-            font-size: 36px;
-            color: white;
-        }
-
-        .login-container input[type="email"],
-        .login-container input[type="password"] {
-            width: 100%;
-            padding: 10px 15px;
-            margin: 10px 0;
-            border: none;
-            border-radius: 5px;
-            background: #f1f1f1;
+        h2 {
             color: #333;
+            margin-bottom: 30px;
+            font-size: 28px;
+            font-weight: 600;
         }
-
-        .login-container .options {
+        .form-control {
+            position: relative;
+            margin-bottom: 20px;
+        }
+        input[type="email"],
+        input[type="password"] {
+            width: 100%;
+            padding: 15px 45px 15px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            background-color: #f8f9fa;
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+        }
+        input[type="email"]:focus,
+        input[type="password"]:focus {
+            outline: none;
+            border-color: #007bff;
+            background-color: #fff;
+        }
+        .form-control i {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #666;
+            font-size: 18px;
+        }
+        .login-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
+        }
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 123, 255, 0.4);
+        }
+        .links {
+            margin-top: 25px;
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            gap: 10px;
+        }
+        .link-btn {
+            flex: 1;
+            padding: 12px 15px;
+            text-decoration: none;
+            color: #007bff;
+            border: 2px solid #007bff;
+            border-radius: 8px;
             font-size: 14px;
-            margin: 10px 0;
-            color: #eee;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: inline-block;
+            text-align: center;
         }
-
-        .login-container button {
-            width: 100%;
-            padding: 12px;
-            background-color: #0d2b4e;
+        .link-btn:hover {
+            background-color: #007bff;
             color: white;
-            border: none;
-            border-radius: 5px;
-            font-size: 16px;
-            margin-top: 10px;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
         }
-
         .alert {
-            background-color: #ffdddd;
-            color: red;
-            padding: 10px;
-            margin-top: 10px;
-            border-radius: 5px;
+            background-color: #ffe6e6;
+            color: #d63384;
+            padding: 12px;
+            margin: 15px 0;
+            border-radius: 8px;
+            border-left: 4px solid #d63384;
+            font-size: 14px;
         }
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
 </head>
 <body>
-
 <div class="login-container">
-    <div class="avatar">
-        <i class="fas fa-user"></i>
-    </div>
+    <h2>Sign In</h2>
     <form action="${pageContext.request.contextPath}/Login" method="post">
-        <input type="email" name="email" placeholder="Email" required />
-        <input type="password" name="password" placeholder="Password" required />
-        <div class="options">
-            <label><input type="checkbox" /> Remember me</label>
-            <a href="${pageContext.request.contextPath}/ForgotPassword" style="color: #eee;">Forgot Password?</a>
+        <div class="form-control">
+            <input type="email" name="email" placeholder="johndoe@example.com" required />
         </div>
-
+        <div class="form-control">
+            <input type="password" id="password" name="password" placeholder="••••••••••" required />
+            <i class="fas fa-eye" id="togglePassword"></i>
+        </div>
         <c:if test="${not empty error}">
             <div class="alert">${error}</div>
         </c:if>
-
-        <button type="submit">LOGIN</button>
+        <button type="submit" class="login-btn">Login</button>
+        <div class="links">
+            <a href="${pageContext.request.contextPath}/ForgotPassword" class="link-btn">Forgot Password?</a>
+            <a href="${pageContext.request.contextPath}/Register" class="link-btn">Create an Account?</a>
+        </div>
     </form>
 </div>
-
+<script>
+    // Toggle show/hide password
+    const togglePassword = document.getElementById('togglePassword');
+    const password = document.getElementById('password');
+    
+    togglePassword.addEventListener('click', function () {
+        const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+        password.setAttribute('type', type);
+        this.classList.toggle('fa-eye-slash');
+    });
+</script>
 </body>
 </html>
-
-
