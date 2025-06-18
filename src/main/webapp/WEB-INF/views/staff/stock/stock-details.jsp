@@ -1,13 +1,13 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 
-<c:set var="pageTitle" value="Chi Tiết Sản Phẩm" scope="request"/>
+<c:set var="pageTitle" value="Product Details" scope="request"/>
 <c:set var="pageSubtitle" value="SKU: ${variant.sku}" scope="request"/>
 <c:set var="currentModule" value="stock" scope="request"/>
 <c:set var="currentAction" value="stock-list" scope="request"/>
 
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
     <head>
         <meta charset="UTF-8">
         <title>${pageTitle} - Admin Panel</title>
@@ -22,69 +22,69 @@
             <main class="content-area">
                 <div class="box">
                     <div class="box-header with-border">
-                        <h3 class="box-title">Thông tin chi tiết sản phẩm</h3>
+                        <h3 class="box-title">Product Details Information</h3>
                     </div>
                     <div class="box-body">
                         <div class="row">
                             <div class="col-md-6">
-                                <h4>Thông tin cơ bản</h4>
+                                <h4>Basic Information</h4>
                                 <ul class="list-group list-group-flush">
                                     <li class="list-group-item"><strong>Product ID:</strong> <c:out value="${product.productId}"/></li>
-                                    <li class="list-group-item"><strong>Tên sản phẩm:</strong> <c:out value="${product.name}"/></li>
-                                    <li class="list-group-item"><strong>Chất liệu:</strong> <c:out value="${product.material}"/></li>
-                                    <li class="list-group-item"><strong>Giá gốc:</strong> <c:out value="${product.price}"/></li>
-                                    <li class="list-group-item"><strong>Trạng thái:</strong> <c:out value="${product.status}"/></li>
+                                    <li class="list-group-item"><strong>Product Name:</strong> <c:out value="${product.name}"/></li>
+                                    <li class="list-group-item"><strong>Material:</strong> <c:out value="${product.material}"/></li>
+                                    <li class="list-group-item"><strong>Original Price:</strong> <c:out value="${product.price}"/></li>
+                                    <li class="list-group-item"><strong>Status:</strong> <c:out value="${product.status}"/></li>
                                 </ul>
                             </div>
                             <div class="col-md-6">
-                                <h4>Thông tin biến thể</h4>
+                                <h4>Variant Information</h4>
                                 <ul class="list-group list-group-flush">
                                     <li class="list-group-item"><strong>Variant ID:</strong> <c:out value="${variant.variantId}"/></li>
                                     <li class="list-group-item"><strong>SKU:</strong> <c:out value="${variant.sku}"/></li>
                                     <li class="list-group-item"><strong>Size:</strong> <c:out value="${variant.size}"/></li>
-                                    <li class="list-group-item"><strong>Màu sắc:</strong> <c:out value="${variant.color}"/></li>
-                                    <li class="list-group-item"><strong>Giá thay đổi:</strong> <c:out value="${variant.priceModifier}"/></li>
+                                    <li class="list-group-item"><strong>Color:</strong> <c:out value="${variant.color}"/></li>
+                                    <li class="list-group-item"><strong>Price Modifier:</strong> <c:out value="${variant.priceModifier}"/></li>
                                 </ul>
                             </div>
                         </div>
                         <hr>
                         <div class="row mt-3">
                             <div class="col-md-6">
-                                <h4>Thông tin phân loại</h4>
+                                <h4>Classification Information</h4>
                                 <ul class="list-group list-group-flush">
                                     <li class="list-group-item"><strong>Category ID:</strong> <c:out value="${category.categoryId}"/></li>
-                                    <li class="list-group-item"><strong>Tên danh mục:</strong> <c:out value="${category.name}"/></li>
+                                    <li class="list-group-item"><strong>Category Name:</strong> <c:out value="${category.name}"/></li>
                                     <li class="list-group-item"><strong>Brand ID:</strong> <c:out value="${brand.brandId}"/></li>
-                                    <li class="list-group-item"><strong>Tên thương hiệu:</strong> <c:out value="${brand.name}"/></li>
+                                    <li class="list-group-item"><strong>Brand Name:</strong> <c:out value="${brand.name}"/></li>
                                 </ul>
                             </div>
                             <div class="col-md-6">
-                                <h4>Thông tin Kho</h4>
+                                <h4>Inventory Information</h4>
                                 <ul class="list-group list-group-flush">
                                     <li class="list-group-item"><strong>Inventory ID:</strong> <c:out value="${inventory.inventoryId}"/></li>
-                                    <li class="list-group-item"><strong>Số lượng tồn kho:</strong> <c:out value="${inventory.quantity}"/>                             
-                                        <a href="${pageContext.request.contextPath}/EditStock?variantId=${variant.variantId}" class="btn btn-warning btn-xs"><i class="fa fa-pencil"></i> Sửa
-                                        </a><li> 
-                                    <li class="list-group-item"><strong>Số lượng đang đặt:</strong> <c:out value="${inventory.reservedQuantity}"/></li>
-                                    <li class="list-group-item"><strong>Cập nhật lần cuối:</strong> <c:out value="${inventory.lastUpdated}"/></li>
+                                    <li class="list-group-item"><strong>Quantity in Stock:</strong> <c:out value="${inventory.quantity}"/>
+                                        <a href="${pageContext.request.contextPath}/EditStock?variantId=${variant.variantId}" class="btn btn-warning btn-xs"><i class="fa fa-pencil"></i> Edit
+                                        </a></li>
+                                    <li class="list-group-item"><strong>Reserved Quantity:</strong> <c:out value="${inventory.reservedQuantity}"/></li>
+                                    <li class="list-group-item"><strong>Last Updated:</strong> <c:out value="${inventory.lastUpdated}"/></li>
                                 </ul>
                             </div>
                         </div>
-                        <%-- Thêm box này vào cuối trang product-details.jsp --%>
+                        <%-- Add this box to the end of the product-details.jsp page --%>
                         <div class="box mt-4">
                             <div class="box-header with-border">
-                                <h3 class="box-title">Lịch sử thay đổi kho</h3>
+                                <h3 class="box-title">Inventory Change History</h3>
                             </div>
                             <div class="box-body">
                                 <div class="table-responsive">
                                     <table class="table table-striped table-sm">
                                         <thead>
                                             <tr>
-                                                <th>Thời gian</th>
-                                                <th>Loại thay đổi</th>
-                                                <th>Số lượng thay đổi</th>
-                                                <th>Ghi chú</th>
-                                                <th>Người thực hiện (ID)</th>
+                                                <th>Timestamp</th>
+                                                <th>Change Type</th>
+                                                <th>Quantity Changed</th>
+                                                <th>Notes</th>
+                                                <th>Performed By</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -92,14 +92,14 @@
                                                 <c:when test="${not empty movementHistory}">
                                                     <c:forEach var="movement" items="${movementHistory}">
                                                         <tr>
-                                                            <%-- Bây giờ chỉ cần hiển thị chuỗi đã được định dạng sẵn --%>
+                                                            <%-- Now just display the pre-formatted string --%>
                                                             <td><c:out value="${movement.createdAtFormatted}"/></td>
 
                                                             <td>
                                                                 <c:choose>
-                                                                    <c:when test="${movement.movementType == 'In'}"><span class="badge bg-success">Nhập kho</span></c:when>
-                                                                    <c:when test="${movement.movementType == 'Out'}"><span class="badge bg-danger">Xuất kho</span></c:when>
-                                                                    <c:when test="${movement.movementType == 'Adjustment'}"><span class="badge bg-warning text-dark">Điều chỉnh</span></c:when>
+                                                                    <c:when test="${movement.movementType == 'In'}"><span class="badge bg-success">Stock In</span></c:when>
+                                                                    <c:when test="${movement.movementType == 'Out'}"><span class="badge bg-danger">Stock Out</span></c:when>
+                                                                    <c:when test="${movement.movementType == 'Adjustment'}"><span class="badge bg-warning text-dark">Adjustment</span></c:when>
                                                                     <c:otherwise><c:out value="${movement.movementType}"/></c:otherwise>
                                                                 </c:choose>
                                                             </td>
@@ -110,7 +110,7 @@
                                                             </td>
                                                             <td><c:out value="${movement.notes}"/></td>
 
-                                                            <%-- Hiển thị Tên nhân viên thay vì ID --%>
+                                                            <%-- Display Staff Name instead of ID --%>
                                                             <td><c:out value="${movement.staffName}"/></td>
                                                         </tr>
                                                     </c:forEach>
@@ -118,7 +118,7 @@
                                                 <c:otherwise>
                                                     <tr>
                                                         <td colspan="5" class="text-center text-muted p-3">
-                                                            Chưa có lịch sử thay đổi nào cho sản phẩm này.
+                                                            No change history available for this product.
                                                         </td>
                                                     </tr>
                                                 </c:otherwise>
@@ -130,10 +130,10 @@
                         </div>
                         <hr>
                         <a href="${pageContext.request.contextPath}/Stock" class="btn btn-secondary">
-                            <i class="fa fa-arrow-left"></i> Quay lại danh sách
+                            <i class="fa fa-arrow-left"></i> Back to list
                         </a>
                         <a href="${pageContext.request.contextPath}/StockMovement" class="btn btn-secondary">
-                            Xem Stock Movement <i class="fa fa-arrow-right"></i> 
+                            View Stock Movement <i class="fa fa-arrow-right"></i> 
                         </a>
                     </div>
                 </div>

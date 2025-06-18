@@ -1,14 +1,14 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 
-<%-- Đặt các biến cho trang này --%>
-<c:set var="pageTitle" value="Sửa Thông Tin Tồn Kho" scope="request"/>
+<%-- 1. Set variables for this page --%>
+<c:set var="pageTitle" value="Edit Stock Information" scope="request"/>
 <c:set var="pageSubtitle" value="SKU: ${variant.sku}" scope="request"/>
 <c:set var="currentModule" value="stock" scope="request"/>
 <c:set var="currentAction" value="stock-list" scope="request"/>
 
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
     <head>
         <meta charset="UTF-8">
         <title>${pageTitle} - Admin Panel</title>
@@ -26,57 +26,59 @@
             <main class="content-area">
                 <div class="box">
                     <div class="box-header with-border">
-                        <h3 class="box-title">Sửa thông tin tồn kho cho SKU: <c:out value="${variant.sku}"/></h3>
+                        <h3 class="box-title">Edit stock information for SKU: <c:out value="${variant.sku}"/></h3>
                     </div>
                     <div class="box-body">
 
-                        <%-- Hiển thị lỗi nếu có (ví dụ nhập chữ vào ô số) --%>
+                        <%-- Display error if any (e.g., non-numeric input) --%>
                         <c:if test="${not empty errorMessage}">
                             <div class="alert alert-warning"><c:out value="${errorMessage}"/></div>
                         </c:if>
 
                         <form action="${pageContext.request.contextPath}/EditStock" method="POST">
+
+                            <%-- Send IDs as hidden fields so the Controller knows which object to update --%>
                             <input type="hidden" name="variantId" value="${variant.variantId}">
                             <input type="hidden" name="inventoryId" value="${inventory.inventoryId}">
 
                             <div class="mb-3">
-                                <label class="form-label">Tên Sản Phẩm</label>
+                                <label class="form-label">Product Name</label>
                                 <input type="text" class="form-control" value="<c:out value='${product.name}'/>" disabled>
-                                <small class="form-text text-muted d-block mb-1">Số lượng hiện tại trong kho: <strong><c:out value="${inventory.quantity}"/></strong></small>
+                                <small class="form-text text-muted d-block mb-1">Current quantity in stock: <strong><c:out value="${inventory.quantity}"/></strong></small>
                             </div>
                             <hr>
 
                             <div class="mb-3">
-                                <label class="form-label fw-bold">Chọn hành động cho Tồn kho:</label>
+                                <label class="form-label fw-bold">Select Action for Stock Quantity:</label>
                                 <div class="form-check">
                                     <input class="form-check-input" type="radio" name="updateAction" id="actionSet" value="set" checked>
                                     <label class="form-check-label" for="actionSet">
-                                        Sửa số lượng (Ghi đè số lượng cũ bằng số mới)
+                                        Set Quantity (Overwrite old quantity with new value)
                                     </label>
                                 </div>
                                 <div class="form-check">
                                     <input class="form-check-input" type="radio" name="updateAction" id="actionAdd" value="add">
                                     <label class="form-check-label" for="actionAdd">
-                                        Thêm vào kho (Cộng dồn vào số lượng hiện tại)
+                                        Add to Stock (Add to the current quantity)
                                     </label>
                                 </div>
                             </div>
 
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label for="quantityValue" class="form-label">Giá trị thay đổi Tồn kho:</label>
+                                    <label for="quantityValue" class="form-label">Value to Change Stock:</label>                             
                                     <input type="number" class="form-control" id="quantityValue" name="quantityValue" min="0" value="0" required>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label for="reservedQuantity" class="form-label">Sửa Số lượng đang đặt:</label>
+                                    <label for="reservedQuantity" class="form-label">Set Reserved Quantity:</label>
                                     <input type="number" class="form-control" id="reservedQuantity" name="reservedQuantity"
                                            value="${inventory.reservedQuantity}" required>
                                 </div>
                             </div>
 
                             <hr>
-                            <button type="submit" class="btn btn-primary">Thực hiện thay đổi</button>
-                            <a href="${pageContext.request.contextPath}/Stock" class="btn btn-secondary">Hủy</a>
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                            <a href="${pageContext.request.contextPath}/Stock" class="btn btn-secondary">Cancel</a>
                         </form>
 
                     </div>

@@ -10,7 +10,7 @@ import model.*;
 
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.List; // Thêm import nếu chưa có
+import java.util.List; // Import if not already present
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -27,18 +27,18 @@ public class StockDetailController extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         try {
-            // 1. Lấy variantId từ URL
+            // 1. Get variantId from the URL
             long variantId = Long.parseLong(request.getParameter("variantId"));
 
-            // 2. Gọi DAO để lấy các thông tin chính
+            // 2. Call DAO to get the main information
             ProductVariant variant = inventoryDAO.getProductVariantById(variantId);
             if (variant == null) {
-                throw new ServletException("Không tìm thấy biến thể sản phẩm với ID: " + variantId);
+                throw new ServletException("Product variant not found with ID: " + variantId);
             }
 
             Product product = inventoryDAO.getProductById(variant.getProductId());
             if (product == null) {
-                throw new ServletException("Không tìm thấy sản phẩm chính cho biến thể ID: " + variantId);
+                throw new ServletException("Main product not found for variant ID: " + variantId);
             }
 
             Inventory inventory = inventoryDAO.getInventoryByVariantId(variantId);
@@ -53,26 +53,26 @@ public class StockDetailController extends HttpServlet {
                 brand = inventoryDAO.getBrandById(product.getBrandId());
             }
 
-            // ================== THÊM TÍNH NĂNG MỚI TẠI ĐÂY ==================
-            // Lấy lịch sử thay đổi kho cho sản phẩm này
-              List<Map<String, Object>> movementHistory = inventoryDAO.getMovementHistoryByVariantId(variantId);
+            // ================== ADD NEW FEATURE HERE ==================
+            // Get the stock movement history for this product
+            List<Map<String, Object>> movementHistory = inventoryDAO.getMovementHistoryByVariantId(variantId);
             // =================================================================
 
-            // 3. Đặt tất cả các đối tượng đã lấy được vào request
+            // 3. Set all retrieved objects as request attributes
             request.setAttribute("variant", variant);
             request.setAttribute("product", product);
             request.setAttribute("inventory", inventory);
             request.setAttribute("category", category);
             request.setAttribute("brand", brand);
-            request.setAttribute("movementHistory", movementHistory); // <<< Gửi thêm danh sách lịch sử
+            request.setAttribute("movementHistory", movementHistory); // <<< Send the history list as well
 
-            // 4. Chuyển tiếp đến trang JSP chi tiết
+            // 4. Forward to the details JSP page
             request.getRequestDispatcher("/WEB-INF/views/staff/stock/stock-details.jsp").forward(request, response);
 
         } catch (ServletException | IOException | NumberFormatException | SQLException e) {
-            // Ghi log lỗi để dễ debug
-            Logger.getLogger(StockDetailController.class.getName()).log(Level.SEVERE, "Lỗi khi tải chi tiết sản phẩm", e);
-            request.setAttribute("errorMessage", "Lỗi khi tải chi tiết sản phẩm: " + e.getMessage());
+            // Log the error for easy debugging
+            Logger.getLogger(StockDetailController.class.getName()).log(Level.SEVERE, "Error loading product details", e);
+            request.setAttribute("errorMessage", "Error loading product details: " + e.getMessage());
             request.getRequestDispatcher("/WEB-INF/views/error.jsp").forward(request, response);
         }
     }

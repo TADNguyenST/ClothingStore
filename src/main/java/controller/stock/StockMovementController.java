@@ -8,10 +8,11 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.List;
-import java.util.Map; // Thêm import này
+import java.util.Map;
 
-
+@WebServlet("/StockMovements") // Assuming this is the correct URL pattern
 public class StockMovementController extends HttpServlet {
     private InventoryDAO inventoryDAO;
 
@@ -25,11 +26,11 @@ public class StockMovementController extends HttpServlet {
             throws ServletException, IOException {
         try {
             String pageStr = request.getParameter("page");
-            int page = (pageStr == null) ? 1 : Integer.parseInt(pageStr);
-            int limit = 10;
+            int page = (pageStr == null || pageStr.isEmpty()) ? 1 : Integer.parseInt(pageStr);
+            int limit = 10; // Number of records per page
             int offset = (page - 1) * limit;
 
-            // Gọi phương thức DAO mới, kiểu trả về là List<Map<String, Object>>
+            // Call the DAO method; the return type is List<Map<String, Object>>
             List<Map<String, Object>> movementList = inventoryDAO.getPaginatedStockMovements(offset, limit);
 
             int totalRecords = inventoryDAO.getTotalStockMovements();
@@ -41,8 +42,8 @@ public class StockMovementController extends HttpServlet {
 
             request.getRequestDispatcher("/WEB-INF/views/staff/stock/stock-movements.jsp").forward(request, response);
 
-        } catch (Exception e) {
-            throw new ServletException("Lỗi tải lịch sử kho", e);
+        } catch (ServletException | IOException | NumberFormatException | SQLException e) {
+            throw new ServletException("Error loading stock history", e);
         }
     }
 }
