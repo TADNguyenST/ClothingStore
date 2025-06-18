@@ -1,27 +1,50 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package model;
 
 import java.math.BigDecimal;
 import java.sql.Date;
 
-/**
- *
- * @author Lenovo
- */
 public class Voucher {
     private long voucherId;
+    private String code;
+    private String name;
+    private String description;
+    private String discountType;
+    private BigDecimal discountValue;
+    private BigDecimal minimumOrderAmount;
+    private BigDecimal maximumDiscountAmount;
+    private Integer usageLimit;
+    private Integer usedCount;
+    private Date expirationDate;
+    private boolean isActive;
+    private Date createdAt;
 
+    // Default constructor
     public Voucher() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
 
-    public Voucher(long voucherId, String code, String name, String description, String discountType, BigDecimal discountValue, BigDecimal minimumOrderAmount, BigDecimal maximumDiscountAmount, Integer usageLimit, int i, java.util.Date expirationDate, boolean active, Object object) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    // Full constructor for creating new Voucher objects
+    public Voucher(long voucherId, String code, String name, String description, String discountType,
+                   BigDecimal discountValue, BigDecimal minimumOrderAmount, BigDecimal maximumDiscountAmount,
+                   Integer usageLimit, Integer usedCount, Date expirationDate, boolean isActive, Date createdAt) {
+        this.voucherId = voucherId;
+        this.code = code;
+        this.name = name;
+        this.description = description;
+        this.discountType = discountType;
+        this.discountValue = discountValue;
+        this.minimumOrderAmount = minimumOrderAmount;
+        this.maximumDiscountAmount = maximumDiscountAmount;
+        this.usageLimit = usageLimit;
+        this.usedCount = usedCount;
+        this.expirationDate = expirationDate;
+        this.isActive = isActive;
+        this.createdAt = createdAt;
     }
 
+    // Deprecated constructor (remove if not used elsewhere)
+ 
+
+    // Getters and setters
     public long getVoucherId() {
         return voucherId;
     }
@@ -110,6 +133,14 @@ public class Voucher {
         this.expirationDate = expirationDate;
     }
 
+    public boolean isActive() {
+        return isActive;
+    }
+
+    public void setActive(boolean isActive) {
+        this.isActive = isActive;
+    }
+
     public boolean isIsActive() {
         return isActive;
     }
@@ -124,41 +155,5 @@ public class Voucher {
 
     public void setCreatedAt(Date createdAt) {
         this.createdAt = createdAt;
-    }
-    private String code;
-    private String name;
-    private String description;
-    private String discountType;
-    private BigDecimal discountValue;
-
-    public Voucher(long voucherId, String code, String name, String description, String discountType, BigDecimal discountValue, BigDecimal minimumOrderAmount, BigDecimal maximumDiscountAmount, Integer usageLimit, Integer usedCount, Date expirationDate, boolean isActive, Date createdAt) {
-        this.voucherId = voucherId;
-        this.code = code;
-        this.name = name;
-        this.description = description;
-        this.discountType = discountType;
-        this.discountValue = discountValue;
-        this.minimumOrderAmount = minimumOrderAmount;
-        this.maximumDiscountAmount = maximumDiscountAmount;
-        this.usageLimit = usageLimit;
-        this.usedCount = usedCount;
-        this.expirationDate = expirationDate;
-        this.isActive = isActive;
-        this.createdAt = createdAt;
-    }
-    private BigDecimal minimumOrderAmount;
-    private BigDecimal maximumDiscountAmount;
-    private Integer usageLimit;
-    private Integer usedCount;
-    private Date expirationDate;
-    private boolean isActive;
-    private Date createdAt;
-
-    public void setActive(boolean aBoolean) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
-    }
-
-    public boolean isActive() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
 }

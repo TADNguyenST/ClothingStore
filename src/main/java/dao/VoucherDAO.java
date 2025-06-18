@@ -21,12 +21,10 @@ public class VoucherDAO {
         dbContext = new DBContext();
     }
 
-    // Get all vouchers
     public List<Voucher> getAllVouchers() throws SQLException {
         return getVouchersByFilter(null, null, false);
     }
 
-    // Get vouchers with filters
     public List<Voucher> getVouchersByFilter(String code, Boolean isActive, boolean onlyNonExpired) throws SQLException {
         List<Voucher> vouchers = new ArrayList<>();
         StringBuilder sql = new StringBuilder(
@@ -36,7 +34,6 @@ public class VoucherDAO {
         );
         List<Object> params = new ArrayList<>();
 
-        // Add filters based on provided parameters
         if (code != null && !code.trim().isEmpty()) {
             sql.append(" AND code = ?");
             params.add(code);
@@ -54,7 +51,6 @@ public class VoucherDAO {
 
         try (Connection conn = dbContext.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
-            // Set parameters
             for (int i = 0; i < params.size(); i++) {
                 stmt.setObject(i + 1, params.get(i));
             }
@@ -83,7 +79,6 @@ public class VoucherDAO {
         return vouchers;
     }
 
-    // Get a voucher by ID
     public Voucher getVoucherById(long voucherId) throws SQLException {
         String sql = "SELECT voucher_id, code, name, description, discount_type, discount_value, " +
                      "minimum_order_amount, maximum_discount_amount, usage_limit, used_count, " +
@@ -115,43 +110,38 @@ public class VoucherDAO {
         return null;
     }
 
-    // Update a voucher
     public boolean updateVoucher(Voucher voucher) throws SQLException {
         String sql = "UPDATE vouchers SET code = ?, name = ?, description = ?, discount_type = ?, " +
                      "discount_value = ?, minimum_order_amount = ?, maximum_discount_amount = ?, " +
-                     "usage_limit = ?, expiration_date = ?, is_active = ?, updated_at = GETDATE() " +
-                     "WHERE voucher_id = ?";
+                     "usage_limit = ?, expiration_date = ?, is_active = ? WHERE voucher_id = ?";
         
         try (Connection conn = dbContext.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-            // Log the SQL statement and voucher details for debugging
-            LOGGER.log(Level.INFO, "Executing updateVoucher with SQL: {0}, Voucher: {1}", 
-                       new Object[]{sql, voucher.toString()});
+            LOGGER.log(Level.INFO, "Executing updateVoucher with SQL: {}, Voucher ID: {}", 
+                       new Object[]{sql, voucher.getVoucherId()});
 
-            // Set parameters, handling null values explicitly
             stmt.setString(1, voucher.getCode());
             stmt.setString(2, voucher.getName());
-            stmt.setString(3, voucher.getDescription()); // Can be null
+            stmt.setString(3, voucher.getDescription());
             stmt.setString(4, voucher.getDiscountType());
-            stmt.setBigDecimal(5, voucher.getDiscountValue());
-            stmt.setObject(6, voucher.getMinimumOrderAmount(), java.sql.Types.DECIMAL); // Handle null
-            stmt.setObject(7, voucher.getMaximumDiscountAmount(), java.sql.Types.DECIMAL); // Handle null
-            stmt.setObject(8, voucher.getUsageLimit(), java.sql.Types.INTEGER); // Handle null
-            stmt.setDate(9, new java.sql.Date(voucher.getExpirationDate().getTime()));
+            stmt.setObject(5, voucher.getDiscountValue(), java.sql.Types.DECIMAL);
+            stmt.setObject(6, voucher.getMinimumOrderAmount(), java.sql.Types.DECIMAL);
+            stmt.setObject(7, voucher.getMaximumDiscountAmount(), java.sql.Types.DECIMAL);
+            stmt.setObject(8, voucher.getUsageLimit(), java.sql.Types.INTEGER);
+            stmt.setObject(9, voucher.getExpirationDate(), java.sql.Types.DATE);
             stmt.setBoolean(10, voucher.isActive());
             stmt.setLong(11, voucher.getVoucherId());
 
             int rowsAffected = stmt.executeUpdate();
-            LOGGER.log(Level.INFO, "Rows affected by updateVoucher: {0}", rowsAffected);
+            LOGGER.log(Level.INFO, "Rows affected by updateVoucher: {}", rowsAffected);
             return rowsAffected > 0;
         } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Error updating voucher with ID: {0}, Error: {1}", 
+            LOGGER.log(Level.SEVERE, "Error updating voucher with ID: {}, Error: {}", 
                        new Object[]{voucher.getVoucherId(), e.getMessage()});
-            throw e; // Re-throw to let servlet handle the error
+            throw e;
         }
     }
 
-    // Ensure connection is closed when DAO is no longer needed
     public void closeConnection() {
         dbContext.closeConnection();
     }
