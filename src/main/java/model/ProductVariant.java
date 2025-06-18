@@ -10,10 +10,15 @@ public class ProductVariant {
     private BigDecimal priceModifier;
     private String sku;
 
+    // Thêm để sinh SKU
+    private String brand;
+    private String productName;
+
     public ProductVariant() {
     }
 
-    public ProductVariant(Long variantId, Long productId, String size, String color, 
+    // Constructor không sinh SKU (nếu muốn nhập tay)
+    public ProductVariant(Long variantId, Long productId, String size, String color,
                           BigDecimal priceModifier, String sku) {
         this.variantId = variantId;
         this.productId = productId;
@@ -21,6 +26,25 @@ public class ProductVariant {
         this.color = color;
         this.priceModifier = priceModifier;
         this.sku = sku;
+    }
+
+    // Constructor có tự sinh SKU
+    public ProductVariant(Long productId, String size, String color,
+                          BigDecimal priceModifier, String brand, String productName) {
+        this.productId = productId;
+        this.size = size;
+        this.color = color;
+        this.priceModifier = priceModifier;
+        this.brand = brand;
+        this.productName = productName;
+        this.sku = generateSku();
+    }
+
+    // Hàm tự động sinh SKU
+    private String generateSku() {
+        return (brand + "-" + size + "-" + color + "-" + productName + "-" + priceModifier)
+                .toUpperCase()
+                .replaceAll("\\s+", "");
     }
 
     public Long getVariantId() {
@@ -45,6 +69,7 @@ public class ProductVariant {
 
     public void setSize(String size) {
         this.size = size;
+        this.sku = generateSku(); // update SKU nếu có thay đổi
     }
 
     public String getColor() {
@@ -53,6 +78,7 @@ public class ProductVariant {
 
     public void setColor(String color) {
         this.color = color;
+        this.sku = generateSku();
     }
 
     public BigDecimal getPriceModifier() {
@@ -61,6 +87,7 @@ public class ProductVariant {
 
     public void setPriceModifier(BigDecimal priceModifier) {
         this.priceModifier = priceModifier;
+        this.sku = generateSku();
     }
 
     public String getSku() {
@@ -69,5 +96,23 @@ public class ProductVariant {
 
     public void setSku(String sku) {
         this.sku = sku;
+    }
+
+    public String getBrand() {
+        return brand;
+    }
+
+    public void setBrand(String brand) {
+        this.brand = brand;
+        this.sku = generateSku();
+    }
+
+    public String getProductName() {
+        return productName;
+    }
+
+    public void setProductName(String productName) {
+        this.productName = productName;
+        this.sku = generateSku();
     }
 }

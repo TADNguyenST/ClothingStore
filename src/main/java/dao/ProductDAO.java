@@ -78,7 +78,7 @@ public class ProductDAO extends DBContext {
         }
         return product;
     }
-
+/*
     public boolean update(long productId, String name, String description, BigDecimal price, long categoryId, 
                           long brandId, String material, String status) {
         String sql = "UPDATE products SET name = ?, description = ?, price = ?, category_id = ?, brand_id = ?, "
@@ -106,9 +106,9 @@ public class ProductDAO extends DBContext {
         }
         return false;
     }
-
-    public int insert(String name, String description, BigDecimal price, long categoryId, long brandId, 
-                      String material, String status) {
+*/
+   public int insert(String name, String description, BigDecimal price, long categoryId, long brandId, 
+                     String material, String status, List<ProductVariant> variants) {
         String getMaxId = "SELECT MAX(product_id) AS maxid FROM products";
         long nextId;
         try {
@@ -125,6 +125,7 @@ public class ProductDAO extends DBContext {
                        + "SET IDENTITY_INSERT products OFF;";
 
             try {
+                conn.setAutoCommit(false);
                 PreparedStatement ps = conn.prepareStatement(sql);
                 ps.setLong(1, nextId);
                 ps.setString(2, name);
@@ -136,18 +137,184 @@ public class ProductDAO extends DBContext {
                 ps.setString(8, status);
                 ps.setTimestamp(9, new java.sql.Timestamp(new Date().getTime()));
                 int row = ps.executeUpdate();
+                
                 if (row > 0) {
+                    String checkSkuSql = "SELECT sku FROM product_variants WHERE sku = ?";
+                    PreparedStatement psCheckSku = conn.prepareStatement(checkSkuSql);
+                    String variantSql = "INSERT INTO product_variants (product_id, size, color, price_modifier, sku) "
+                                     + "VALUES (?, ?, ?, ?, ?)";
+                    PreparedStatement psVariant = conn.prepareStatement(variantSql);
+                    
+                    for (ProductVariant variant : variants) {
+                        String sku = variant.getSku();
+                        if (sku == null || sku.length() > 100) {
+                            conn.rollback();
+                            System.out.println("Invalid SKU: " + (sku == null ? "null" : "exceeds 100 characters"));
+                            return 0;
+                        }
+                        
+                        psCheckSku.setString(1, sku);
+                        ResultSet rs = psCheckSku.executeQuery();
+                        if (rs.next()) {
+                            conn.rollback();
+                            System.out.println("Duplicate SKU: " + sku);
+                            return 0;
+                        }
+                        
+                        psVariant.setLong(1, nextId);
+                        psVariant.setString(2, variant.getSize());
+                        psVariant.setString(3, variant.getColor());
+                        psVariant.setBigDecimal(4, variant.getPriceModifier());
+                        psVariant.setString(5, sku);
+                        psVariant.executeUpdate();
+                    }
+                    conn.commit();
                     return 1;
                 } else {
+                    conn.rollback();
                     return 0;
                 }
-            } catch (Exception e) {
-                System.out.println(e.getMessage());
+            } catch (SQLException e) {
+                conn.rollback();
+                System.out.println("Database error: " + e.getMessage());
                 return 0;
+            } finally {
+                conn.setAutoCommit(true);
             }
         } catch (Exception e) {
-            System.out.println(e.getMessage());
+            System.out.println("Error: " + e.getMessage());
             return 0;
+        }
+    }
+
+    public boolean update(long id, String name, String description, BigDecimal price, long categoryId, long brandId, 
+                         String material, String status, List<ProductVariant> variants) {
+        try {
+            conn.setAutoCommit(false);
+
+            // Update product
+            String productSql = "UPDATE products SET name = ?, description = ?, price = ?, category_id = ?, brand_id = ?, " +
+                               "material = ?, status = ?, updated_at = ? WHERE product_id = ?";
+            PreparedStatement psProduct = conn.prepareStatement(productSql);
+            psProduct.setString(1, name);
+            psProduct.setString(2, description);
+            psProduct.setBigDecimal(3, price);
+            psProduct.setLong(4, categoryId);
+            psProduct.setLong(5, brandId);
+            psProduct.setString(6, material);
+            psProduct.setString(7, status);
+            psProduct.setTimestamp(8, new java.sql.Timestamp(new Date().getTime()));
+            psProduct.setLong(9, id);
+            int productRows = psProduct.executeUpdate();
+
+            if (productRows == 0) {
+                conn.rollback();
+                return false;
+            }
+
+            // Get existing variant IDs
+            List<Long> existingVariantIds = new ArrayList<>();
+            String selectVariantsSql = "SELECT variant_id FROM product_variants WHERE product_id = ?";
+            PreparedStatement psSelectVariants = conn.prepareStatement(selectVariantsSql);
+            psSelectVariants.setLong(1, id);
+            ResultSet rs = psSelectVariants.executeQuery();
+            while (rs.next()) {
+                existingVariantIds.add(rs.getLong("variant_id"));
+            }
+
+            // Process variants
+            String checkSkuSql = "SELECT sku FROM product_variants WHERE sku = ? AND variant_id != ?";
+            String updateVariantSql = "UPDATE product_variants SET size = ?, color = ?, price_modifier = ?, sku = ? " +
+                                     "WHERE variant_id = ? AND product_id = ?";
+            String insertVariantSql = "INSERT INTO product_variants (product_id, size, color, price_modifier, sku) " +
+                                     "VALUES (?, ?, ?, ?, ?)";
+            PreparedStatement psCheckSku = conn.prepareStatement(checkSkuSql);
+            PreparedStatement psUpdateVariant = conn.prepareStatement(updateVariantSql);
+            PreparedStatement psInsertVariant = conn.prepareStatement(insertVariantSql);
+
+            List<Long> submittedVariantIds = new ArrayList<>();
+            for (ProductVariant variant : variants) {
+                String sku = variant.getSku();
+                if (sku == null || sku.length() > 100) {
+                    conn.rollback();
+                    System.out.println("Invalid SKU: " + (sku == null ? "null" : "exceeds 100 characters"));
+                    return false;
+                }
+
+                Long variantId = variant.getVariantId();
+                psCheckSku.setString(1, sku);
+                psCheckSku.setLong(2, variantId != null ? variantId : 0);
+                ResultSet rsSku = psCheckSku.executeQuery();
+                if (rsSku.next()) {
+                    conn.rollback();
+                    System.out.println("Duplicate SKU: " + sku);
+                    return false;
+                }
+
+                if (variantId != null) {
+                    // Update existing variant
+                    psUpdateVariant.setString(1, variant.getSize());
+                    psUpdateVariant.setString(2, variant.getColor());
+                    psUpdateVariant.setBigDecimal(3, variant.getPriceModifier());
+                    psUpdateVariant.setString(4, sku);
+                    psUpdateVariant.setLong(5, variantId);
+                    psUpdateVariant.setLong(6, id);
+                    psUpdateVariant.executeUpdate();
+                    submittedVariantIds.add(variantId);
+                } else {
+                    // Insert new variant
+                    psInsertVariant.setLong(1, id);
+                    psInsertVariant.setString(2, variant.getSize());
+                    psInsertVariant.setString(3, variant.getColor());
+                    psInsertVariant.setBigDecimal(4, variant.getPriceModifier());
+                    psInsertVariant.setString(5, sku);
+                    psInsertVariant.executeUpdate();
+                }
+            }
+
+            // Delete removed variants
+            String deleteVariantSql = "DELETE FROM product_variants WHERE variant_id = ? AND product_id = ?";
+            PreparedStatement psDeleteVariant = conn.prepareStatement(deleteVariantSql);
+            for (Long existingId : existingVariantIds) {
+                if (!submittedVariantIds.contains(existingId)) {
+                    psDeleteVariant.setLong(1, existingId);
+                    psDeleteVariant.setLong(2, id);
+                    psDeleteVariant.executeUpdate();
+                }
+            }
+
+            conn.commit();
+            return true;
+        } catch (SQLException e) {
+            try {
+                conn.rollback();
+            } catch (SQLException ex) {
+                System.out.println("Rollback error: " + ex.getMessage());
+            }
+            System.out.println("Database error: " + e.getMessage());
+            return false;
+        } finally {
+            try {
+                conn.setAutoCommit(true);
+            } catch (SQLException e) {
+                System.out.println("AutoCommit reset error: " + e.getMessage());
+            }
+        }
+    }
+
+    public String getBrandNameById(long brandId) {
+        String sql = "SELECT name FROM brands WHERE brand_id = ?";
+        try {
+            PreparedStatement ps = conn.prepareStatement(sql);
+            ps.setLong(1, brandId);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                return rs.getString("name");
+            }
+            return null;
+        } catch (SQLException e) {
+            System.out.println("Error fetching brand name: " + e.getMessage());
+            return null;
         }
     }
 
