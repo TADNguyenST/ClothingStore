@@ -1,27 +1,41 @@
-/*
- * Click nbproject://SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbproject://SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package model;
 
+import java.math.BigDecimal;
+import java.util.Date;
+import java.util.List;
 
-/**
- *
- * @author DANGVUONGTHINH
- */
 public class Product {
     private Long productId;
     private String name;
     private String description;
-    private double price; 
-    private int stockQuantity;
-    private Supplier supplier;
+    private BigDecimal price;
     private Category category;
     private Brand brand;
     private String material;
     private String status;
+    private Date createdAt;
+    private Date updatedAt;
+    private List<ProductVariant> variants;
+    private List<ProductImage> images;
 
-    // Getters and Setters
+    public Product() {
+    }
+
+    public Product(Long productId, String name, String description, BigDecimal price, 
+                   Category category, Brand brand, String material, String status, 
+                   Date createdAt, Date updatedAt) {
+        this.productId = productId;
+        this.name = name;
+        this.description = description;
+        this.price = price;
+        this.category = category;
+        this.brand = brand;
+        this.material = material;
+        this.status = status;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
+    }
+
     public Long getProductId() {
         return productId;
     }
@@ -46,28 +60,12 @@ public class Product {
         this.description = description;
     }
 
-    public double getPrice() {
+    public BigDecimal getPrice() {
         return price;
     }
 
-    public void setPrice(double price) { // Thêm setter cho price
+    public void setPrice(BigDecimal price) {
         this.price = price;
-    }
-
-    public int getStockQuantity() {
-        return stockQuantity;
-    }
-
-    public void setStockQuantity(int stockQuantity) {
-        this.stockQuantity = stockQuantity;
-    }
-
-    public Supplier getSupplier() {
-        return supplier;
-    }
-
-    public void setSupplier(Supplier supplier) {
-        this.supplier = supplier;
     }
 
     public Category getCategory() {
@@ -100,5 +98,42 @@ public class Product {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public Date getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(Date createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public Date getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(Date updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
+    public List<ProductVariant> getVariants() {
+        return variants;
+    }
+
+    public void setVariants(List<ProductVariant> variants) {
+        this.variants = variants;
+    }
+
+    public List<ProductImage> getImages() {
+        return images;
+    }
+
+    public void setImages(List<ProductImage> images) {
+        this.images = images;
+    }
+
+    public String getSeoUrl() {
+        String slug = name.toLowerCase().replaceAll("[^a-z0-9]+", "-");
+        return "/product/" + productId + "/" + slug;
     }
 }

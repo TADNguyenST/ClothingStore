@@ -1,13 +1,73 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package model;
 
-/**
- *
- * @author Lenovo
- */
+import java.util.Date;
+
 public class ProductImage {
-    
+    private Long imageId;
+    private Long productId;
+    private Long variantId;
+    private String imageUrl;
+    private int displayOrder;
+    private Date createdAt;
+
+    public ProductImage() {
+    }
+
+    public ProductImage(Long imageId, Long productId, Long variantId, String imageUrl, 
+                        int displayOrder, Date createdAt) {
+        this.imageId = imageId;
+        this.productId = productId;
+        this.variantId = variantId;
+        this.imageUrl = imageUrl;
+        this.displayOrder = displayOrder;
+        this.createdAt = createdAt;
+    }
+
+    public Long getImageId() {
+        return imageId;
+    }
+
+    public void setImageId(Long imageId) {
+        this.imageId = imageId;
+    }
+
+    public Long getProductId() {
+        return productId;
+    }
+
+    public void setProductId(Long productId) {
+        this.productId = productId;
+    }
+
+    public Long getVariantId() {
+        return variantId;
+    }
+
+    public void setVariantId(Long variantId) {
+        this.variantId = variantId;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
+    }
+
+    public int getDisplayOrder() {
+        return displayOrder;
+    }
+
+    public void setDisplayOrder(int displayOrder) {
+        this.displayOrder = displayOrder;
+    }
+
+    public Date getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(Date createdAt) {
+        this.createdAt = createdAt;
+    }
 }

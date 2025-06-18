@@ -1,25 +1,28 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package model;
 
-import java.time.LocalDateTime;
+import java.util.Date;
 
-/**
- *
- * @author DANGVUONG THINH
- */
 public class Category {
     private Long categoryId;
     private String name;
     private String description;
     private Long parentCategoryId;
-    private Category parentCategory;
-    private Boolean isActive = true;
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private boolean isActive;
+    private Date createdAt;
 
-    // Getters and Setters
+    public Category() {
+    }
+
+    public Category(Long categoryId, String name, String description, Long parentCategoryId, 
+                    boolean isActive, Date createdAt) {
+        this.categoryId = categoryId;
+        this.name = name;
+        this.description = description;
+        this.parentCategoryId = parentCategoryId;
+        this.isActive = isActive;
+        this.createdAt = createdAt;
+    }
+
     public Long getCategoryId() {
         return categoryId;
     }
@@ -52,28 +55,24 @@ public class Category {
         this.parentCategoryId = parentCategoryId;
     }
 
-    public Category getParentCategory() {
-        return parentCategory;
-    }
-
-    public void setParentCategory(Category parentCategory) {
-        this.parentCategory = parentCategory;
-    }
-
-    public Boolean getIsActive() {
+    public boolean isActive() {
         return isActive;
     }
 
-    public void setIsActive(Boolean isActive) {
+    public void setActive(boolean isActive) {
         this.isActive = isActive;
     }
 
-    public LocalDateTime getCreatedAt() {
+    public Date getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(LocalDateTime createdAt) {
+    public void setCreatedAt(Date createdAt) {
         this.createdAt = createdAt;
     }
 
+    public String getSeoUrl() {
+        String slug = name.toLowerCase().replaceAll("[^a-z0-9]+", "-");
+        return "/category/" + categoryId + "/" + slug;
+    }
 }

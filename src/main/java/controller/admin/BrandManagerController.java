@@ -60,34 +60,7 @@ public class BrandManagerController extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        BrandDAO dao = new BrandDAO();
-
-        String action = request.getParameter("action");
-        if (action == null) {
-            action = "list";
-        }
-
-        if (action.equalsIgnoreCase("list")) {
-            List<Brand> listBrand = dao.getAll();
-            request.setAttribute("listBrand", listBrand);
-            request.getRequestDispatcher("/BrandManager/listBrand.jsp").forward(request, response);
-        } else if (action.equalsIgnoreCase("update")) {
-            String id = request.getParameter("id");
-            int brandId = (id != null && id.matches("\\d+")) ? Integer.parseInt(id) : -1;
-
-            if (brandId != -1) {
-                Brand brand = dao.getBrandById(brandId); // Use getBrandById instead of stream
-                if (brand != null) {
-                    request.setAttribute("brand", brand);
-                    request.getRequestDispatcher("/BrandManager/editBrand.jsp").forward(request, response);
-                } else {
-                    request.setAttribute("errorMessage", "Brand does not exist!");
-                    request.getRequestDispatcher("/BrandManager/error.jsp").forward(request, response);
-                }
-            } else {
-                response.sendRedirect("errorPage.jsp?message=Invalid ID");
-            }
-        }
+       
     }
 
     /**
