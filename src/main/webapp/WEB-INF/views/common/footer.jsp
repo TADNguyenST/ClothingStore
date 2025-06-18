@@ -1,17 +1,12 @@
-<%-- 
-    Document   : footer
-    Created on : Jun 14, 2025, 4:00:10 AM
-    Author     : Lenovo
---%>
-
-<%@page contentType="text/html" pageEncoding="UTF-8"%>
-<!DOCTYPE html>
-<html>
-    <head>
-        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-        <title>JSP Page</title>
-    </head>
-    <body>
-        <h1>Hello World!</h1>
-    </body>
+<footer class="bg-dark text-white text-center p-4 mt-5">
+    <div class="container">
+        <p>Contact us: info@clothingstore.com | Phone: +1-800-123-4567</p>
+        <div class="mt-2">
+            <a href="#" class="text-white me-3"><i class="bi bi-facebook"></i></a>
+            <a href="#" class="text-white me-3"><i class="bi bi-instagram"></i></a>
+            <a href="#" class="text-white me-3"><i class="bi bi-twitter"></i></a>
+        </div>
+        <p class="mt-2">© 2025 Clothing Store. All rights reserved.</p>
+    </footer>
+</body>
 </html>

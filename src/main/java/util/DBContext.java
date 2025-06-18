@@ -44,7 +44,8 @@ public class DBContext {
             Logger.getLogger(DBContext.class.getName()).log(Level.SEVERE, "SQL Server driver not found", ex);
         }
     }
-
+    
+   
     // Method to get connection (checks and reopens if needed)
     public Connection getConnection() throws SQLException {
         if (conn == null || conn.isClosed()) {
@@ -68,4 +69,5 @@ public class DBContext {
             Logger.getLogger(DBContext.class.getName()).log(Level.SEVERE, "Error closing connection", ex);
         }
     }
+    
 }
