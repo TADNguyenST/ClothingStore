@@ -8,14 +8,18 @@ import java.sql.*;
 import model.Users;
 import util.DBContext;
 
+/**
+ *
+ * @author Khoa
+ */
 public class UserDAO {
 
     private final DBContext dbContext = new DBContext();
+//Login mail and password
 
     public Users checkLogin(String email, String password) {
         String sql = "SELECT * FROM users WHERE email = ? AND password = ?";
-        try (Connection conn = dbContext.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try ( Connection conn = dbContext.getConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, email);
             ps.setString(2, password);
@@ -40,5 +44,20 @@ public class UserDAO {
         }
         return null;
     }
-}
 
+    //Change Passeword
+    public boolean updatePassword(long userId, String newPassword) {
+        String sql = "UPDATE users SET password = ?, updated_at = GETDATE() WHERE user_id = ?";
+        try ( Connection conn = new DBContext().getConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, newPassword);
+            ps.setLong(2, userId);
+            int rowsUpdated = ps.executeUpdate();
+            return rowsUpdated > 0;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+}

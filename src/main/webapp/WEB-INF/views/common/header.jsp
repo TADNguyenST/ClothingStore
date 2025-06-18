@@ -47,12 +47,16 @@
                                 <%= session.getAttribute("username") != null ? session.getAttribute("username") : "User"%>
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                                <li><a class="dropdown-item" href="${pageContext.request.contextPath}/ViewProfile">
+                                <li>
+                                    <a class="dropdown-item" href="${pageContext.request.contextPath}/Profile">
                                         <i class="bi bi-person"></i> View Profile
-                                    </a></li>
-                                <li><a class="dropdown-item" href="${pageContext.request.contextPath}/ChangePassword">
-                                        <i class="bi bi-key"></i> Change Password
-                                    </a></li>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="${pageContext.request.contextPath}/MyOrder">
+                                        <i class="bi bi-receipt"></i> My Order
+                                    </a>
+                                </li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item" href="${pageContext.request.contextPath}/Logout">
                                         <i class="bi bi-box-arrow-right"></i> Logout
