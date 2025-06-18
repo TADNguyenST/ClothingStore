@@ -12,6 +12,18 @@
         <servlet-name>StockImportController</servlet-name>
         <servlet-class>controller.stock.StockImportController</servlet-class>
     </servlet>
+    <servlet>
+        <servlet-name>EditStockController</servlet-name>
+        <servlet-class>controller.stock.EditStockController</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>StockMovementController</servlet-name>
+        <servlet-class>controller.stock.StockMovementController</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>StockDetailController</servlet-name>
+        <servlet-class>controller.stock.StockDetailController</servlet-class>
+    </servlet>
     <servlet-mapping>
         <servlet-name>AdmindashboardController</servlet-name>
         <url-pattern>/admindashboard</url-pattern>
@@ -23,6 +35,18 @@
     <servlet-mapping>
         <servlet-name>StockImportController</servlet-name>
         <url-pattern>/StockImport</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>EditStockController</servlet-name>
+        <url-pattern>/EditStock</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>StockMovementController</servlet-name>
+        <url-pattern>/StockMovement</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>StockDetailController</servlet-name>
+        <url-pattern>/StockDetail</url-pattern>
     </servlet-mapping>
     <session-config>
         <session-timeout>

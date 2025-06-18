@@ -109,7 +109,7 @@ public class AdmindashboardController extends HttpServlet {
                 case "stock":
                     switch (action) {
                         case "stockList": pageTitle = "Stock List"; targetJspPath = "/Stock"; break;
-                        case "importStock": pageTitle = "Import Stock"; targetJspPath = "/StockImport"; break;
+                        case "importStock": pageTitle = "Import Stock"; targetJspPath = "/StockMovement"; break;
                         case "stockDetails": pageTitle = "Stock Details"; targetJspPath = "/WEB-INF/views/staff/stock/stock-details.jsp"; break;
                         case "stockStatistics": pageTitle = "Stock Statistics"; targetJspPath = "/StockController"; break;
                     }

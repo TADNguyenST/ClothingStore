@@ -181,14 +181,7 @@
                     <a href="${pageContext.request.contextPath}/admindashboard?action=stockList&module=stock"><i class="fa fa-circle-o"></i> Stock List</a>
                 </li>
                 <li class="${requestScope.currentAction eq 'importStock' ? 'active' : ''}">
-                    <a href="${pageContext.request.contextPath}/admindashboard?action=importStock&module=stock"><i class="fa fa-circle-o"></i> Import Stock</a>
-                </li>
-                <li class="${requestScope.currentAction eq 'stockDetails' ? 'active' : ''}">
-                    <a href="${pageContext.request.contextPath}/admindashboard?action=stockDetails&module=stock"><i class="fa fa-circle-o"></i> Stock Details</a>
-                </li>
-                <li class="${requestScope.currentAction eq 'stockStatistics' ? 'active' : ''}">
-                    <a href="${pageContext.request.contextPath}/admindashboard?action=stockStatistics&module=stock"><i class="fa fa-circle-o"></i> Stock Statistics</a>
-                </li>
+                    <a href="${pageContext.request.contextPath}/admindashboard?action=importStock&module=stock"><i class="fa fa-circle-o"></i> Stock Movement</a>
             </ul>
         </li>
         <li class="treeview ${requestScope.currentModule eq 'supplier' ? 'active menu-open' : ''}">
