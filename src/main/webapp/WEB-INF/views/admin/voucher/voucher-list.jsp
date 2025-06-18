@@ -97,7 +97,7 @@
     <div class="header-container">
         <h2>Danh sách Voucher</h2>
         <div class="search-container">
-            <form action="searchVoucher" method="post" style="display: inline;">
+            <form action="${pageContext.request.contextPath}/searchVoucher" method="post" style="display: inline;">
                 <input type="text" name="code" class="search-input" placeholder="Nhập mã voucher">
                 <button type="submit" class="btn btn-search">Tìm kiếm</button>
             </form>
@@ -147,8 +147,8 @@
                             <td><fmt:formatDate value="${voucher.expirationDate}" pattern="dd-MM-yyyy"/></td>
                             <td>${voucher.isActive ? 'Active' : 'Inactive'}</td>
                             <td>
-                                <a href="editVoucher?voucher_id=${voucher.voucherId}" class="btn btn-edit">Edit</a>
-                                <a href="deleteVoucher?voucher_id=${voucher.voucherId}" class="btn btn-delete" onclick="return confirm('Bạn có chắc muốn xóa voucher này?')">Delete</a>
+                                <a href="${pageContext.request.contextPath}/editVoucher?voucherId=${voucher.voucherId}" class="btn btn-edit">Edit</a>
+                                <a href="${pageContext.request.contextPath}/deleteVoucher?voucherId=${voucher.voucherId}" class="btn btn-delete" onclick="return confirm('Bạn có chắc muốn xóa voucher này?')">Delete</a>
                             </td>
                         </tr>
                     </c:forEach>
