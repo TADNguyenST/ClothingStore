@@ -18,7 +18,7 @@ public class Inventory {
     private ProductVariant variant;
     private Integer quantity;
     private Integer reservedQuantity = 0;
-    private LocalDateTime lastUpdated; // Thêm khai báo biến lastUpdated
+    private LocalDateTime lastUpdated; 
 
     // Getters and Setters
     public Long getInventoryId() {

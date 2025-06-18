@@ -60,34 +60,7 @@ public class ProductVariantManagerCotroller extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        ProductVariantDAO dao = new ProductVariantDAO();
-
-        String action = request.getParameter("action");
-        if (action == null) {
-            action = "list";
-        }
-
-        if (action.equalsIgnoreCase("list")) {
-            List<ProductVariant> listProductVariant = dao.getAll();
-            request.setAttribute("listProductVariant", listProductVariant);
-            request.getRequestDispatcher("/ProductVariantManager/listProductVariant.jsp").forward(request, response);
-        } else if (action.equalsIgnoreCase("update")) {
-            String id = request.getParameter("id");
-            int variantId = (id != null && id.matches("\\d+")) ? Integer.parseInt(id) : -1;
-
-            if (variantId != -1) {
-                ProductVariant variant = dao.getProductVariantById(variantId); // Changed from long to int
-                if (variant != null) {
-                    request.setAttribute("variant", variant);
-                    request.getRequestDispatcher("/ProductVariantManager/editProductVariant.jsp").forward(request, response);
-                } else {
-                    request.setAttribute("errorMessage", "Product variant does not exist!");
-                    request.getRequestDispatcher("/ProductVariantManager/error.jsp").forward(request, response);
-                }
-            } else {
-                response.sendRedirect("errorPage.jsp?message=Invalid ID");
-            }
-        }
+      
     }
 
     /**

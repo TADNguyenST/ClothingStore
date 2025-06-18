@@ -1,42 +1,42 @@
 package model;
 
-import java.time.LocalDateTime;
+import java.math.BigDecimal;
 
 public class ProductVariant {
-    private long variantId;
-    private long productId;
-    private Product product;
+    private Long variantId;
+    private Long productId;
     private String size;
     private String color;
-    private int quantity;
-    private double price; 
+    private BigDecimal priceModifier;
     private String sku;
-    private LocalDateTime createdAt;
 
-    // Getters and Setters
+    public ProductVariant() {
+    }
 
-    public long getVariantId() {
+    public ProductVariant(Long variantId, Long productId, String size, String color, 
+                          BigDecimal priceModifier, String sku) {
+        this.variantId = variantId;
+        this.productId = productId;
+        this.size = size;
+        this.color = color;
+        this.priceModifier = priceModifier;
+        this.sku = sku;
+    }
+
+    public Long getVariantId() {
         return variantId;
     }
 
-    public void setVariantId(long variantId) {
+    public void setVariantId(Long variantId) {
         this.variantId = variantId;
     }
 
-    public long getProductId() {
+    public Long getProductId() {
         return productId;
     }
 
-    public void setProductId(long productId) {
+    public void setProductId(Long productId) {
         this.productId = productId;
-    }
-
-    public Product getProduct() {
-        return product;
-    }
-
-    public void setProduct(Product product) {
-        this.product = product;
     }
 
     public String getSize() {
@@ -55,20 +55,12 @@ public class ProductVariant {
         this.color = color;
     }
 
-    public int getQuantity() {
-        return quantity;
+    public BigDecimal getPriceModifier() {
+        return priceModifier;
     }
 
-    public void setQuantity(int quantity) {
-        this.quantity = quantity;
-    }
-
-    public double getPrice() {
-        return price;
-    }
-
-    public void setPrice(double price) {
-        this.price = price;
+    public void setPriceModifier(BigDecimal priceModifier) {
+        this.priceModifier = priceModifier;
     }
 
     public String getSku() {
@@ -78,13 +70,4 @@ public class ProductVariant {
     public void setSku(String sku) {
         this.sku = sku;
     }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-    
 }

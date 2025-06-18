@@ -1,22 +1,28 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package model;
-import java.time.LocalDateTime;
-/**
- *
- * @author DANGVUONGTHINH
- */
+
+import java.util.Date;
+
 public class Brand {
-    private Long brandId; 
+    private Long brandId;
     private String name;
     private String description;
     private String logoUrl;
-    private Boolean isActive = true;
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private boolean isActive;
+    private Date createdAt;
 
-    // Getters and Setters
+    public Brand() {
+    }
+
+    public Brand(Long brandId, String name, String description, String logoUrl, 
+                 boolean isActive, Date createdAt) {
+        this.brandId = brandId;
+        this.name = name;
+        this.description = description;
+        this.logoUrl = logoUrl;
+        this.isActive = isActive;
+        this.createdAt = createdAt;
+    }
+
     public Long getBrandId() {
         return brandId;
     }
@@ -49,20 +55,19 @@ public class Brand {
         this.logoUrl = logoUrl;
     }
 
-    public Boolean getIsActive() {
+    public boolean isActive() {
         return isActive;
     }
 
-    public void setIsActive(Boolean isActive) {
+    public void setActive(boolean isActive) {
         this.isActive = isActive;
     }
 
-    public LocalDateTime getCreatedAt() {
+    public Date getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(LocalDateTime createdAt) {
+    public void setCreatedAt(Date createdAt) {
         this.createdAt = createdAt;
     }
-
 }
