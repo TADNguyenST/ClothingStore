@@ -1,7 +1,3 @@
-/*
- * Click nbproject://SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbproject://SystemFileSystem/Templates/J2EE/Servlet.java to edit this template
- */
 package controller.admin;
 
 import dao.ProductDAO;
@@ -10,14 +6,14 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import model.Brand;
 import model.Category;
 import model.Product;
-import model.Users;
+import model.ProductVariant;
 
 @WebServlet(name = "ProductManagerController", urlPatterns = {"/ProductManager"})
 public class ProductManagerController extends HttpServlet {
@@ -25,15 +21,7 @@ public class ProductManagerController extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        // HttpSession session = request.getSession();
-        // Users acc = (Users) session.getAttribute("user");
         ProductDAO dao = new ProductDAO();
-
-        // Require authentication
-        // if (acc == null) {
-        //     response.sendRedirect("Login");
-        //     return;
-        // }
 
         String action = request.getParameter("action");
         if (action == null) {
@@ -43,7 +31,6 @@ public class ProductManagerController extends HttpServlet {
         if (action.equalsIgnoreCase("list")) {
             List<Product> data = dao.getAll();
             request.setAttribute("list", data);
-            // Provide categories and brands for filter dropdowns
             List<Category> categories = dao.getAllCategories();
             List<Brand> brands = dao.getAllBrands();
             request.setAttribute("categories", categories);
@@ -85,7 +72,6 @@ public class ProductManagerController extends HttpServlet {
                     request.getRequestDispatcher("products.jsp").forward(request, response);
                 } else {
                     request.setAttribute("data", product);
-                    // Provide categories and brands for dropdowns
                     List<Category> categories = dao.getAllCategories();
                     List<Brand> brands = dao.getAllBrands();
                     request.setAttribute("categories", categories);
@@ -129,14 +115,13 @@ public class ProductManagerController extends HttpServlet {
             String minPriceRaw = request.getParameter("minPrice");
             String maxPriceRaw = request.getParameter("maxPrice");
 
-            // Parse categoryId
             Long categoryId = null;
             if (categoryIdRaw != null && !categoryIdRaw.isEmpty()) {
                 try {
                     categoryId = Long.parseLong(categoryIdRaw);
                     if (!dao.categoryExists(categoryId)) {
                         request.setAttribute("err", "<p class='text-danger'>Invalid Category ID: " + categoryIdRaw + "</p>");
-                        categoryId = null; // Ignore invalid category
+                        categoryId = null;
                     }
                 } catch (NumberFormatException e) {
                     System.out.println("Invalid Long format for categoryId: " + categoryIdRaw);
@@ -144,14 +129,13 @@ public class ProductManagerController extends HttpServlet {
                 }
             }
 
-            // Parse brandId
             Long brandId = null;
             if (brandIdRaw != null && !brandIdRaw.isEmpty()) {
                 try {
                     brandId = Long.parseLong(brandIdRaw);
                     if (!dao.brandExists(brandId)) {
                         request.setAttribute("err", "<p class='text-danger'>Invalid Brand ID: " + brandIdRaw + "</p>");
-                        brandId = null; // Ignore invalid brand
+                        brandId = null;
                     }
                 } catch (NumberFormatException e) {
                     System.out.println("Invalid Long format for brandId: " + brandIdRaw);
@@ -159,11 +143,9 @@ public class ProductManagerController extends HttpServlet {
                 }
             }
 
-            // Parse minPrice
             BigDecimal minPrice = null;
             if (minPriceRaw != null && !minPriceRaw.isEmpty()) {
                 try {
-                    // Remove thousand separators (dots) and convert comma to decimal point
                     minPrice = new BigDecimal(minPriceRaw.replace(".", "").replace(",", "."));
                 } catch (NumberFormatException e) {
                     System.out.println("Invalid BigDecimal format for minPrice: " + minPriceRaw);
@@ -171,11 +153,9 @@ public class ProductManagerController extends HttpServlet {
                 }
             }
 
-            // Parse maxPrice
             BigDecimal maxPrice = null;
             if (maxPriceRaw != null && !maxPriceRaw.isEmpty()) {
                 try {
-                    // Remove thousand separators (dots) and convert comma to decimal point
                     maxPrice = new BigDecimal(maxPriceRaw.replace(".", "").replace(",", "."));
                 } catch (NumberFormatException e) {
                     System.out.println("Invalid BigDecimal format for maxPrice: " + maxPriceRaw);
@@ -183,7 +163,6 @@ public class ProductManagerController extends HttpServlet {
                 }
             }
 
-            // Validate price range
             if (minPrice != null && maxPrice != null && minPrice.compareTo(maxPrice) > 0) {
                 request.setAttribute("err", "<p class='text-danger'>Min Price cannot be greater than Max Price</p>");
                 minPrice = null;
@@ -195,7 +174,6 @@ public class ProductManagerController extends HttpServlet {
             if (data.isEmpty()) {
                 request.setAttribute("err", "<p class='text-danger'>No products found matching the filter criteria</p>");
             }
-            // Provide categories and brands for filter dropdowns
             List<Category> categories = dao.getAllCategories();
             List<Brand> brands = dao.getAllBrands();
             request.setAttribute("categories", categories);
@@ -207,15 +185,7 @@ public class ProductManagerController extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        // HttpSession session = request.getSession();
-        // Users acc = (Users) session.getAttribute("user");
         ProductDAO dao = new ProductDAO();
-
-        // Require authentication
-        // if (acc == null) {
-        //     response.sendRedirect("Login");
-        //     return;
-        // }
 
         String action = request.getParameter("action");
         if (action.equalsIgnoreCase("create")) {
@@ -227,8 +197,11 @@ public class ProductManagerController extends HttpServlet {
             String material = request.getParameter("material");
             String status = request.getParameter("status");
 
+            String[] sizes = request.getParameterValues("size");
+            String[] colors = request.getParameterValues("color");
+            String[] priceModifiers = request.getParameterValues("priceModifier");
+
             try {
-                // Validate required fields
                 if (name == null || name.trim().isEmpty()) {
                     throw new IllegalArgumentException("Name is required");
                 }
@@ -242,13 +215,14 @@ public class ProductManagerController extends HttpServlet {
                     throw new IllegalArgumentException("Brand is required");
                 }
 
-                // Remove thousand separators (dots) and convert comma to decimal point
                 priceRaw = priceRaw.replace(".", "").replace(",", ".");
                 BigDecimal price = new BigDecimal(priceRaw);
+                if (price.compareTo(BigDecimal.ZERO) <= 0) {
+                    throw new IllegalArgumentException("Price must be positive");
+                }
                 long categoryId = Long.parseLong(categoryIdRaw);
                 long brandId = Long.parseLong(brandIdRaw);
 
-                // Validate category and brand existence
                 if (!dao.categoryExists(categoryId)) {
                     throw new IllegalArgumentException("Invalid Category ID: " + categoryId);
                 }
@@ -256,11 +230,56 @@ public class ProductManagerController extends HttpServlet {
                     throw new IllegalArgumentException("Invalid Brand ID: " + brandId);
                 }
 
-                int res = dao.insert(name, description, price, categoryId, brandId, material, status);
+                String brandName = dao.getBrandNameById(brandId);
+                if (brandName == null) {
+                    throw new IllegalArgumentException("Brand name not found for ID: " + brandId);
+                }
+
+                System.out.println("Sizes: " + (sizes != null ? String.join(", ", sizes) : "null"));
+                System.out.println("Colors: " + (colors != null ? String.join(", ", colors) : "null"));
+                System.out.println("Price Modifiers: " + (priceModifiers != null ? String.join(", ", priceModifiers) : "null"));
+
+                List<ProductVariant> variants = new ArrayList<>();
+                if (sizes != null && colors != null && priceModifiers != null &&
+                    sizes.length == colors.length && colors.length == priceModifiers.length && sizes.length > 0) {
+                    for (int i = 0; i < sizes.length; i++) {
+                        if (sizes[i] == null || sizes[i].trim().isEmpty()) {
+                            throw new IllegalArgumentException("Size cannot be empty for variant " + (i + 1));
+                        }
+                        if (colors[i] == null || colors[i].trim().isEmpty()) {
+                            throw new IllegalArgumentException("Color cannot be empty for variant " + (i + 1));
+                        }
+                        if (priceModifiers[i] == null || priceModifiers[i].trim().isEmpty()) {
+                            throw new IllegalArgumentException("Price Modifier cannot be empty for variant " + (i + 1));
+                        }
+                        String priceModifierRaw = priceModifiers[i].replace(".", "").replace(",", ".");
+                        BigDecimal priceModifier = new BigDecimal(priceModifierRaw);
+                        if (price.add(priceModifier).compareTo(BigDecimal.ZERO) < 0) {
+                            throw new IllegalArgumentException("Price Modifier for variant " + (i + 1) + " makes total price negative (" + 
+                                price.add(priceModifier) + "). Total price must be non-negative.");
+                        }
+                        ProductVariant variant = new ProductVariant(
+                            null,
+                            sizes[i].trim(),
+                            colors[i].trim(),
+                            priceModifier,
+                            brandName,
+                            name
+                        );
+                        variants.add(variant);
+                    }
+                } else if (sizes != null || colors != null || priceModifiers != null) {
+                    throw new IllegalArgumentException("Incomplete or mismatched variant data: " +
+                        "Sizes=" + (sizes != null ? sizes.length : "null") + ", " +
+                        "Colors=" + (colors != null ? colors.length : "null") + ", " +
+                        "PriceModifiers=" + (priceModifiers != null ? priceModifiers.length : "null"));
+                }
+
+                int res = dao.insert(name, description, price, categoryId, brandId, material, status, variants);
                 if (res == 1) {
                     response.sendRedirect("ProductManager");
                 } else {
-                    request.setAttribute("err", "<p class='text-danger'>Create failed: Database error</p>");
+                    request.setAttribute("err", "<p class='text-danger'>Create failed: Database error or invalid data</p>");
                     List<Category> categories = dao.getAllCategories();
                     List<Brand> brands = dao.getAllBrands();
                     request.setAttribute("categories", categories);
@@ -269,7 +288,7 @@ public class ProductManagerController extends HttpServlet {
                 }
             } catch (NumberFormatException e) {
                 System.err.println("NumberFormatException in create: " + e.getMessage());
-                request.setAttribute("err", "<p class='text-danger'>Invalid input format: Please check Price, Category, or Brand</p>");
+                request.setAttribute("err", "<p class='text-danger'>Invalid input format: Please check Price or Price Modifier (e.g., -5.00, 0, 5.50)</p>");
                 List<Category> categories = dao.getAllCategories();
                 List<Brand> brands = dao.getAllBrands();
                 request.setAttribute("categories", categories);
@@ -303,8 +322,12 @@ public class ProductManagerController extends HttpServlet {
             String material = request.getParameter("material");
             String status = request.getParameter("status");
 
+            String[] variantIds = request.getParameterValues("variantId");
+            String[] sizes = request.getParameterValues("size");
+            String[] colors = request.getParameterValues("color");
+            String[] priceModifiers = request.getParameterValues("priceModifier");
+
             try {
-                // Validate required fields
                 if (name == null || name.trim().isEmpty()) {
                     throw new IllegalArgumentException("Name is required");
                 }
@@ -319,13 +342,14 @@ public class ProductManagerController extends HttpServlet {
                 }
 
                 long id = Long.parseLong(idRaw);
-                // Remove thousand separators (dots) and convert comma to decimal point
                 priceRaw = priceRaw.replace(".", "").replace(",", ".");
                 BigDecimal price = new BigDecimal(priceRaw);
+                if (price.compareTo(BigDecimal.ZERO) <= 0) {
+                    throw new IllegalArgumentException("Price must be positive");
+                }
                 long categoryId = Long.parseLong(categoryIdRaw);
                 long brandId = Long.parseLong(brandIdRaw);
 
-                // Validate category and brand existence
                 if (!dao.categoryExists(categoryId)) {
                     throw new IllegalArgumentException("Invalid Category ID: " + categoryId);
                 }
@@ -333,13 +357,73 @@ public class ProductManagerController extends HttpServlet {
                     throw new IllegalArgumentException("Invalid Brand ID: " + brandId);
                 }
 
-                boolean res = dao.update(id, name, description, price, categoryId, brandId, material, status);
+                String brandName = dao.getBrandNameById(brandId);
+                if (brandName == null) {
+                    throw new IllegalArgumentException("Brand name not found for ID: " + brandId);
+                }
+
+                System.out.println("Sizes: " + (sizes != null ? String.join(", ", sizes) : "null"));
+                System.out.println("Colors: " + (colors != null ? String.join(", ", colors) : "null"));
+                System.out.println("Price Modifiers: " + (priceModifiers != null ? String.join(", ", priceModifiers) : "null"));
+                System.out.println("Variant IDs: " + (variantIds != null ? String.join(", ", variantIds) : "null"));
+
+                List<ProductVariant> variants = new ArrayList<>();
+                if (sizes != null && colors != null && priceModifiers != null &&
+                    sizes.length == colors.length && colors.length == priceModifiers.length && sizes.length > 0) {
+                    // Ensure variantIds is at least as long as other arrays
+                    String[] normalizedVariantIds = new String[sizes.length];
+                    if (variantIds != null) {
+                        for (int i = 0; i < Math.min(variantIds.length, sizes.length); i++) {
+                            normalizedVariantIds[i] = variantIds[i];
+                        }
+                    }
+                    for (int i = variantIds != null ? variantIds.length : 0; i < sizes.length; i++) {
+                        normalizedVariantIds[i] = "";
+                    }
+
+                    for (int i = 0; i < sizes.length; i++) {
+                        if (sizes[i] == null || sizes[i].trim().isEmpty()) {
+                            throw new IllegalArgumentException("Size cannot be empty for variant " + (i + 1));
+                        }
+                        if (colors[i] == null || colors[i].trim().isEmpty()) {
+                            throw new IllegalArgumentException("Color cannot be empty for variant " + (i + 1));
+                        }
+                        if (priceModifiers[i] == null || priceModifiers[i].trim().isEmpty()) {
+                            throw new IllegalArgumentException("Price Modifier cannot be empty for variant " + (i + 1));
+                        }
+                        String priceModifierRaw = priceModifiers[i].replace(".", "").replace(",", ".");
+                        BigDecimal priceModifier = new BigDecimal(priceModifierRaw);
+                        if (price.add(priceModifier).compareTo(BigDecimal.ZERO) < 0) {
+                            throw new IllegalArgumentException("Price Modifier for variant " + (i + 1) + " makes total price negative (" + 
+                                price.add(priceModifier) + "). Total price must be non-negative.");
+                        }
+                        ProductVariant variant = new ProductVariant();
+                        variant.setProductId(id);
+                        variant.setSize(sizes[i].trim());
+                        variant.setColor(colors[i].trim());
+                        variant.setPriceModifier(priceModifier);
+                        variant.setBrand(brandName);
+                        variant.setProductName(name);
+                        if (normalizedVariantIds[i] != null && !normalizedVariantIds[i].isEmpty()) {
+                            variant.setVariantId(Long.parseLong(normalizedVariantIds[i]));
+                        }
+                        variants.add(variant);
+                    }
+                } else if (sizes != null || colors != null || priceModifiers != null) {
+                    throw new IllegalArgumentException("Incomplete or mismatched variant data: " +
+                        "Sizes=" + (sizes != null ? sizes.length : "null") + ", " +
+                        "Colors=" + (colors != null ? colors.length : "null") + ", " +
+                        "PriceModifiers=" + (priceModifiers != null ? priceModifiers.length : "null") + ", " +
+                        "VariantIds=" + (variantIds != null ? variantIds.length : "null"));
+                }
+
+                boolean res = dao.update(id, name, description, price, categoryId, brandId, material, status, variants);
                 if (res) {
                     response.sendRedirect("ProductManager");
                 } else {
                     request.setAttribute("err", "<p class='text-danger'>Update failed: Product not found or database error</p>");
-                    Product product = dao.getProductById(id);
-                    request.setAttribute("data", product != null ? product : new Product());
+                    Product updatedProduct = dao.getProductById(id);
+                    request.setAttribute("data", updatedProduct != null ? updatedProduct : new Product());
                     List<Category> categories = dao.getAllCategories();
                     List<Brand> brands = dao.getAllBrands();
                     request.setAttribute("categories", categories);
@@ -348,11 +432,11 @@ public class ProductManagerController extends HttpServlet {
                 }
             } catch (NumberFormatException e) {
                 System.err.println("NumberFormatException in update: " + e.getMessage());
-                request.setAttribute("err", "<p class='text-danger'>Invalid input format: Please check Price, Category, or Brand</p>");
+                request.setAttribute("err", "<p class='text-danger'>Invalid input format: Please check Price, Category, Brand, or Price Modifier (e.g., -5.00, 0, 5.50)</p>");
                 try {
                     long id = Long.parseLong(idRaw);
-                    Product product = dao.getProductById(id);
-                    request.setAttribute("data", product != null ? product : new Product());
+                    Product updatedProduct = dao.getProductById(id);
+                    request.setAttribute("data", updatedProduct != null ? updatedProduct : new Product());
                 } catch (NumberFormatException ex) {
                     request.setAttribute("err", "<p class='text-danger'>Invalid product ID</p>");
                 }
@@ -366,8 +450,8 @@ public class ProductManagerController extends HttpServlet {
                 request.setAttribute("err", "<p class='text-danger'>" + e.getMessage() + "</p>");
                 try {
                     long id = Long.parseLong(idRaw);
-                    Product product = dao.getProductById(id);
-                    request.setAttribute("data", product != null ? product : new Product());
+                    Product updatedProduct = dao.getProductById(id);
+                    request.setAttribute("data", updatedProduct != null ? updatedProduct : new Product());
                 } catch (NumberFormatException ex) {
                     request.setAttribute("err", "<p class='text-danger'>Invalid product ID</p>");
                 }
@@ -382,8 +466,8 @@ public class ProductManagerController extends HttpServlet {
                 request.setAttribute("err", "<p class='text-danger'>Error updating product: " + e.getMessage() + "</p>");
                 try {
                     long id = Long.parseLong(idRaw);
-                    Product product = dao.getProductById(id);
-                    request.setAttribute("data", product != null ? product : new Product());
+                    Product updatedProduct = dao.getProductById(id);
+                    request.setAttribute("data", updatedProduct != null ? updatedProduct : new Product());
                 } catch (NumberFormatException ex) {
                     request.setAttribute("err", "<p class='text-danger'>Invalid product ID</p>");
                 }

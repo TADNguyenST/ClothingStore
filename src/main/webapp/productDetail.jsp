@@ -85,11 +85,11 @@
                             java.util.List variants = (java.util.List) product.getClass().getMethod("getVariants").invoke(product);
                             if (variants != null && !variants.isEmpty()) {
                                 for (Object variant : variants) {
-                                    String size = (String) variant.getClass().getMethod("getSize").invoke(variant);
-                                    String color = (String) variant.getClass().getMethod("getColor").invoke(variant);
+                                    
+                                   
                                     String sku = (String) variant.getClass().getMethod("getSku").invoke(variant);
                         %>
-                            Size: <%= size %>, Color: <%= color %>, SKU: <%= sku %><br>
+                            SKU: <%= sku %><br>
                         <% 
                                 }
                             } else {
