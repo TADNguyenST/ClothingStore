@@ -9,18 +9,20 @@ public class ProductImage {
     private String imageUrl;
     private int displayOrder;
     private Date createdAt;
+    private boolean isMain;
 
     public ProductImage() {
     }
 
     public ProductImage(Long imageId, Long productId, Long variantId, String imageUrl, 
-                        int displayOrder, Date createdAt) {
+                        int displayOrder, Date createdAt, boolean isMain) {
         this.imageId = imageId;
         this.productId = productId;
         this.variantId = variantId;
         this.imageUrl = imageUrl;
         this.displayOrder = displayOrder;
         this.createdAt = createdAt;
+        this.isMain = isMain;
     }
 
     public Long getImageId() {
@@ -69,5 +71,13 @@ public class ProductImage {
 
     public void setCreatedAt(Date createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public boolean isMain() {
+        return isMain;
+    }
+
+    public void setMain(boolean isMain) {
+        this.isMain = isMain;
     }
 }

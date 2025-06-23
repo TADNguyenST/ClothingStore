@@ -1,21 +1,182 @@
-/*
- * Click nbproject://SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbproject://SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package dao;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import model.Category;
 import util.DBContext;
 
-/**
- *
- * @author DANGVUONGTHINH
- */
 public class CategoryDAO extends DBContext {
-    
-   
+
+    public int insertCategory(String name, String description, Long parentCategoryId, boolean isActive) {
+        String sql = "INSERT INTO categories (name, description, parent_category_id, is_active, created_at) "
+                + "VALUES (?, ?, ?, ?, GETDATE())";
+        try {
+            PreparedStatement ps = conn.prepareStatement(sql);
+            System.out.println("Inserting: name=" + name + ", parentId=" + parentCategoryId + ", isActive=" + isActive);
+            ps.setString(1, name);
+            ps.setString(2, description != null ? description : null);
+            if (parentCategoryId != null) {
+                ps.setLong(3, parentCategoryId);
+            } else {
+                ps.setNull(3, java.sql.Types.BIGINT);
+            }
+            ps.setBoolean(4, isActive);
+            int result = ps.executeUpdate();
+            System.out.println("Insert affected rows: " + result);
+            return result;
+        } catch (SQLException e) {
+            throw new RuntimeException("Error inserting category: " + e.getMessage(), e);
+        }
+    }
+
+    public Category getCategoryById(Long categoryId) {
+        String sql = "SELECT category_id, name, description, parent_category_id, is_active, created_at "
+                + "FROM categories WHERE category_id = ?";
+        try {
+            PreparedStatement ps = conn.prepareStatement(sql);
+            ps.setLong(1, categoryId);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                Long parentCategoryId = rs.getLong("parent_category_id");
+                if (rs.wasNull()) {
+                    parentCategoryId = null;
+                }
+                return new Category(
+                        rs.getLong("category_id"),
+                        rs.getString("name"),
+                        rs.getString("description"),
+                        parentCategoryId,
+                        rs.getBoolean("is_active"),
+                        rs.getTimestamp("created_at")
+                );
+            }
+            return null;
+        } catch (SQLException e) {
+            throw new RuntimeException("Error fetching category: " + e.getMessage(), e);
+        }
+    }
+
+    public boolean deleteCategory(long categoryId) {
+        String sql = "DELETE FROM categories WHERE category_id = ?";
+        try {
+            String checkSql = "SELECT COUNT(*) FROM products WHERE category_id = ?";
+            PreparedStatement psCheck = conn.prepareStatement(checkSql);
+            psCheck.setLong(1, categoryId);
+            ResultSet rs = psCheck.executeQuery();
+            if (rs.next() && rs.getInt(1) > 0) {
+                throw new RuntimeException("Cannot delete category: It is used by products");
+            }
+
+            PreparedStatement ps = conn.prepareStatement(sql);
+            ps.setLong(1, categoryId);
+            int rowsAffected = ps.executeUpdate();
+            return rowsAffected == 1;
+        } catch (SQLException e) {
+            throw new RuntimeException("Error deleting category: " + e.getMessage(), e);
+        }
+    }
+
+    public boolean updateCategory(long id, String name, String description, Long parentCategoryId, boolean isActive) {
+        String sql = "UPDATE categories SET name = ?, description = ?, parent_category_id = ?, is_active = ? WHERE category_id = ?";
+        try {
+            PreparedStatement ps = conn.prepareStatement(sql);
+            ps.setString(1, name);
+            ps.setString(2, description);
+            if (parentCategoryId == null) {
+                ps.setNull(3, java.sql.Types.BIGINT);
+            } else {
+                ps.setLong(3, parentCategoryId);
+            }
+            ps.setBoolean(4, isActive);
+            ps.setLong(5, id);
+            int rowsAffected = ps.executeUpdate();
+            return rowsAffected > 0;
+        } catch (SQLException e) {
+            System.out.println("Error in updateCategory: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public List<Category> getAllCategories() {
+        List<Category> list = new ArrayList<>();
+        String sql = "SELECT category_id, name, description, parent_category_id, is_active, created_at FROM categories";
+        try {
+            PreparedStatement ps = conn.prepareStatement(sql);
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                Long parentCategoryId = rs.getLong("parent_category_id");
+                if (rs.wasNull()) {
+                    parentCategoryId = null;
+                }
+                Category category = new Category(
+                        rs.getLong("category_id"),
+                        rs.getString("name"),
+                        rs.getString("description"),
+                        parentCategoryId,
+                        rs.getBoolean("is_active"),
+                        rs.getTimestamp("created_at")
+                );
+                list.add(category);
+            }
+            return list;
+        } catch (SQLException e) {
+            throw new RuntimeException("Error fetching categories: " + e.getMessage(), e);
+        }
+    }
+
+    public List<Category> searchCategories(String name, Long parentCategoryId, Boolean isActive) {
+        List<Category> list = new ArrayList<>();
+        StringBuilder sql = new StringBuilder("SELECT category_id, name, description, parent_category_id, is_active, created_at FROM categories WHERE 1=1");
+        List<Object> params = new ArrayList<>();
+
+        if (name != null && !name.trim().isEmpty()) {
+            sql.append(" AND name LIKE ?");
+            params.add("%" + name.trim() + "%");
+        }
+        if (parentCategoryId != null) {
+            sql.append(" AND parent_category_id = ?");
+            params.add(parentCategoryId);
+        } else if (parentCategoryId == null && name != null && name.trim().isEmpty() && isActive == null) {
+            sql.append(" AND parent_category_id IS NULL");
+        }
+        if (isActive != null) {
+            sql.append(" AND is_active = ?");
+            params.add(isActive);
+        }
+
+        try {
+            PreparedStatement ps = conn.prepareStatement(sql.toString());
+            for (int i = 0; i < params.size(); i++) {
+                ps.setObject(i + 1, params.get(i));
+            }
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                Long parentId = rs.getLong("parent_category_id");
+                if (rs.wasNull()) {
+                    parentId = null;
+                }
+                Category category = new Category(
+                        rs.getLong("category_id"),
+                        rs.getString("name"),
+                        rs.getString("description"),
+                        parentId,
+                        rs.getBoolean("is_active"),
+                        rs.getTimestamp("created_at")
+                );
+                list.add(category);
+            }
+            return list;
+        } catch (SQLException e) {
+            throw new RuntimeException("Error searching categories: " + e.getMessage(), e);
+        }
+    }
+
+    public static void main(String[] args) {
+        CategoryDAO dao = new CategoryDAO();
+        int result = dao.insertCategory("Test Category", "Test", null, true);
+        System.out.println("Insert result: " + result);
+    }
 }
