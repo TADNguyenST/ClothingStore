@@ -100,6 +100,14 @@ public class EditVoucherServlet extends HttpServlet {
             String expirationDateStr = request.getParameter("expirationDate");
             String isActiveStr = request.getParameter("isActive");
 
+            // Prevent voucher code modification
+            if (code != null && !code.trim().isEmpty() && !code.trim().equals(existingVoucher.getCode())) {
+                request.setAttribute("errorMessage", "Voucher code cannot be modified.");
+                request.setAttribute("voucher", existingVoucher);
+                request.getRequestDispatcher("/WEB-INF/views/admin/voucher/voucher-edit.jsp").forward(request, response);
+                return;
+            }
+
             BigDecimal discountValue = existingVoucher.getDiscountValue();
             if (discountValueStr != null && !discountValueStr.trim().isEmpty()) {
                 try {
@@ -157,13 +165,12 @@ public class EditVoucherServlet extends HttpServlet {
                 }
             }
 
-            String finalCode = (code != null && !code.trim().isEmpty()) ? code.trim() : existingVoucher.getCode();
             String finalName = (name != null && !name.trim().isEmpty()) ? name.trim() : existingVoucher.getName();
             String finalDiscountType = (discountType != null && !discountType.trim().isEmpty()) ? discountType : existingVoucher.getDiscountType();
 
             Voucher voucher = new Voucher(
                 voucherId,
-                finalCode,
+                existingVoucher.getCode(), // Always use existing code
                 finalName,
                 description != null ? description.trim() : existingVoucher.getDescription(),
                 finalDiscountType,
@@ -182,16 +189,13 @@ public class EditVoucherServlet extends HttpServlet {
                 response.sendRedirect(request.getContextPath() + "/vouchers?successMessage=Voucher+updated+successfully");
             } else {
                 LOGGER.warning("Update failed for voucher ID: " + voucherId);
-                request.setAttribute("errorMessage", "Unable to update voucher. Please check for duplicate voucher code or system error.");
+                request.setAttribute("errorMessage", "Unable to update voucher. Please check for system error.");
                 request.setAttribute("voucher", voucher);
                 request.getRequestDispatcher("/WEB-INF/views/admin/voucher/voucher-edit.jsp").forward(request, response);
             }
         } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Database error during voucher update", e);
             String errorMessage = "Database error: " + e.getMessage();
-            if (e.getMessage().contains("UNIQUE") || e.getMessage().contains("unique")) {
-                errorMessage = "Voucher code already exists. Please choose a different code.";
-            }
             request.setAttribute("errorMessage", errorMessage);
             request.getRequestDispatcher("/WEB-INF/views/admin/voucher/voucher-edit.jsp").forward(request, response);
         } catch (Exception e) {

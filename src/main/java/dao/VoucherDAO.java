@@ -145,4 +145,53 @@ public class VoucherDAO {
     public void closeConnection() {
         dbContext.closeConnection();
     }
+    public boolean deleteVoucher(long voucherId) throws SQLException {
+    String sql = "DELETE FROM vouchers WHERE voucher_id = ?";
+    
+    try (Connection conn = dbContext.getConnection();
+         PreparedStatement stmt = conn.prepareStatement(sql)) {
+        LOGGER.log(Level.INFO, "Executing deleteVoucher with SQL: {}, Voucher ID: {}", 
+                   new Object[]{sql, voucherId});
+        
+        stmt.setLong(1, voucherId);
+        
+        int rowsAffected = stmt.executeUpdate();
+        LOGGER.log(Level.INFO, "Rows affected by deleteVoucher: {}", rowsAffected);
+        return rowsAffected > 0;
+    } catch (SQLException e) {
+        LOGGER.log(Level.SEVERE, "Error deleting voucher with ID: {}, Error: {}", 
+                   new Object[]{voucherId, e.getMessage()});
+        throw e;
+    }
+}
+    public boolean addVoucher(Voucher voucher) throws SQLException {
+    String sql = "INSERT INTO vouchers (code, name, description, discount_type, discount_value, " +
+                 "minimum_order_amount, maximum_discount_amount, usage_limit, used_count, " +
+                 "expiration_date, is_active, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    
+    try (Connection conn = dbContext.getConnection();
+         PreparedStatement stmt = conn.prepareStatement(sql)) {
+        LOGGER.log(Level.INFO, "Executing addVoucher with SQL: {}", sql);
+        
+        stmt.setString(1, voucher.getCode());
+        stmt.setString(2, voucher.getName());
+        stmt.setString(3, voucher.getDescription());
+        stmt.setString(4, voucher.getDiscountType());
+        stmt.setBigDecimal(5, voucher.getDiscountValue());
+        stmt.setObject(6, voucher.getMinimumOrderAmount(), java.sql.Types.DECIMAL);
+        stmt.setObject(7, voucher.getMaximumDiscountAmount(), java.sql.Types.DECIMAL);
+        stmt.setObject(8, voucher.getUsageLimit(), java.sql.Types.INTEGER);
+        stmt.setInt(9, voucher.getUsedCount());
+        stmt.setObject(10, voucher.getExpirationDate(), java.sql.Types.DATE);
+        stmt.setBoolean(11, voucher.isActive());
+        stmt.setDate(12, new java.sql.Date(voucher.getCreatedAt().getTime()));
+        
+        int rowsAffected = stmt.executeUpdate();
+        LOGGER.log(Level.INFO, "Rows affected by addVoucher: {}", rowsAffected);
+        return rowsAffected > 0;
+    } catch (SQLException e) {
+        LOGGER.log(Level.SEVERE, "Error adding voucher: {0}", e.getMessage());
+        throw e;
+    }
+}
 }
