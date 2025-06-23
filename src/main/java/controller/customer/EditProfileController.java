@@ -6,6 +6,7 @@ package controller.customer;
 
 import dao.CustomerDAO;
 import java.io.IOException;
+import java.sql.Date;
 import java.io.PrintWriter;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -13,15 +14,15 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import model.Users;
 import model.Customer;
+import model.Users;
 
 /**
  *
- * @author default
+ * @author Khoa
  */
-@WebServlet(name = "ProfileController", urlPatterns = {"/Profile"})
-public class ProfileController extends HttpServlet {
+@WebServlet(name = "EditProfileController", urlPatterns = {"/EditProfile"})
+public class EditProfileController extends HttpServlet {
 
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
@@ -45,13 +46,51 @@ public class ProfileController extends HttpServlet {
         }
 
         CustomerDAO dao = new CustomerDAO();
-        Users userInfo = dao.getUserById(user.getUserId());
-        Customer customerInfo = dao.getCustomerByUserId(user.getUserId());
 
-        request.setAttribute("user", userInfo);
-        request.setAttribute("customer", customerInfo);
+        if (request.getMethod().equalsIgnoreCase("GET")) {
+            Users userInfo = dao.getUserById(user.getUserId());
+            Customer customerInfo = dao.getCustomerByUserId(user.getUserId());
+            request.setAttribute("user", userInfo);
+            request.setAttribute("customer", customerInfo);
+            request.getRequestDispatcher("/WEB-INF/views/customer/profile/edit-profile.jsp").forward(request, response);
+        } else if (request.getMethod().equalsIgnoreCase("POST")) {
+            String fullName = request.getParameter("fullName");
+            String phoneNumber = request.getParameter("phoneNumber");
+            String gender = request.getParameter("gender");
+            String birthDateStr = request.getParameter("birthDate");
 
-        request.getRequestDispatcher("/WEB-INF/views/customer/profile/profile.jsp").forward(request, response);
+            // Kiểm tra số điện thoại
+            if (phoneNumber == null || !phoneNumber.matches("\\d{10}")) {
+                request.setAttribute("error", "Phone number must be exactly 10 digits and contain only numbers.");
+                request.setAttribute("user", dao.getUserById(user.getUserId()));
+                request.setAttribute("customer", dao.getCustomerByUserId(user.getUserId()));
+                request.getRequestDispatcher("/WEB-INF/views/customer/profile/edit-profile.jsp").forward(request, response);
+                return;
+            }
+
+            // Cập nhật model
+            user.setFullName(fullName);
+            user.setPhoneNumber(phoneNumber);
+
+            Customer customer = new Customer();
+            customer.setUserId(user.getUserId());
+            customer.setGender(gender);
+            customer.setBirthDate(
+                    birthDateStr == null || birthDateStr.isEmpty() ? null : Date.valueOf(birthDateStr)
+            );
+
+            boolean updated = dao.updateCustomerProfile(user, customer);
+
+            if (updated) {
+                request.setAttribute("success", "Profile updated successfully.");
+            } else {
+                request.setAttribute("error", "Failed to update profile.");
+            }
+
+            request.setAttribute("user", dao.getUserById(user.getUserId()));
+            request.setAttribute("customer", dao.getCustomerByUserId(user.getUserId()));
+            request.getRequestDispatcher("/WEB-INF/views/customer/profile/edit-profile.jsp").forward(request, response);
+        }
     }
 
     // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
@@ -90,7 +129,7 @@ public class ProfileController extends HttpServlet {
      */
     @Override
     public String getServletInfo() {
-        return "View Profile";
+        return "Edit Profile";
     }// </editor-fold>
 
 }

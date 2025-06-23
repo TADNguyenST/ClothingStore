@@ -3,13 +3,11 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
 package model;
-        
+
 import java.sql.Timestamp;
-/**
- *
- * @author Lenovo
- */
+
 public class Users {
+
     private long userId;
     private String email;
     private String password;
@@ -24,9 +22,18 @@ public class Users {
     public Users() {
     }
 
-    // Parameterized constructor
-    public Users(long userId, String email, String password, String fullName, String phoneNumber, 
-                 String status, String role, Timestamp createdAt, Timestamp updatedAt) {
+    // **FIXED: Added the missing constructor for registration**
+    public Users(String email, String password, String fullName) {
+        this.email = email;
+        this.password = password;
+        this.fullName = fullName;
+        this.status = "Active"; // Set default status
+        this.role = "Customer"; // Set default role
+    }
+
+    // Full parameterized constructor
+    public Users(long userId, String email, String password, String fullName, String phoneNumber,
+            String status, String role, Timestamp createdAt, Timestamp updatedAt) {
         this.userId = userId;
         this.email = email;
         this.password = password;
@@ -38,7 +45,7 @@ public class Users {
         this.updatedAt = updatedAt;
     }
 
-    // Getters and Setters
+    // Getters and Setters...
     public long getUserId() {
         return userId;
     }
