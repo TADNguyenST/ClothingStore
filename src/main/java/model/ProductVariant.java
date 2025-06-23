@@ -1,6 +1,8 @@
 package model;
 
 import java.math.BigDecimal;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 public class ProductVariant {
     private Long variantId;
@@ -10,14 +12,14 @@ public class ProductVariant {
     private BigDecimal priceModifier;
     private String sku;
 
-    // Thêm để sinh SKU
-    private String brand;
-    private String productName;
+    // Thuộc tính tạm thời để sinh SKU
+    private transient String brand;
+    private transient String productName;
 
     public ProductVariant() {
     }
 
-    // Constructor không sinh SKU (nếu muốn nhập tay)
+    // Constructor không sinh SKU (dùng khi lấy từ DB)
     public ProductVariant(Long variantId, Long productId, String size, String color,
                           BigDecimal priceModifier, String sku) {
         this.variantId = variantId;
@@ -28,7 +30,7 @@ public class ProductVariant {
         this.sku = sku;
     }
 
-    // Constructor có tự sinh SKU
+    // Constructor sinh SKU (dùng khi tạo mới)
     public ProductVariant(Long productId, String size, String color,
                           BigDecimal priceModifier, String brand, String productName) {
         this.productId = productId;
@@ -40,11 +42,15 @@ public class ProductVariant {
         this.sku = generateSku();
     }
 
-    // Hàm tự động sinh SKU
+    // Hàm sinh SKU với xử lý null và thêm thời gian
     private String generateSku() {
-        return (brand + "-" + size + "-" + color + "-" + productName + "-" + priceModifier)
-                .toUpperCase()
-                .replaceAll("\\s+", "");
+        String brandSafe = (brand != null ? brand : "UNKNOWN").replaceAll("\\s+", "");
+        String sizeSafe = (size != null ? size : "NOSIZE").replaceAll("\\s+", "");
+        String colorSafe = (color != null ? color : "NOCOLOR").replaceAll("\\s+", "");
+        String productNameSafe = (productName != null ? productName : "NOPRODUCT").replaceAll("\\s+", "");
+        String priceSafe = (priceModifier != null ? priceModifier.toString() : "0");
+        return String.format("%s-%s-%s-%s-%s", brandSafe, sizeSafe, colorSafe, 
+                            productNameSafe, priceSafe.replace(".", "")).toUpperCase();
     }
 
     public Long getVariantId() {
@@ -69,7 +75,9 @@ public class ProductVariant {
 
     public void setSize(String size) {
         this.size = size;
-        this.sku = generateSku(); // update SKU nếu có thay đổi
+        if (brand != null && productName != null) { // Chỉ cập nhật SKU nếu đã có brand và productName
+            this.sku = generateSku();
+        }
     }
 
     public String getColor() {
@@ -78,7 +86,9 @@ public class ProductVariant {
 
     public void setColor(String color) {
         this.color = color;
-        this.sku = generateSku();
+        if (brand != null && productName != null) {
+            this.sku = generateSku();
+        }
     }
 
     public BigDecimal getPriceModifier() {
@@ -87,7 +97,9 @@ public class ProductVariant {
 
     public void setPriceModifier(BigDecimal priceModifier) {
         this.priceModifier = priceModifier;
-        this.sku = generateSku();
+        if (brand != null && productName != null) {
+            this.sku = generateSku();
+        }
     }
 
     public String getSku() {
@@ -104,7 +116,9 @@ public class ProductVariant {
 
     public void setBrand(String brand) {
         this.brand = brand;
-        this.sku = generateSku();
+        if (size != null && color != null && productName != null) {
+            this.sku = generateSku();
+        }
     }
 
     public String getProductName() {
@@ -113,6 +127,8 @@ public class ProductVariant {
 
     public void setProductName(String productName) {
         this.productName = productName;
-        this.sku = generateSku();
+        if (size != null && color != null && brand != null) {
+            this.sku = generateSku();
+        }
     }
 }
