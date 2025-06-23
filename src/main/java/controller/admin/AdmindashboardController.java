@@ -1,12 +1,10 @@
 package controller.admin;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
 import java.io.IOException;
+import jakarta.servlet.ServletException;
 
 public class AdmindashboardController extends HttpServlet {
 
@@ -50,15 +48,35 @@ public class AdmindashboardController extends HttpServlet {
                     switch (action) {
                         case "categoryList":
                             pageTitle = "Category List";
-                            targetJspPath = "/WEB-INF/views/admin/category/category-list.jsp";
-                            break;
+                            response.sendRedirect(request.getContextPath() + "/CategoryManager?action=list&module=category");
+                            return;
                         case "categoryForm":
                             pageTitle = "Category Form";
-                            targetJspPath = "/WEB-INF/views/admin/category/category-form.jsp";
-                            break;
+                            response.sendRedirect(request.getContextPath() + "/CategoryManager?action=create&module=category");
+                            return;
                         case "categoryDetails":
                             pageTitle = "Category Details";
-                            targetJspPath = "/WEB-INF/views/admin/category/category-details.jsp";
+                            response.sendRedirect(request.getContextPath() + "/CategoryManager?action=detail" + (id != null ? "&id=" + id : "") + "&module=category");
+                            return;
+                    }
+                    break;
+                case "brand":
+                    switch (action) {
+                        case "brandList":
+                            pageTitle = "Brand List";
+                            response.sendRedirect(request.getContextPath() + "/BrandManager?action=list&module=brand");
+                            break;
+                        case "brandForm":
+                            pageTitle = "Brand Form";
+                            response.sendRedirect(request.getContextPath() + "/BrandManager?action=create&module=brand");
+                            break;
+                        case "brandDetails":
+                            pageTitle = "Brand Details";
+                            response.sendRedirect(request.getContextPath() + "/BrandManager?action=detail" + (id != null ? "&id=" + id : "") + "&module=brand");
+                            break;
+                        default:
+                            pageTitle = "Page Not Found";
+                            targetJspPath = "/WEB-INF/views/common/404.jsp";
                             break;
                     }
                     break;
@@ -82,15 +100,11 @@ public class AdmindashboardController extends HttpServlet {
                     switch (action) {
                         case "voucherList":
                             pageTitle = "Voucher List";
-                            targetJspPath = "/vouchers";
+                            targetJspPath = "/WEB-INF/views/admin/voucher/voucher-list.jsp";
                             break;
                         case "voucherForm":
                             pageTitle = "Voucher Form";
                             targetJspPath = "/WEB-INF/views/admin/voucher/voucher-form.jsp";
-                            break;
-                        case "voucherEdit":
-                            pageTitle = "Voucher Edit";
-                            targetJspPath = "/editVoucher";
                             break;
                         case "sendVoucher":
                             pageTitle = "Send Voucher";
@@ -106,16 +120,16 @@ public class AdmindashboardController extends HttpServlet {
                     switch (action) {
                         case "productList":
                             pageTitle = "Product List";
-                            targetJspPath = "/WEB-INF/views/staff/product/product-list.jsp";
-                            break;
+                            response.sendRedirect(request.getContextPath() + "/ProductManager?action=list");
+                            return;
                         case "productForm":
                             pageTitle = "Product Form";
-                            targetJspPath = "/ProductManager";
-                            break;
+                            response.sendRedirect(request.getContextPath() + "/ProductManager?action=create");
+                            return;
                         case "productDetails":
                             pageTitle = "Product Details";
-                            targetJspPath = "/WEB-INF/views/staff/product/product-details.jsp";
-                            break;
+                            response.sendRedirect(request.getContextPath() + "/ProductManager?action=detail&id=" + id);
+                            return;
                     }
                     break;
                 case "order":
@@ -134,11 +148,11 @@ public class AdmindashboardController extends HttpServlet {
                     switch (action) {
                         case "blogList":
                             pageTitle = "Blog Management";
-                            targetJspPath = "/WEB-INF/views/staff/blog/blog-list.jsp";
+                            targetJspPath = "/StaffBlogListController";
                             break;
                         case "blogForm":
                             pageTitle = "Blog Form";
-                            targetJspPath = "/WEB-INF/views/staff/blog/blog-form.jsp";
+                            targetJspPath = "/StaffBlogController";
                             break;
                     }
                     break;

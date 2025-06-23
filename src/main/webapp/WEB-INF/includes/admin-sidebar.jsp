@@ -69,27 +69,33 @@
                 </li>
             </ul>
         </li>
-
+        <li class="treeview ${requestScope.currentModule eq 'brand' ? 'active menu-open' : ''}">
+            <a href="#">
+                <i class="fa fa-tags"></i> <span>Brand Management</span>
+                <span class="pull-right-container"><i class="fa fa-angle-left pull-right"></i></span>
+            </a>
+            <ul class="treeview-menu">
+                <li class="${requestScope.currentAction eq 'brandList' ? 'active' : ''}">
+                    <a href="${pageContext.request.contextPath}/BrandManager?action=list&module=brand"><i class="fa fa-circle-o"></i> Brand List</a>
+                </li>
+                <li class="${requestScope.currentAction eq 'brandForm' ? 'active' : ''}">
+                    <a href="${pageContext.request.contextPath}/BrandManager?action=create&module=brand"><i class="fa fa-circle-o"></i> Add New Brand</a>
+                </li>
+                <li class="${requestScope.currentAction eq 'brandDetails' ? 'active' : ''}">
+                    <a href="${pageContext.request.contextPath}/BrandManager?action=detail&module=brand"><i class="fa fa-circle-o"></i> Brand Details</a>
+                </li>
+            </ul>
+        </li>
         <%-- NOTE: C c module d??i ? y (product, order, blog, customer, feedback, revenue, stock, supplier) --%>
         <%-- B?n ?  n i ch ng n?m trong th? m?c 'staff' trong WEB-INF/views/staff/ --%>
         <%-- V  v?y, ???ng d?n trong href c?a ch ng v?n l  /admindashboard v  module t??ng ?ng --%>
         <%-- ?i?u ch?nh `currentModule` trong Controller ?? kh?p v?i t n th? m?c `staff` khi c?n --%>
 
-        <li class="treeview ${requestScope.currentModule eq 'product' ? 'active menu-open' : ''}">
-            <a href="#">
+        <li class="${requestScope.currentModule eq 'product' ? 'active' : ''}">
+            <a href="${pageContext.request.contextPath}/admindashboard?action=productList&module=product">
                 <i class="fa fa-cubes"></i> <span>Product Management</span>
-                <span class="pull-right-container"><i class="fa fa-angle-left pull-right"></i></span>
             </a>
-            <ul class="treeview-menu">
-                <li class="${requestScope.currentAction eq 'productList' ? 'active' : ''}">
-                    <a href="${pageContext.request.contextPath}/admindashboard?action=productList&module=product"><i class="fa fa-circle-o"></i> Product List</a>
-                </li>
-                <li class="${requestScope.currentAction eq 'productForm' ? 'active' : ''}">
-                    <a href="${pageContext.request.contextPath}/admindashboard?action=productForm&module=product"><i class="fa fa-circle-o"></i> Add New Product</a>
-                </li>
-            </ul>
         </li>
-
         <li class="treeview ${requestScope.currentModule eq 'order' ? 'active menu-open' : ''}">
             <a href="#">
                 <i class="fa fa-shopping-cart"></i> <span>Order Management</span>
