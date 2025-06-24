@@ -107,6 +107,28 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="${pageContext.request.contextPath}/assets/js/main.js"></script>
+<script>
+    // Đợi cho toàn bộ nội dung trang được tải xong rồi mới chạy script
+    document.addEventListener('DOMContentLoaded', function () {
 
+        // 1. Tìm tất cả các thẻ div có class là "alert-dismissible"
+        // Đây là class mà chúng ta đã dùng cho các thông báo trong các trang trước
+        const alertMessages = document.querySelectorAll('.alert-dismissible');
+
+        // 2. Với mỗi thông báo tìm được, thực hiện hành động sau:
+        alertMessages.forEach(function (alert) {
+
+            // 3. Đặt một bộ đếm thời gian, sau 5 giây (5000 mili giây) sẽ tự động thực thi
+            setTimeout(function () {
+
+                // 4. Dùng hàm 'close' có sẵn của Bootstrap để đóng thông báo một cách mượt mà
+                // Điều này yêu cầu project đã nhúng file Javascript của Bootstrap
+                const bsAlert = new bootstrap.Alert(alert);
+                bsAlert.close();
+
+            }, 5000); // Bạn có thể thay đổi thời gian ở đây, ví dụ: 3000 cho 3 giây
+        });
+    });
+</script>
 </body>
 </html>

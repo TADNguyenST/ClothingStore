@@ -1,6 +1,7 @@
 package model;
 
 import java.sql.Timestamp;
+import java.util.Date; 
 
 public class ShippingAddress {
 
@@ -15,6 +16,7 @@ public class ShippingAddress {
     private boolean isDefault;
     private Timestamp createdAt;
 
+    // Constructors
     public ShippingAddress() {
     }
 
@@ -83,11 +85,11 @@ public class ShippingAddress {
         this.postalCode = postalCode;
     }
 
-    public boolean isIsDefault() { // Corrected getter for boolean 'isDefault'
+    public boolean isIsDefault() {
         return isDefault;
     }
 
-    public void setIsDefault(boolean isDefault) { // Corrected setter for boolean 'isDefault'
+    public void setIsDefault(boolean isDefault) {
         this.isDefault = isDefault;
     }
 
@@ -97,21 +99,5 @@ public class ShippingAddress {
 
     public void setCreatedAt(Timestamp createdAt) {
         this.createdAt = createdAt;
-    }
-
-    @Override
-    public String toString() {
-        return "ShippingAddress{"
-                + "addressId=" + addressId
-                + ", customerId=" + customerId
-                + ", recipientName='" + recipientName + '\''
-                + ", phoneNumber='" + phoneNumber + '\''
-                + ", addressDetails='" + addressDetails + '\''
-                + ", city='" + city + '\''
-                + ", country='" + country + '\''
-                + ", postalCode='" + postalCode + '\''
-                + ", isDefault=" + isDefault
-                + ", createdAt=" + createdAt
-                + '}';
     }
 }

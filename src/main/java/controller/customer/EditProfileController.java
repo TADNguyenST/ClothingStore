@@ -21,7 +21,7 @@ import model.Users;
  *
  * @author Khoa
  */
-@WebServlet(name = "EditProfileController", urlPatterns = {"/EditProfile"})
+@WebServlet(name = "EditProfileController", urlPatterns = {"/customer/edit-profile"})
 public class EditProfileController extends HttpServlet {
 
     /**

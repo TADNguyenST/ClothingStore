@@ -5,6 +5,7 @@ import java.util.Date;
 import java.util.List;
 
 public class Product {
+
     private Long productId;
     private String name;
     private String description;
@@ -18,12 +19,16 @@ public class Product {
     private List<ProductVariant> variants;
     private List<ProductImage> images;
 
+    // ===== TRƯỜNG MỚI ĐƯỢC THÊM VÀO =====
+    private String imageUrl; // Để lưu ảnh đại diện, tiện cho việc hiển thị
+    private long defaultVariantId; // Để lưu ID biến thể mặc định cho nút "Add to Cart"
+
     public Product() {
     }
 
-    public Product(Long productId, String name, String description, BigDecimal price, 
-                   Category category, Brand brand, String material, String status, 
-                   Date createdAt, Date updatedAt) {
+    public Product(Long productId, String name, String description, BigDecimal price,
+            Category category, Brand brand, String material, String status,
+            Date createdAt, Date updatedAt) {
         this.productId = productId;
         this.name = name;
         this.description = description;
@@ -36,6 +41,25 @@ public class Product {
         this.updatedAt = updatedAt;
     }
 
+    // ===== GETTER VÀ SETTER CHO 2 TRƯỜNG MỚI =====
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
+    }
+
+    public long getDefaultVariantId() {
+        return defaultVariantId;
+    }
+
+    public void setDefaultVariantId(long defaultVariantId) {
+        this.defaultVariantId = defaultVariantId;
+    }
+
+    // ===== CÁC GETTER, SETTER CŨ GIỮ NGUYÊN =====
+    // ... (Toàn bộ các getter và setter cũ của bạn ở đây) ...
     public Long getProductId() {
         return productId;
     }

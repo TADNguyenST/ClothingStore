@@ -1,96 +1,60 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/JSP_Servlet/Servlet.java to edit this template
- */
 package controller.customer;
 
 import dao.CustomerDAO;
-import java.io.IOException;
-import java.io.PrintWriter;
+import dao.UserDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import model.Users;
+import java.io.IOException;
 import model.Customer;
+import model.Users;
 
-/**
- *
- * @author default
- */
 @WebServlet(name = "ProfileController", urlPatterns = {"/Profile"})
 public class ProfileController extends HttpServlet {
 
-    /**
-     * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
-     * methods.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
-     */
-    protected void processRequest(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        response.setContentType("text/html;charset=UTF-8");
+    private final UserDAO userDAO = new UserDAO();
+    private final CustomerDAO customerDAO = new CustomerDAO(); 
 
-        HttpSession session = request.getSession(false);
-        Users user = (Users) session.getAttribute("user");
-
-        if (user == null) {
-            response.sendRedirect("Login");
-            return;
-        }
-
-        CustomerDAO dao = new CustomerDAO();
-        Users userInfo = dao.getUserById(user.getUserId());
-        Customer customerInfo = dao.getCustomerByUserId(user.getUserId());
-
-        request.setAttribute("user", userInfo);
-        request.setAttribute("customer", customerInfo);
-
-        request.getRequestDispatcher("/WEB-INF/views/customer/profile/profile.jsp").forward(request, response);
-    }
-
-    // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
-    /**
-     * Handles the HTTP <code>GET</code> method.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
-     */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        processRequest(request, response);
+        
+        HttpSession session = request.getSession(false);
+        if (session == null || session.getAttribute("user") == null) {
+            response.sendRedirect(request.getContextPath() + "/login");
+            return;
+        }
+
+        Users sessionUser = (Users) session.getAttribute("user");
+
+        // Lấy thông tin customer từ DB
+        Customer customerInfo = customerDAO.getCustomerByUserId(sessionUser.getUserId());
+
+        // Không cần lấy lại user từ DB vì đã có trong session, trừ khi bạn muốn dữ liệu mới nhất
+        // Users userInfo = userDAO.getUserById(sessionUser.getUserId());
+
+        if (customerInfo == null) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND, "Customer profile data not found.");
+            return;
+        }
+        
+        request.setAttribute("user", sessionUser); // Dùng user từ session
+        request.setAttribute("customer", customerInfo);
+        
+        request.setAttribute("pageTitle", "My Account");
+
+        // Forward đến file jsp đã được tích hợp
+        request.getRequestDispatcher("/WEB-INF/views/customer/profile/profile.jsp").forward(request, response);
     }
 
-    /**
-     * Handles the HTTP <code>POST</code> method.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
-     */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        processRequest(request, response);
+        // Hiện tại trang profile chỉ để xem. Logic update sẽ nằm ở EditProfileController.
+        // Nếu có form nào post về đây, ta chỉ cần chuyển hướng lại trang profile.
+        response.sendRedirect(request.getContextPath() + "/Profile");
     }
-
-    /**
-     * Returns a short description of the servlet.
-     *
-     * @return a String containing servlet description
-     */
-    @Override
-    public String getServletInfo() {
-        return "View Profile";
-    }// </editor-fold>
-
 }

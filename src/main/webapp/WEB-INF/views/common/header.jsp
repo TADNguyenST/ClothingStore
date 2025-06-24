@@ -155,7 +155,7 @@
                                 </ul>
                             </div>
                             <a href="#" class="nav-link d-none d-lg-inline-block"><i class="fas fa-heart"></i></a>
-                            <a href="${pageContext.request.contextPath}/cart" class="nav-link position-relative">
+                            <a href="${pageContext.request.contextPath}/customer/cart" class="nav-link position-relative">
                                 <i class="fas fa-shopping-bag"></i>
                                 <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-dark" style="font-size: 0.6em;">
                                     ${not empty cartItemCount ? cartItemCount : '0'}

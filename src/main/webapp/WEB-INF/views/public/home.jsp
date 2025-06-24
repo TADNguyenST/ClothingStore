@@ -1,4 +1,3 @@
-<%-- ================ FILE: home.jsp ================ --%>
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
@@ -93,6 +92,8 @@
     .product-card img {
         width: 100%;
         transition: transform 0.4s ease;
+        aspect-ratio: 4 / 5;
+        object-fit: cover;
     }
     .product-card:hover img {
         transform: scale(1.05);
@@ -102,6 +103,8 @@
         font-weight: 500;
         color: #333;
         text-decoration: none;
+        display: block;
+        height: 40px;
     }
     .product-card .product-title:hover {
         color: #000;
@@ -156,18 +159,24 @@
         <h2 class="section-title">New Arrivals</h2>
     </div>
     <div class="row">
-        <%-- LƯU Ý: Vòng lặp này cần dữ liệu thật từ Controller. --%>
-        <%-- Ví dụ: controller của bạn cần đặt request.setAttribute("newProducts", productList); --%>
         <c:forEach items="${newProducts}" var="product">
             <div class="col-lg-3 col-md-4 col-6">
                 <div class="product-card">
                     <div class="product-image">
-                        <a href="#"><img src="${product.imageUrl}" alt="${product.name}"></a>
+                        <a href="#">
+                            <img src="${not empty product.imageUrl ? product.imageUrl : 'https://placehold.co/400x500/f0f0f0/333?text=No+Image'}" alt="${product.name}">
+                        </a>
                     </div>
                     <a href="#" class="product-title">${product.name}</a>
                     <p class="product-price">
                         <fmt:formatNumber value="${product.price}" type="currency" currencyCode="VND" />
                     </p>
+                    <form action="${pageContext.request.contextPath}/customer/cart" method="post">
+                        <input type="hidden" name="action" value="add">
+                        <input type="hidden" name="variantId" value="${product.defaultVariantId}">
+                        <input type="hidden" name="quantity" value="1">
+                        <button type="submit" class="btn btn-dark btn-sm">Add to Cart</button>
+                    </form>
                 </div>
             </div>
         </c:forEach>
@@ -175,6 +184,7 @@
     <div class="text-center mt-4">
         <a href="#" class="btn btn-outline-dark">View All New Arrivals</a>
     </div>
+
 </div>
 
 <div class="promo-banner my-5">
@@ -190,23 +200,26 @@
         <h2 class="section-title">Best Sellers</h2>
     </div>
     <div class="row">
-        <%-- LƯU Ý: Vòng lặp này cần dữ liệu thật từ Controller. --%>
-        <%-- Ví dụ: controller của bạn cần đặt request.setAttribute("bestSellers", productList); --%>
         <c:forEach items="${bestSellers}" var="product">
             <div class="col-lg-3 col-md-4 col-6">
                 <div class="product-card">
                     <div class="product-image">
-                        <a href="#"><img src="${product.imageUrl}" alt="${product.name}"></a>
+                        <a href="#"><img src="${not empty product.imageUrl ? product.imageUrl : 'https://placehold.co/400x500/e0e0e0/333?text=No+Image'}" alt="${product.name}"></a>
                     </div>
                     <a href="#" class="product-title">${product.name}</a>
                     <p class="product-price">
                         <fmt:formatNumber value="${product.price}" type="currency" currencyCode="VND" />
                     </p>
+                    <form action="${pageContext.request.contextPath}/customer/cart" method="post">
+                        <input type="hidden" name="action" value="add">
+                        <input type="hidden" name="variantId" value="${product.defaultVariantId}">
+                        <input type="hidden" name="quantity" value="1">
+                        <button type="submit" class="btn btn-dark btn-sm">Add to Cart</button>
+                    </form>
                 </div>
             </div>
         </c:forEach>
     </div>
 </div>
 
-<%-- Nhúng footer --%>
 <jsp:include page="/WEB-INF/views/common/footer.jsp" />

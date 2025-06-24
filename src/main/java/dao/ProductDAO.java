@@ -359,92 +359,92 @@ public class ProductDAO extends DBContext {
         return 0;
     }
 
- public List<Product> filterProducts(Long parentCategoryId, Long categoryId, Long brandId, String size, String color,
-        BigDecimal minPrice, BigDecimal maxPrice, String status) {
-    List<Product> list = new ArrayList<>();
-    StringBuilder sql = new StringBuilder(
-            "SELECT p.product_id, p.name, p.description, p.price, p.category_id, p.brand_id, p.material, p.status, "
-            + "p.created_at, p.updated_at, c.category_id, c.name AS category_name, c.description AS category_description, "
-            + "c.parent_category_id, c.is_active AS category_active, c.created_at AS category_created_at, "
-            + "b.brand_id, b.name AS brand_name, b.description AS brand_description, b.logo_url, b.is_active AS brand_active, "
-            + "b.created_at AS brand_created_at "
-            + "FROM products p "
-            + "JOIN categories c ON p.category_id = c.category_id " // Đảm bảo category_id hợp lệ
-            + "LEFT JOIN brands b ON p.brand_id = b.brand_id "
-            + "WHERE 1=1"
-    );
+    public List<Product> filterProducts(Long parentCategoryId, Long categoryId, Long brandId, String size, String color,
+            BigDecimal minPrice, BigDecimal maxPrice, String status) {
+        List<Product> list = new ArrayList<>();
+        StringBuilder sql = new StringBuilder(
+                "SELECT p.product_id, p.name, p.description, p.price, p.category_id, p.brand_id, p.material, p.status, "
+                + "p.created_at, p.updated_at, c.category_id, c.name AS category_name, c.description AS category_description, "
+                + "c.parent_category_id, c.is_active AS category_active, c.created_at AS category_created_at, "
+                + "b.brand_id, b.name AS brand_name, b.description AS brand_description, b.logo_url, b.is_active AS brand_active, "
+                + "b.created_at AS brand_created_at "
+                + "FROM products p "
+                + "JOIN categories c ON p.category_id = c.category_id " // Đảm bảo category_id hợp lệ
+                + "LEFT JOIN brands b ON p.brand_id = b.brand_id "
+                + "WHERE 1=1"
+        );
 
-    List<Object> params = new ArrayList<>();
+        List<Object> params = new ArrayList<>();
 
-    // Xử lý khi cả parentCategoryId và categoryId được chọn
-    if (parentCategoryId != null && categoryId != null) {
-        sql.append(" AND p.category_id = ? AND c.parent_category_id = ?");
-        params.add(categoryId);
-        params.add(parentCategoryId);
-    } else if (categoryId != null) {
-        sql.append(" AND p.category_id = ?");
-        params.add(categoryId);
-    } else if (parentCategoryId != null) {
-        sql.append(" AND c.parent_category_id = ?");
-        params.add(parentCategoryId);
-    }
-
-    // Xử lý trạng thái linh hoạt
-    if (status != null && !status.isEmpty()) {
-        sql.append(" AND p.status = ?");
-        params.add(status);
-    }
-
-    if (brandId != null) {
-        sql.append(" AND p.brand_id = ?");
-        params.add(brandId);
-    }
-    if (minPrice != null) {
-        sql.append(" AND p.price >= ?");
-        params.add(minPrice);
-    }
-    if (maxPrice != null) {
-        sql.append(" AND p.price <= ?");
-        params.add(maxPrice);
-    }
-    if (size != null && !size.isEmpty()) {
-        sql.append(" AND EXISTS (SELECT 1 FROM product_variants pv WHERE pv.product_id = p.product_id AND LOWER(pv.size) LIKE LOWER(?))");
-        params.add(size + "%");
-    }
-    if (color != null && !color.isEmpty()) {
-        sql.append(" AND EXISTS (SELECT 1 FROM product_variants pv WHERE pv.product_id = p.product_id AND LOWER(pv.color) LIKE LOWER(?))");
-        params.add(color + "%");
-    }
-
-    // Debug logging
-    System.out.println("Filter SQL: " + sql.toString());
-    System.out.println("Filter Params: " + params);
-
-    try {
-        PreparedStatement ps = conn.prepareStatement(sql.toString());
-        for (int i = 0; i < params.size(); i++) {
-            ps.setObject(i + 1, params.get(i));
+        // Xử lý khi cả parentCategoryId và categoryId được chọn
+        if (parentCategoryId != null && categoryId != null) {
+            sql.append(" AND p.category_id = ? AND c.parent_category_id = ?");
+            params.add(categoryId);
+            params.add(parentCategoryId);
+        } else if (categoryId != null) {
+            sql.append(" AND p.category_id = ?");
+            params.add(categoryId);
+        } else if (parentCategoryId != null) {
+            sql.append(" AND c.parent_category_id = ?");
+            params.add(parentCategoryId);
         }
-        ResultSet rs = ps.executeQuery();
-        int rowCount = 0;
-        while (rs.next()) {
-            Product product = mapProduct(rs);
-            product.setVariants(getVariantsByProductId(product.getProductId()));
-            product.setImages(getImagesByProductId(product.getProductId()));
-            list.add(product);
-            rowCount++;
-            System.out.println("Product ID: " + product.getProductId() + ", Category: " + (product.getCategory() != null ? product.getCategory().getName() : "N/A") 
-                    + ", Parent Category ID: " + (product.getCategory() != null && product.getCategory().getParentCategoryId() != null ? product.getCategory().getParentCategoryId() : "N/A")
-                    + ", Status: " + product.getStatus());
+
+        // Xử lý trạng thái linh hoạt
+        if (status != null && !status.isEmpty()) {
+            sql.append(" AND p.status = ?");
+            params.add(status);
         }
-        System.out.println("Rows returned: " + rowCount); // Log number of rows
+
+        if (brandId != null) {
+            sql.append(" AND p.brand_id = ?");
+            params.add(brandId);
+        }
+        if (minPrice != null) {
+            sql.append(" AND p.price >= ?");
+            params.add(minPrice);
+        }
+        if (maxPrice != null) {
+            sql.append(" AND p.price <= ?");
+            params.add(maxPrice);
+        }
+        if (size != null && !size.isEmpty()) {
+            sql.append(" AND EXISTS (SELECT 1 FROM product_variants pv WHERE pv.product_id = p.product_id AND LOWER(pv.size) LIKE LOWER(?))");
+            params.add(size + "%");
+        }
+        if (color != null && !color.isEmpty()) {
+            sql.append(" AND EXISTS (SELECT 1 FROM product_variants pv WHERE pv.product_id = p.product_id AND LOWER(pv.color) LIKE LOWER(?))");
+            params.add(color + "%");
+        }
+
+        // Debug logging
+        System.out.println("Filter SQL: " + sql.toString());
+        System.out.println("Filter Params: " + params);
+
+        try {
+            PreparedStatement ps = conn.prepareStatement(sql.toString());
+            for (int i = 0; i < params.size(); i++) {
+                ps.setObject(i + 1, params.get(i));
+            }
+            ResultSet rs = ps.executeQuery();
+            int rowCount = 0;
+            while (rs.next()) {
+                Product product = mapProduct(rs);
+                product.setVariants(getVariantsByProductId(product.getProductId()));
+                product.setImages(getImagesByProductId(product.getProductId()));
+                list.add(product);
+                rowCount++;
+                System.out.println("Product ID: " + product.getProductId() + ", Category: " + (product.getCategory() != null ? product.getCategory().getName() : "N/A")
+                        + ", Parent Category ID: " + (product.getCategory() != null && product.getCategory().getParentCategoryId() != null ? product.getCategory().getParentCategoryId() : "N/A")
+                        + ", Status: " + product.getStatus());
+            }
+            System.out.println("Rows returned: " + rowCount); // Log number of rows
+            return list;
+        } catch (SQLException e) {
+            System.out.println("Error in filterProducts: " + e.getMessage());
+            e.printStackTrace();
+        }
         return list;
-    } catch (SQLException e) {
-        System.out.println("Error in filterProducts: " + e.getMessage());
-        e.printStackTrace();
     }
-    return list;
-}
 
     public List<Category> getAllCategories() {
         List<Category> list = new ArrayList<>();
@@ -665,36 +665,124 @@ public class ProductDAO extends DBContext {
     }
 
     public boolean updateProductStatusByCategoryId(long categoryId, String status) {
-    String sql = "UPDATE products SET status = ? WHERE category_id = ? AND status != ?";
-    try {
-        PreparedStatement ps = conn.prepareStatement(sql);
-        ps.setString(1, status);
-        ps.setLong(2, categoryId);
-        ps.setString(3, status); // Chỉ cập nhật nếu trạng thái khác với trạng thái mới
-        int rowsAffected = ps.executeUpdate();
-        System.out.println("updateProductStatusByCategoryId: Updated " + rowsAffected + " products for categoryId=" + categoryId + " to status=" + status);
-        return rowsAffected >= 0;
-    } catch (SQLException e) {
-        System.out.println("Error in updateProductStatusByCategoryId: " + e.getMessage());
-        e.printStackTrace();
-        return false;
+        String sql = "UPDATE products SET status = ? WHERE category_id = ? AND status != ?";
+        try {
+            PreparedStatement ps = conn.prepareStatement(sql);
+            ps.setString(1, status);
+            ps.setLong(2, categoryId);
+            ps.setString(3, status); // Chỉ cập nhật nếu trạng thái khác với trạng thái mới
+            int rowsAffected = ps.executeUpdate();
+            System.out.println("updateProductStatusByCategoryId: Updated " + rowsAffected + " products for categoryId=" + categoryId + " to status=" + status);
+            return rowsAffected >= 0;
+        } catch (SQLException e) {
+            System.out.println("Error in updateProductStatusByCategoryId: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
     }
-}
+
     public boolean updateProductStatusByBrandId(long brandId, String status) {
-    String sql = "UPDATE products SET status = ? WHERE brand_id = ?";
-    try {
-        PreparedStatement ps = conn.prepareStatement(sql);
-        ps.setString(1, status);
-        ps.setLong(2, brandId);
-        int rowsAffected = ps.executeUpdate();
-        System.out.println("updateProductStatusByBrandId: Updated " + rowsAffected + " products for brandId=" + brandId + " to status=" + status);
-        return rowsAffected >= 0;
-    } catch (SQLException e) {
-        System.out.println("Error in updateProductStatusByBrandId: " + e.getMessage());
-        e.printStackTrace();
-        return false;
+        String sql = "UPDATE products SET status = ? WHERE brand_id = ?";
+        try {
+            PreparedStatement ps = conn.prepareStatement(sql);
+            ps.setString(1, status);
+            ps.setLong(2, brandId);
+            int rowsAffected = ps.executeUpdate();
+            System.out.println("updateProductStatusByBrandId: Updated " + rowsAffected + " products for brandId=" + brandId + " to status=" + status);
+            return rowsAffected >= 0;
+        } catch (SQLException e) {
+            System.out.println("Error in updateProductStatusByBrandId: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
     }
-}
+
+    /**
+     * Lấy danh sách sản phẩm mới nhất cho trang chủ (đã được tối ưu).
+     *
+     * @param limit Số lượng sản phẩm muốn lấy.
+     * @return Danh sách các sản phẩm.
+     */
+    public List<Product> getNewArrivals(int limit) {
+        List<Product> list = new ArrayList<>();
+        // Câu lệnh SQL này dùng CTE và ROW_NUMBER để lấy đúng 1 ảnh đại diện và 1 biến thể mặc định trong 1 lần chạy
+        String sql = "WITH RankedImages AS ("
+                + "    SELECT *, ROW_NUMBER() OVER(PARTITION BY product_id ORDER BY display_order, image_id) as rn "
+                + "    FROM product_images"
+                + "), DefaultVariants AS ("
+                + "    SELECT *, ROW_NUMBER() OVER(PARTITION BY product_id ORDER BY variant_id) as rn_variant "
+                + "    FROM product_variants"
+                + ") "
+                + "SELECT TOP (?) p.product_id, p.name, p.price, p.created_at, ri.image_url, dv.variant_id AS default_variant_id "
+                + "FROM products p "
+                + "LEFT JOIN RankedImages ri ON p.product_id = ri.product_id AND ri.rn = 1 "
+                + "LEFT JOIN DefaultVariants dv ON p.product_id = dv.product_id AND dv.rn_variant = 1 "
+                + "WHERE p.status = 'Active' "
+                + "ORDER BY p.created_at DESC";
+
+        try {
+            PreparedStatement ps = conn.prepareStatement(sql);
+            ps.setInt(1, limit);
+            ResultSet rs = ps.executeQuery();
+
+            while (rs.next()) {
+                Product product = new Product();
+                product.setProductId(rs.getLong("product_id"));
+                product.setName(rs.getString("name"));
+                product.setPrice(rs.getBigDecimal("price"));
+                product.setCreatedAt(rs.getTimestamp("created_at"));
+                product.setImageUrl(rs.getString("image_url"));
+                product.setDefaultVariantId(rs.getLong("default_variant_id"));
+                list.add(product);
+            }
+        } catch (Exception e) {
+            System.out.println("Error in getNewArrivals: " + e.getMessage());
+        }
+        return list;
+    }
+
+    /**
+     * Lấy danh sách sản phẩm bán chạy nhất cho trang chủ (đã được tối ưu).
+     *
+     * @param limit Số lượng sản phẩm muốn lấy.
+     * @return Danh sách các sản phẩm.
+     */
+    public List<Product> getBestSellers(int limit) {
+        // TODO: Logic ORDER BY cần được thay thế bằng logic dựa trên số lượng bán ra từ bảng order_items
+        List<Product> list = new ArrayList<>();
+        String sql = "WITH RankedImages AS ("
+                + "    SELECT *, ROW_NUMBER() OVER(PARTITION BY product_id ORDER BY display_order, image_id) as rn "
+                + "    FROM product_images"
+                + "), DefaultVariants AS ("
+                + "    SELECT *, ROW_NUMBER() OVER(PARTITION BY product_id ORDER BY variant_id) as rn_variant "
+                + "    FROM product_variants"
+                + ") "
+                + "SELECT TOP (?) p.product_id, p.name, p.price, p.created_at, ri.image_url, dv.variant_id AS default_variant_id "
+                + "FROM products p "
+                + "LEFT JOIN RankedImages ri ON p.product_id = ri.product_id AND ri.rn = 1 "
+                + "LEFT JOIN DefaultVariants dv ON p.product_id = dv.product_id AND dv.rn_variant = 1 "
+                + "WHERE p.status = 'Active' "
+                + "ORDER BY NEWID()"; // Tạm thời lấy ngẫu nhiên
+
+        try {
+            PreparedStatement ps = conn.prepareStatement(sql);
+            ps.setInt(1, limit);
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                Product product = new Product();
+                product.setProductId(rs.getLong("product_id"));
+                product.setName(rs.getString("name"));
+                product.setPrice(rs.getBigDecimal("price"));
+                product.setCreatedAt(rs.getTimestamp("created_at"));
+                product.setImageUrl(rs.getString("image_url"));
+                product.setDefaultVariantId(rs.getLong("default_variant_id"));
+                list.add(product);
+            }
+        } catch (Exception e) {
+            System.out.println("Error in getBestSellers: " + e.getMessage());
+        }
+        return list;
+    }
 
     public static void main(String[] args) {
         ProductDAO dao = new ProductDAO();
