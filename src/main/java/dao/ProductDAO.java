@@ -2,6 +2,7 @@ package dao;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import model.Product;
@@ -11,11 +12,11 @@ import model.ProductVariant;
 import model.ProductImage;
 import util.DBContext;
 import java.math.BigDecimal;
-import java.sql.SQLException;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.util.Date;
 
 /**
- *
  * @author DANGVUONGTHINH
  */
 public class ProductDAO extends DBContext {
@@ -30,10 +31,13 @@ public class ProductDAO extends DBContext {
                 + "p.created_at, p.updated_at, c.category_id, c.name AS category_name, c.description AS category_description, "
                 + "c.parent_category_id, c.is_active AS category_active, c.created_at AS category_created_at, "
                 + "b.brand_id, b.name AS brand_name, b.description AS brand_description, b.logo_url, b.is_active AS brand_active, "
-                + "b.created_at AS brand_created_at "
+                + "b.created_at AS brand_created_at, "
+                + "ri.image_url AS main_image_url "
                 + "FROM products p "
                 + "LEFT JOIN categories c ON p.category_id = c.category_id "
-                + "LEFT JOIN brands b ON p.brand_id = b.brand_id";
+                + "LEFT JOIN brands b ON p.brand_id = b.brand_id "
+                + "LEFT JOIN (SELECT product_id, image_url, ROW_NUMBER() OVER(PARTITION BY product_id ORDER BY display_order, image_id) AS rn "
+                + "           FROM product_images WHERE is_main = 1) ri ON p.product_id = ri.product_id AND ri.rn = 1";
 
         try {
             PreparedStatement ps = conn.prepareStatement(sql);
@@ -47,6 +51,7 @@ public class ProductDAO extends DBContext {
             return list;
         } catch (SQLException e) {
             System.out.println("Error in getAll: " + e.getMessage());
+            e.printStackTrace();
         }
         return list;
     }
@@ -57,10 +62,13 @@ public class ProductDAO extends DBContext {
                 + "p.created_at, p.updated_at, c.category_id, c.name AS category_name, c.description AS category_description, "
                 + "c.parent_category_id, c.is_active AS category_active, c.created_at AS category_created_at, "
                 + "b.brand_id, b.name AS brand_name, b.description AS brand_description, b.logo_url, b.is_active AS brand_active, "
-                + "b.created_at AS brand_created_at "
+                + "b.created_at AS brand_created_at, "
+                + "ri.image_url AS main_image_url "
                 + "FROM products p "
                 + "LEFT JOIN categories c ON p.category_id = c.category_id "
                 + "LEFT JOIN brands b ON p.brand_id = b.brand_id "
+                + "LEFT JOIN (SELECT product_id, image_url, ROW_NUMBER() OVER(PARTITION BY product_id ORDER BY display_order, image_id) AS rn "
+                + "           FROM product_images WHERE is_main = 1) ri ON p.product_id = ri.product_id AND ri.rn = 1 "
                 + "WHERE p.product_id = ?";
 
         try {
@@ -75,6 +83,7 @@ public class ProductDAO extends DBContext {
             }
         } catch (SQLException e) {
             System.out.println("Error in getProductById: " + e.getMessage());
+            e.printStackTrace();
         }
         return product;
     }
@@ -105,7 +114,6 @@ public class ProductDAO extends DBContext {
                 return 0;
             }
 
-            // Insert variants
             String checkSkuSql = "SELECT sku FROM product_variants WHERE sku = ?";
             String variantSql = "INSERT INTO product_variants (product_id, size, color, price_modifier, sku) "
                     + "VALUES (?, ?, ?, ?, ?); SELECT SCOPE_IDENTITY() AS variant_id;";
@@ -131,7 +139,7 @@ public class ProductDAO extends DBContext {
                 psVariant.setLong(1, productId);
                 psVariant.setString(2, variant.getSize());
                 psVariant.setString(3, variant.getColor());
-                psVariant.setBigDecimal(4, variant.getPriceModifier());
+                ps.setBigDecimal(4, variant.getPriceModifier());
                 psVariant.setString(5, sku);
                 ResultSet rsVariant = psVariant.executeQuery();
                 if (rsVariant.next()) {
@@ -143,7 +151,6 @@ public class ProductDAO extends DBContext {
                 }
             }
 
-            // Insert images
             for (ProductImage image : images) {
                 insertProductImage(productId, image);
             }
@@ -157,6 +164,7 @@ public class ProductDAO extends DBContext {
                 System.out.println("Rollback error: " + ex.getMessage());
             }
             System.out.println("Database error: " + e.getMessage());
+            e.printStackTrace();
             return 0;
         } finally {
             try {
@@ -189,7 +197,6 @@ public class ProductDAO extends DBContext {
         try {
             conn.setAutoCommit(false);
 
-            // Update product
             String productSql = "UPDATE products SET name = ?, description = ?, price = ?, category_id = ?, brand_id = ?, "
                     + "material = ?, status = ?, updated_at = ? WHERE product_id = ?";
             PreparedStatement psProduct = conn.prepareStatement(productSql);
@@ -210,7 +217,6 @@ public class ProductDAO extends DBContext {
                 return false;
             }
 
-            // Get existing variant IDs
             List<Long> existingVariantIds = new ArrayList<>();
             String selectVariantsSql = "SELECT variant_id FROM product_variants WHERE product_id = ?";
             PreparedStatement psSelectVariants = conn.prepareStatement(selectVariantsSql);
@@ -220,7 +226,6 @@ public class ProductDAO extends DBContext {
                 existingVariantIds.add(rs.getLong("variant_id"));
             }
 
-            // Process variants
             String checkSkuSql = "SELECT sku FROM product_variants WHERE sku = ? AND variant_id != ?";
             String updateVariantSql = "UPDATE product_variants SET size = ?, color = ?, price_modifier = ?, sku = ? "
                     + "WHERE variant_id = ? AND product_id = ?";
@@ -250,7 +255,6 @@ public class ProductDAO extends DBContext {
                 }
 
                 if (variantId != null) {
-                    // Update existing variant
                     psUpdateVariant.setString(1, variant.getSize());
                     psUpdateVariant.setString(2, variant.getColor());
                     psUpdateVariant.setBigDecimal(3, variant.getPriceModifier());
@@ -260,7 +264,6 @@ public class ProductDAO extends DBContext {
                     psUpdateVariant.executeUpdate();
                     submittedVariantIds.add(variantId);
                 } else {
-                    // Insert new variant
                     psInsertVariant.setLong(1, id);
                     psInsertVariant.setString(2, variant.getSize());
                     psInsertVariant.setString(3, variant.getColor());
@@ -269,7 +272,6 @@ public class ProductDAO extends DBContext {
                     ResultSet rsVariant = psInsertVariant.executeQuery();
                     if (rsVariant.next()) {
                         long newVariantId = rsVariant.getLong("variant_id");
-                        // Insert into inventory with default quantity
                         String inventorySql = "INSERT INTO inventory (variant_id, quantity, reserved_quantity) VALUES (?, 0, 0)";
                         PreparedStatement psInventory = conn.prepareStatement(inventorySql);
                         psInventory.setLong(1, newVariantId);
@@ -282,7 +284,6 @@ public class ProductDAO extends DBContext {
                 }
             }
 
-            // Delete removed variants
             String deleteVariantSql = "DELETE FROM product_variants WHERE variant_id = ? AND product_id = ?";
             PreparedStatement psDeleteVariant = conn.prepareStatement(deleteVariantSql);
             for (Long existingId : existingVariantIds) {
@@ -293,14 +294,11 @@ public class ProductDAO extends DBContext {
                 }
             }
 
-            // Process images
-            // Delete existing images
             String deleteImageSql = "DELETE FROM product_images WHERE product_id = ?";
             PreparedStatement psDeleteImage = conn.prepareStatement(deleteImageSql);
             psDeleteImage.setLong(1, id);
             psDeleteImage.executeUpdate();
 
-            // Insert new images
             if (images != null && !images.isEmpty()) {
                 for (ProductImage image : images) {
                     insertProductImage(id, image);
@@ -316,6 +314,7 @@ public class ProductDAO extends DBContext {
                 System.out.println("Rollback error: " + ex.getMessage());
             }
             System.out.println("Database error in update: " + e.getMessage());
+            e.printStackTrace();
             return false;
         } finally {
             try {
@@ -338,6 +337,7 @@ public class ProductDAO extends DBContext {
             return null;
         } catch (SQLException e) {
             System.out.println("Error fetching brand name: " + e.getMessage());
+            e.printStackTrace();
             return null;
         }
     }
@@ -353,8 +353,9 @@ public class ProductDAO extends DBContext {
             } else {
                 return 0;
             }
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
+        } catch (SQLException e) {
+            System.out.println("Error in delete: " + e.getMessage());
+            e.printStackTrace();
         }
         return 0;
     }
@@ -367,16 +368,18 @@ public class ProductDAO extends DBContext {
                 + "p.created_at, p.updated_at, c.category_id, c.name AS category_name, c.description AS category_description, "
                 + "c.parent_category_id, c.is_active AS category_active, c.created_at AS category_created_at, "
                 + "b.brand_id, b.name AS brand_name, b.description AS brand_description, b.logo_url, b.is_active AS brand_active, "
-                + "b.created_at AS brand_created_at "
+                + "b.created_at AS brand_created_at, "
+                + "ri.image_url AS main_image_url "
                 + "FROM products p "
-                + "JOIN categories c ON p.category_id = c.category_id " // Đảm bảo category_id hợp lệ
+                + "JOIN categories c ON p.category_id = c.category_id "
                 + "LEFT JOIN brands b ON p.brand_id = b.brand_id "
+                + "LEFT JOIN (SELECT product_id, image_url, ROW_NUMBER() OVER(PARTITION BY product_id ORDER BY display_order, image_id) AS rn "
+                + "           FROM product_images WHERE is_main = 1) ri ON p.product_id = ri.product_id AND ri.rn = 1 "
                 + "WHERE 1=1"
         );
 
         List<Object> params = new ArrayList<>();
 
-        // Xử lý khi cả parentCategoryId và categoryId được chọn
         if (parentCategoryId != null && categoryId != null) {
             sql.append(" AND p.category_id = ? AND c.parent_category_id = ?");
             params.add(categoryId);
@@ -389,7 +392,6 @@ public class ProductDAO extends DBContext {
             params.add(parentCategoryId);
         }
 
-        // Xử lý trạng thái linh hoạt
         if (status != null && !status.isEmpty()) {
             sql.append(" AND p.status = ?");
             params.add(status);
@@ -416,7 +418,6 @@ public class ProductDAO extends DBContext {
             params.add(color + "%");
         }
 
-        // Debug logging
         System.out.println("Filter SQL: " + sql.toString());
         System.out.println("Filter Params: " + params);
 
@@ -435,9 +436,9 @@ public class ProductDAO extends DBContext {
                 rowCount++;
                 System.out.println("Product ID: " + product.getProductId() + ", Category: " + (product.getCategory() != null ? product.getCategory().getName() : "N/A")
                         + ", Parent Category ID: " + (product.getCategory() != null && product.getCategory().getParentCategoryId() != null ? product.getCategory().getParentCategoryId() : "N/A")
-                        + ", Status: " + product.getStatus());
+                        + ", Status: " + product.getStatus() + ", Image URL: " + (product.getImageUrl() != null ? product.getImageUrl() : "N/A"));
             }
-            System.out.println("Rows returned: " + rowCount); // Log number of rows
+            System.out.println("Rows returned: " + rowCount);
             return list;
         } catch (SQLException e) {
             System.out.println("Error in filterProducts: " + e.getMessage());
@@ -470,8 +471,9 @@ public class ProductDAO extends DBContext {
                 list.add(category);
             }
             return list;
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
+        } catch (SQLException e) {
+            System.out.println("Error in getAllCategories: " + e.getMessage());
+            e.printStackTrace();
         }
         return list;
     }
@@ -496,8 +498,9 @@ public class ProductDAO extends DBContext {
                 list.add(brand);
             }
             return list;
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
+        } catch (SQLException e) {
+            System.out.println("Error in getAllBrands: " + e.getMessage());
+            e.printStackTrace();
         }
         return list;
     }
@@ -511,8 +514,9 @@ public class ProductDAO extends DBContext {
             if (rs.next()) {
                 return rs.getInt("count") > 0;
             }
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
+        } catch (SQLException e) {
+            System.out.println("Error in categoryExists: " + e.getMessage());
+            e.printStackTrace();
         }
         return false;
     }
@@ -526,8 +530,9 @@ public class ProductDAO extends DBContext {
             if (rs.next()) {
                 return rs.getInt("count") > 0;
             }
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
+        } catch (SQLException e) {
+            System.out.println("Error in brandExists: " + e.getMessage());
+            e.printStackTrace();
         }
         return false;
     }
@@ -565,6 +570,7 @@ public class ProductDAO extends DBContext {
             return variants;
         } catch (SQLException e) {
             System.out.println("Error in getVariantsByProductId: " + e.getMessage());
+            e.printStackTrace();
         }
         return variants;
     }
@@ -617,8 +623,8 @@ public class ProductDAO extends DBContext {
                 rs.getString("name"),
                 rs.getString("description"),
                 price,
-                null, // Category sẽ được set sau
-                null, // Brand sẽ được set sau
+                null,
+                null,
                 rs.getString("material"),
                 rs.getString("status"),
                 createdAt,
@@ -629,7 +635,7 @@ public class ProductDAO extends DBContext {
         if (categoryName != null) {
             Date categoryCreatedAt = rs.getTimestamp("category_created_at");
             if (categoryCreatedAt == null) {
-                categoryCreatedAt = new Date(); // Default to current date if null
+                categoryCreatedAt = new Date();
                 System.out.println("Warning: category_created_at is null for category_id: " + rs.getLong("category_id"));
             }
             Long parentCategoryId = rs.getLong("parent_category_id");
@@ -661,6 +667,9 @@ public class ProductDAO extends DBContext {
             product.setBrand(brand);
         }
 
+        String imageUrl = rs.getString("main_image_url");
+        product.setImageUrl(imageUrl != null ? imageUrl : "https://placehold.co/400x500/f0f0f0/333?text=No+Image");
+
         return product;
     }
 
@@ -670,7 +679,7 @@ public class ProductDAO extends DBContext {
             PreparedStatement ps = conn.prepareStatement(sql);
             ps.setString(1, status);
             ps.setLong(2, categoryId);
-            ps.setString(3, status); // Chỉ cập nhật nếu trạng thái khác với trạng thái mới
+            ps.setString(3, status);
             int rowsAffected = ps.executeUpdate();
             System.out.println("updateProductStatusByCategoryId: Updated " + rowsAffected + " products for categoryId=" + categoryId + " to status=" + status);
             return rowsAffected >= 0;
@@ -697,15 +706,8 @@ public class ProductDAO extends DBContext {
         }
     }
 
-    /**
-     * Lấy danh sách sản phẩm mới nhất cho trang chủ (đã được tối ưu).
-     *
-     * @param limit Số lượng sản phẩm muốn lấy.
-     * @return Danh sách các sản phẩm.
-     */
     public List<Product> getNewArrivals(int limit) {
         List<Product> list = new ArrayList<>();
-        // Câu lệnh SQL này dùng CTE và ROW_NUMBER để lấy đúng 1 ảnh đại diện và 1 biến thể mặc định trong 1 lần chạy
         String sql = "WITH RankedImages AS ("
                 + "    SELECT *, ROW_NUMBER() OVER(PARTITION BY product_id ORDER BY display_order, image_id) as rn "
                 + "    FROM product_images"
@@ -735,54 +737,109 @@ public class ProductDAO extends DBContext {
                 product.setDefaultVariantId(rs.getLong("default_variant_id"));
                 list.add(product);
             }
-        } catch (Exception e) {
+        } catch (SQLException e) {
             System.out.println("Error in getNewArrivals: " + e.getMessage());
+            e.printStackTrace();
         }
         return list;
     }
 
-    /**
-     * Lấy danh sách sản phẩm bán chạy nhất cho trang chủ (đã được tối ưu).
-     *
-     * @param limit Số lượng sản phẩm muốn lấy.
-     * @return Danh sách các sản phẩm.
-     */
     public List<Product> getBestSellers(int limit) {
-        // TODO: Logic ORDER BY cần được thay thế bằng logic dựa trên số lượng bán ra từ bảng order_items
-        List<Product> list = new ArrayList<>();
-        String sql = "WITH RankedImages AS ("
-                + "    SELECT *, ROW_NUMBER() OVER(PARTITION BY product_id ORDER BY display_order, image_id) as rn "
-                + "    FROM product_images"
+        List<Product> products = new ArrayList<>();
+        String sql = "WITH StockLevels AS ("
+                + "    SELECT variant_id, SUM(CASE "
+                + "        WHEN movement_type = 'In' THEN quantity_changed "
+                + "        WHEN movement_type = 'Out' THEN -quantity_changed "
+                + "        WHEN movement_type = 'Adjustment' THEN quantity_changed "
+                + "        WHEN movement_type = 'Reserved' THEN -quantity_changed "
+                + "        WHEN movement_type = 'Released' THEN quantity_changed "
+                + "        ELSE 0 END) AS current_stock "
+                + "    FROM stock_movements "
+                + "    GROUP BY variant_id "
+                + "), ProductStock AS ("
+                + "    SELECT pv.product_id, SUM(sl.current_stock) AS total_stock "
+                + "    FROM product_variants pv "
+                + "    LEFT JOIN StockLevels sl ON pv.variant_id = sl.variant_id "
+                + "    GROUP BY pv.product_id "
+                + "), RankedImages AS ("
+                + "    SELECT *, ROW_NUMBER() OVER(PARTITION BY product_id ORDER BY display_order, image_id) AS rn "
+                + "    FROM product_images "
                 + "), DefaultVariants AS ("
-                + "    SELECT *, ROW_NUMBER() OVER(PARTITION BY product_id ORDER BY variant_id) as rn_variant "
-                + "    FROM product_variants"
+                + "    SELECT *, ROW_NUMBER() OVER(PARTITION BY product_id ORDER BY variant_id) AS rn_variant "
+                + "    FROM product_variants "
                 + ") "
-                + "SELECT TOP (?) p.product_id, p.name, p.price, p.created_at, ri.image_url, dv.variant_id AS default_variant_id "
+                + "SELECT TOP (?) p.product_id, p.name, p.price, p.created_at, ri.image_url, dv.variant_id AS default_variant_id, ps.total_stock "
                 + "FROM products p "
+                + "LEFT JOIN ProductStock ps ON p.product_id = ps.product_id "
                 + "LEFT JOIN RankedImages ri ON p.product_id = ri.product_id AND ri.rn = 1 "
                 + "LEFT JOIN DefaultVariants dv ON p.product_id = dv.product_id AND dv.rn_variant = 1 "
-                + "WHERE p.status = 'Active' "
-                + "ORDER BY NEWID()"; // Tạm thời lấy ngẫu nhiên
+                + "WHERE p.status = 'active' "
+                + "ORDER BY ISNULL(ps.total_stock, 0) ASC, p.product_id DESC";
 
-        try {
-            PreparedStatement ps = conn.prepareStatement(sql);
+        try ( PreparedStatement ps = conn.prepareStatement(sql)) {
+            System.out.println("Executing getBestSellers with limit: " + limit);
+            System.out.println("Connection: " + (conn != null ? "Valid" : "Null"));
             ps.setInt(1, limit);
-            ResultSet rs = ps.executeQuery();
-            while (rs.next()) {
-                Product product = new Product();
-                product.setProductId(rs.getLong("product_id"));
-                product.setName(rs.getString("name"));
-                product.setPrice(rs.getBigDecimal("price"));
-                product.setCreatedAt(rs.getTimestamp("created_at"));
-                product.setImageUrl(rs.getString("image_url"));
-                product.setDefaultVariantId(rs.getLong("default_variant_id"));
-                list.add(product);
+            try ( ResultSet rs = ps.executeQuery()) {
+                int rowCount = 0;
+                while (rs.next()) {
+                    Product product = new Product();
+                    product.setProductId(rs.getLong("product_id"));
+                    product.setName(rs.getString("name"));
+                    product.setPrice(rs.getBigDecimal("price"));
+                    product.setCreatedAt(rs.getTimestamp("created_at"));
+                    String imageUrl = rs.getString("image_url");
+                    product.setImageUrl(imageUrl);
+                    Long variantId = rs.getLong("default_variant_id");
+                    product.setDefaultVariantId(rs.wasNull() ? null : variantId);
+                    products.add(product);
+                    System.out.println("Fetched best seller: ID=" + product.getProductId() + ", Name=" + product.getName()
+                            + ", TotalStock=" + rs.getLong("total_stock") + ", ImageUrl=" + (imageUrl != null ? imageUrl : "null"));
+                    rowCount++;
+                }
+                System.out.println("getBestSellers returned " + rowCount + " products");
             }
+        } catch (SQLException e) {
+            System.err.println("SQLException in getBestSellers: " + e.getMessage());
+            System.err.println("SQL State: " + e.getSQLState());
+            System.err.println("Error Code: " + e.getErrorCode());
+            System.err.println("Query: " + sql);
+            System.err.println("Limit: " + limit);
+            e.printStackTrace();
         } catch (Exception e) {
-            System.out.println("Error in getBestSellers: " + e.getMessage());
+            System.err.println("Unexpected error in getBestSellers: " + e.getMessage());
+            e.printStackTrace();
         }
-        return list;
+        return products;
     }
+    public List<Product> searchProducts(String keyword) {
+    List<Product> list = new ArrayList<>();
+    String sql = "SELECT TOP 5 p.product_id, p.name, p.price, ri.image_url AS main_image_url "
+               + "FROM products p "
+               + "LEFT JOIN (SELECT product_id, image_url, ROW_NUMBER() OVER(PARTITION BY product_id ORDER BY display_order, image_id) AS rn "
+               + "           FROM product_images WHERE is_main = 1) ri ON p.product_id = ri.product_id AND ri.rn = 1 "
+               + "WHERE p.status = 'Active' AND LOWER(p.name) LIKE LOWER(?)";
+
+    try {
+        PreparedStatement ps = conn.prepareStatement(sql);
+        ps.setString(1, "%" + keyword + "%");
+        ResultSet rs = ps.executeQuery();
+        while (rs.next()) {
+            Product product = new Product();
+            product.setProductId(rs.getLong("product_id"));
+            product.setName(rs.getString("name"));
+            product.setPrice(rs.getBigDecimal("price"));
+            String imageUrl = rs.getString("main_image_url");
+            product.setImageUrl(imageUrl != null ? imageUrl : "https://placehold.co/50x50");
+            list.add(product);
+        }
+    } catch (SQLException e) {
+        System.out.println("Error in searchProducts: " + e.getMessage());
+        e.printStackTrace();
+    }
+    return list;
+}
+
 
     public static void main(String[] args) {
         ProductDAO dao = new ProductDAO();
@@ -801,6 +858,7 @@ public class ProductDAO extends DBContext {
                 System.out.println("Status: " + (product.getStatus() != null ? product.getStatus() : "N/A"));
                 System.out.println("Created At: " + (product.getCreatedAt() != null ? product.getCreatedAt() : "N/A"));
                 System.out.println("Updated At: " + (product.getUpdatedAt() != null ? product.getUpdatedAt() : "N/A"));
+                System.out.println("Image URL: " + (product.getImageUrl() != null ? product.getImageUrl() : "N/A"));
 
                 List<ProductVariant> variants = product.getVariants();
                 if (variants != null && !variants.isEmpty()) {
@@ -823,6 +881,7 @@ public class ProductDAO extends DBContext {
                         System.out.println("  - Image ID: " + image.getImageId());
                         System.out.println("    URL: " + (image.getImageUrl() != null ? image.getImageUrl() : "N/A"));
                         System.out.println("    Display Order: " + image.getDisplayOrder());
+                        System.out.println("    Is Main: " + image.isMain());
                     }
                 } else {
                     System.out.println("Images: None");

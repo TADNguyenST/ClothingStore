@@ -36,9 +36,9 @@ public class ProductManagerController extends HttpServlet {
     public void init() {
         try {
             cloudinary = new Cloudinary(ObjectUtils.asMap(
-                "cloud_name", "da36bkpx5",
-                "api_key", "342541776882536",
-                "api_secret", "F_90gUaX6jfD8yJI8FxCY1Hurbg"
+                    "cloud_name", "da36bkpx5",
+                    "api_key", "342541776882536",
+                    "api_secret", "F_90gUaX6jfD8yJI8FxCY1Hurbg"
             ));
             if (cloudinary == null) {
                 System.err.println("Failed to initialize Cloudinary!");
@@ -56,7 +56,7 @@ public class ProductManagerController extends HttpServlet {
             throws ServletException, IOException {
         ProductDAO dao = new ProductDAO();
         CategoryDAO categoryDAO = new CategoryDAO();
-        
+
         String action = request.getParameter("action");
         if (action == null) {
             action = "list";
@@ -142,114 +142,111 @@ public class ProductManagerController extends HttpServlet {
                 request.getRequestDispatcher("/WEB-INF/views/staff/product/productDetail.jsp").forward(request, response);
             }
         } else if (action.equalsIgnoreCase("filter")) {
-    String parentCategoryIdRaw = request.getParameter("parentCategoryId");
-    String categoryIdRaw = request.getParameter("categoryId");
-    String brandIdRaw = request.getParameter("brandId");
-    String size = request.getParameter("size");
-    String color = request.getParameter("color");
-    String minPriceRaw = request.getParameter("minPrice");
-    String maxPriceRaw = request.getParameter("maxPrice");
-    String status = request.getParameter("status"); // Thêm tham số trạng thái
+            String parentCategoryIdRaw = request.getParameter("parentCategoryId");
+            String categoryIdRaw = request.getParameter("categoryId");
+            String brandIdRaw = request.getParameter("brandId");
+            String size = request.getParameter("size");
+            String color = request.getParameter("color");
+            String minPriceRaw = request.getParameter("minPrice");
+            String maxPriceRaw = request.getParameter("maxPrice");
+            String status = request.getParameter("status");
 
-    Long parentCategoryId = null;
-    if (parentCategoryIdRaw != null && !parentCategoryIdRaw.isEmpty()) {
-        try {
-            parentCategoryId = Long.parseLong(parentCategoryIdRaw);
-            if (!dao.categoryExists(parentCategoryId)) {
-                request.setAttribute("err", "<p class='text-danger'>Invalid Parent Category ID: " + parentCategoryIdRaw + "</p>");
-                parentCategoryId = null;
+            Long parentCategoryId = null;
+            if (parentCategoryIdRaw != null && !parentCategoryIdRaw.isEmpty()) {
+                try {
+                    parentCategoryId = Long.parseLong(parentCategoryIdRaw);
+                    if (!dao.categoryExists(parentCategoryId)) {
+                        request.setAttribute("err", "<p class='text-danger'>Invalid Parent Category ID: " + parentCategoryIdRaw + "</p>");
+                        parentCategoryId = null;
+                    }
+                } catch (NumberFormatException e) {
+                    System.out.println("Invalid Long format for parentCategoryId: " + parentCategoryIdRaw);
+                    request.setAttribute("err", "<p class='text-danger'>Invalid Parent Category ID format</p>");
+                }
             }
-        } catch (NumberFormatException e) {
-            System.out.println("Invalid Long format for parentCategoryId: " + parentCategoryIdRaw);
-            request.setAttribute("err", "<p class='text-danger'>Invalid Parent Category ID format</p>");
-        }
-    }
 
-    Long categoryId = null;
-    if (categoryIdRaw != null && !categoryIdRaw.isEmpty()) {
-        try {
-            categoryId = Long.parseLong(categoryIdRaw);
-            // Chỉ báo lỗi nếu categoryId không tồn tại và parentCategoryId hợp lệ
-            if (parentCategoryId != null && !dao.categoryExists(categoryId)) {
-                System.out.println("Warning: Invalid Category ID: " + categoryIdRaw + " under parent " + parentCategoryId);
-                // Không set err ngay, để filter tiếp tục với dữ liệu hợp lệ
+            Long categoryId = null;
+            if (categoryIdRaw != null && !categoryIdRaw.isEmpty()) {
+                try {
+                    categoryId = Long.parseLong(categoryIdRaw);
+                    if (parentCategoryId != null && !dao.categoryExists(categoryId)) {
+                        System.out.println("Warning: Invalid Category ID: " + categoryIdRaw + " under parent " + parentCategoryId);
+                    }
+                } catch (NumberFormatException e) {
+                    System.out.println("Invalid Long format for categoryId: " + categoryIdRaw);
+                    request.setAttribute("err", "<p class='text-danger'>Invalid Category ID format</p>");
+                }
             }
-        } catch (NumberFormatException e) {
-            System.out.println("Invalid Long format for categoryId: " + categoryIdRaw);
-            request.setAttribute("err", "<p class='text-danger'>Invalid Category ID format</p>");
-        }
-    }
 
-    Long brandId = null;
-    if (brandIdRaw != null && !brandIdRaw.isEmpty()) {
-        try {
-            brandId = Long.parseLong(brandIdRaw);
-            if (!dao.brandExists(brandId)) {
-                request.setAttribute("err", "<p class='text-danger'>Invalid Brand ID: " + brandIdRaw + "</p>");
-                brandId = null;
+            Long brandId = null;
+            if (brandIdRaw != null && !brandIdRaw.isEmpty()) {
+                try {
+                    brandId = Long.parseLong(brandIdRaw);
+                    if (!dao.brandExists(brandId)) {
+                        request.setAttribute("err", "<p class='text-danger'>Invalid Brand ID: " + brandIdRaw + "</p>");
+                        brandId = null;
+                    }
+                } catch (NumberFormatException e) {
+                    System.out.println("Invalid Long format for brandId: " + brandIdRaw);
+                    request.setAttribute("err", "<p class='text-danger'>Invalid Brand ID format</p>");
+                }
             }
-        } catch (NumberFormatException e) {
-            System.out.println("Invalid Long format for brandId: " + brandIdRaw);
-            request.setAttribute("err", "<p class='text-danger'>Invalid Brand ID format</p>");
+
+            BigDecimal minPrice = null;
+            if (minPriceRaw != null && !minPriceRaw.isEmpty()) {
+                try {
+                    minPrice = new BigDecimal(minPriceRaw.replace(".", "").replace(",", "."));
+                } catch (NumberFormatException e) {
+                    System.out.println("Invalid BigDecimal format for minPrice: " + minPriceRaw);
+                    request.setAttribute("err", "<p class='text-danger'>Invalid Min Price format</p>");
+                }
+            }
+
+            BigDecimal maxPrice = null;
+            if (maxPriceRaw != null && !maxPriceRaw.isEmpty()) {
+                try {
+                    maxPrice = new BigDecimal(maxPriceRaw.replace(".", "").replace(",", "."));
+                } catch (NumberFormatException e) {
+                    System.out.println("Invalid BigDecimal format for maxPrice: " + maxPriceRaw);
+                    request.setAttribute("err", "<p class='text-danger'>Invalid Max Price format</p>");
+                }
+            }
+
+            if (minPrice != null && maxPrice != null && minPrice.compareTo(maxPrice) > 0) {
+                request.setAttribute("err", "<p class='text-danger'>Min Price cannot be greater than Max Price</p>");
+                minPrice = null;
+                maxPrice = null;
+            }
+
+            try {
+                List<Product> data = dao.filterProducts(parentCategoryId, categoryId, brandId, size, color, minPrice, maxPrice, status);
+                request.setAttribute("list", data);
+                if (data.isEmpty()) {
+                    request.setAttribute("err", "<p class='text-danger'>No products found matching the filter criteria</p>");
+                }
+            } catch (Exception e) {
+                request.setAttribute("err", "<p class='text-danger'>Error filtering products: " + e.getMessage() + "</p>");
+                System.out.println("Error in filter action: " + e.getMessage());
+            }
+
+            List<Category> categories = dao.getAllCategories();
+            List<Brand> brands = dao.getAllBrands();
+            request.setAttribute("categories", categories);
+            request.setAttribute("brands", brands);
+            request.getRequestDispatcher("/WEB-INF/views/staff/product/products.jsp").forward(request, response);
         }
-    }
-
-    BigDecimal minPrice = null;
-    if (minPriceRaw != null && !minPriceRaw.isEmpty()) {
-        try {
-            minPrice = new BigDecimal(minPriceRaw.replace(".", "").replace(",", "."));
-        } catch (NumberFormatException e) {
-            System.out.println("Invalid BigDecimal format for minPrice: " + minPriceRaw);
-            request.setAttribute("err", "<p class='text-danger'>Invalid Min Price format</p>");
-        }
-    }
-
-    BigDecimal maxPrice = null;
-    if (maxPriceRaw != null && !maxPriceRaw.isEmpty()) {
-        try {
-            maxPrice = new BigDecimal(maxPriceRaw.replace(".", "").replace(",", "."));
-        } catch (NumberFormatException e) {
-            System.out.println("Invalid BigDecimal format for maxPrice: " + maxPriceRaw);
-            request.setAttribute("err", "<p class='text-danger'>Invalid Max Price format</p>");
-        }
-    }
-
-    if (minPrice != null && maxPrice != null && minPrice.compareTo(maxPrice) > 0) {
-        request.setAttribute("err", "<p class='text-danger'>Min Price cannot be greater than Max Price</p>");
-        minPrice = null;
-        maxPrice = null;
-    }
-
-    try {
-        List<Product> data = dao.filterProducts(parentCategoryId, categoryId, brandId, size, color, minPrice, maxPrice, status);
-        request.setAttribute("list", data);
-        if (data.isEmpty()) {
-            request.setAttribute("err", "<p class='text-danger'>No products found matching the filter criteria</p>");
-        }
-    } catch (Exception e) {
-        request.setAttribute("err", "<p class='text-danger'>Error filtering products: " + e.getMessage() + "</p>");
-        System.out.println("Error in filter action: " + e.getMessage());
-    }
-
-    List<Category> categories = dao.getAllCategories();
-    List<Brand> brands = dao.getAllBrands();
-    request.setAttribute("categories", categories);
-    request.setAttribute("brands", brands);
-    request.getRequestDispatcher("/WEB-INF/views/staff/product/products.jsp").forward(request, response);
-}
     }
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        System.out.println("doPost called with action: " + request.getParameter("action")); // Debug log
+        System.out.println("doPost called with action: " + request.getParameter("action"));
         ProductDAO dao = new ProductDAO();
 
         String action = request.getParameter("action");
         if (action == null) {
-            action = "create"; // Default to create for POST
+            action = "create";
         }
-
         if (action.equalsIgnoreCase("create")) {
             try {
                 String name = request.getParameter("name");
@@ -259,6 +256,10 @@ public class ProductManagerController extends HttpServlet {
                 String brandIdRaw = request.getParameter("brandId");
                 String material = request.getParameter("material");
                 String status = request.getParameter("status");
+                // Default status to 'active' if null or empty
+                if (status == null || status.trim().isEmpty()) {
+                    status = "active";
+                }
 
                 String[] sizes = request.getParameterValues("size");
                 String[] colors = request.getParameterValues("color");
@@ -280,7 +281,12 @@ public class ProductManagerController extends HttpServlet {
                 }
 
                 priceRaw = priceRaw.replace(".", "").replace(",", ".");
-                BigDecimal price = new BigDecimal(priceRaw);
+                BigDecimal price;
+                try {
+                    price = new BigDecimal(priceRaw);
+                } catch (NumberFormatException e) {
+                    throw new IllegalArgumentException("Invalid Price format: " + priceRaw);
+                }
                 if (price.compareTo(BigDecimal.ZERO) <= 0) {
                     throw new IllegalArgumentException("Price must be positive");
                 }
@@ -299,11 +305,6 @@ public class ProductManagerController extends HttpServlet {
                     throw new IllegalArgumentException("Brand name not found for ID: " + brandId);
                 }
 
-                System.out.println("Sizes: " + (sizes != null ? String.join(", ", sizes) : "null"));
-                System.out.println("Colors: " + (colors != null ? String.join(", ", colors) : "null"));
-                System.out.println("Price Modifiers: " + (priceModifiers != null ? String.join(", ", priceModifiers) : "null"));
-                System.out.println("Is Main Images: " + (isMainImages != null ? String.join(", ", isMainImages) : "null"));
-
                 // Handle variants
                 List<ProductVariant> variants = new ArrayList<>();
                 if (sizes != null && colors != null && priceModifiers != null
@@ -319,20 +320,19 @@ public class ProductManagerController extends HttpServlet {
                             throw new IllegalArgumentException("Price Modifier cannot be empty for variant " + (i + 1));
                         }
                         String priceModifierRaw = priceModifiers[i].replace(".", "").replace(",", ".");
-                        BigDecimal priceModifier = new BigDecimal(priceModifierRaw);
-                        if (price.add(priceModifier).compareTo(BigDecimal.ZERO) < 0) {
-                            throw new IllegalArgumentException("Price Modifier for variant " + (i + 1) + " makes total price negative ("
-                                    + price.add(priceModifier) + "). Total price must be non-negative.");
+                        BigDecimal priceModifier;
+                        try {
+                            priceModifier = new BigDecimal(priceModifierRaw);
+                        } catch (NumberFormatException e) {
+                            throw new IllegalArgumentException("Invalid Price Modifier format for variant " + (i + 1) + ": " + priceModifiers[i]);
+                        }
+                        if (priceModifier.compareTo(price) < 0) {
+                            throw new IllegalArgumentException("Price Modifier for variant " + (i + 1) + " (" + priceModifier + ") must be at least the base price (" + price + ")");
                         }
                         ProductVariant variant = new ProductVariant(null, sizes[i].trim(), colors[i].trim(),
                                 priceModifier, brandName, name);
                         variants.add(variant);
                     }
-                } else if (sizes != null || colors != null || priceModifiers != null) {
-                    throw new IllegalArgumentException("Incomplete or mismatched variant data: "
-                            + "Sizes=" + (sizes != null ? sizes.length : "null") + ", "
-                            + "Colors=" + (colors != null ? colors.length : "null") + ", "
-                            + "PriceModifiers=" + (priceModifiers != null ? priceModifiers.length : "null"));
                 }
 
                 // Handle images
@@ -352,8 +352,7 @@ public class ProductManagerController extends HttpServlet {
                             File tempFile = null;
                             try {
                                 tempFile = File.createTempFile("upload", fileName);
-                                try (InputStream input = filePart.getInputStream();
-                                     FileOutputStream output = new FileOutputStream(tempFile)) {
+                                try ( InputStream input = filePart.getInputStream();  FileOutputStream output = new FileOutputStream(tempFile)) {
                                     byte[] buffer = new byte[1024];
                                     int len;
                                     while ((len = input.read(buffer)) != -1) {
@@ -363,11 +362,11 @@ public class ProductManagerController extends HttpServlet {
 
                                 if (cloudinary != null) {
                                     Map uploadResult = cloudinary.uploader().upload(tempFile, ObjectUtils.asMap(
-                                        "quality", "auto",
-                                        "fetch_format", "auto",
-                                        "width", 800,
-                                        "crop", "limit",
-                                        "folder", "products"
+                                            "quality", "auto",
+                                            "fetch_format", "auto",
+                                            "width", 800,
+                                            "crop", "limit",
+                                            "folder", "products"
                                     ));
                                     String imageUrl = (String) uploadResult.get("secure_url");
                                     System.out.println("Optimized image URL: " + imageUrl);
@@ -376,7 +375,10 @@ public class ProductManagerController extends HttpServlet {
                                     ProductImage image = new ProductImage();
                                     image.setImageUrl(imageUrl);
                                     image.setDisplayOrder(imageIndex + 1);
-                                    image.setMain(isMainImages != null && imageIndex < isMainImages.length && "true".equals(isMainImages[imageIndex]));
+                                    // Default first image to isMain=true if none specified
+                                    boolean isMain = (isMainImages == null || isMainImages.length == 0) ? (imageIndex == 0)
+                                            : (imageIndex < isMainImages.length && "true".equals(isMainImages[imageIndex]));
+                                    image.setMain(isMain);
                                     images.add(image);
                                     imageIndex++;
                                 } else {
@@ -384,11 +386,15 @@ public class ProductManagerController extends HttpServlet {
                                 }
                             } catch (IOException e) {
                                 System.err.println("IO Error processing file: " + e.getMessage());
-                                if (tempFile != null) tempFile.delete();
+                                if (tempFile != null) {
+                                    tempFile.delete();
+                                }
                                 throw e;
                             } catch (Exception e) {
                                 System.err.println("Upload error: " + e.getMessage());
-                                if (tempFile != null) tempFile.delete();
+                                if (tempFile != null) {
+                                    tempFile.delete();
+                                }
                                 throw e;
                             }
                         }
@@ -441,7 +447,7 @@ public class ProductManagerController extends HttpServlet {
                 String[] existingImageUrls = request.getParameterValues("existingImageUrl");
                 String[] isMainImages = request.getParameterValues("isMainImage");
 
-                System.out.println("Update action started for ID: " + idRaw); // Debug
+                System.out.println("Update action started for ID: " + idRaw);
                 System.out.println("Existing Image URLs: " + (existingImageUrls != null ? String.join(", ", existingImageUrls) : "null"));
                 System.out.println("Is Main Images: " + (isMainImages != null ? String.join(", ", isMainImages) : "null"));
 
@@ -460,7 +466,12 @@ public class ProductManagerController extends HttpServlet {
 
                 long id = Long.parseLong(idRaw);
                 priceRaw = priceRaw.replace(".", "").replace(",", ".");
-                BigDecimal price = new BigDecimal(priceRaw);
+                BigDecimal price;
+                try {
+                    price = new BigDecimal(priceRaw);
+                } catch (NumberFormatException e) {
+                    throw new IllegalArgumentException("Invalid Price format: " + priceRaw);
+                }
                 if (price.compareTo(BigDecimal.ZERO) <= 0) {
                     throw new IllegalArgumentException("Price must be positive");
                 }
@@ -484,6 +495,7 @@ public class ProductManagerController extends HttpServlet {
                 System.out.println("Price Modifiers: " + (priceModifiers != null ? String.join(", ", priceModifiers) : "null"));
                 System.out.println("Variant IDs: " + (variantIds != null ? String.join(", ", variantIds) : "null"));
 
+                // Handle variants
                 List<ProductVariant> variants = new ArrayList<>();
                 if (sizes != null && colors != null && priceModifiers != null
                         && sizes.length == colors.length && colors.length == priceModifiers.length && sizes.length > 0) {
@@ -508,10 +520,15 @@ public class ProductManagerController extends HttpServlet {
                             throw new IllegalArgumentException("Price Modifier cannot be empty for variant " + (i + 1));
                         }
                         String priceModifierRaw = priceModifiers[i].replace(".", "").replace(",", ".");
-                        BigDecimal priceModifier = new BigDecimal(priceModifierRaw);
-                        if (price.add(priceModifier).compareTo(BigDecimal.ZERO) < 0) {
-                            throw new IllegalArgumentException("Price Modifier for variant " + (i + 1) + " makes total price negative ("
-                                    + price.add(priceModifier) + "). Total price must be non-negative.");
+                        BigDecimal priceModifier;
+                        try {
+                            priceModifier = new BigDecimal(priceModifierRaw);
+                        } catch (NumberFormatException e) {
+                            throw new IllegalArgumentException("Invalid Price Modifier format for variant " + (i + 1) + ": " + priceModifiers[i]);
+                        }
+                        // Ensure price modifier is at least the base price
+                        if (priceModifier.compareTo(price) < 0) {
+                            throw new IllegalArgumentException("Price Modifier for variant " + (i + 1) + " (" + priceModifier + ") must be at least the base price (" + price + ")");
                         }
                         ProductVariant variant = new ProductVariant();
                         variant.setProductId(id);
@@ -535,7 +552,6 @@ public class ProductManagerController extends HttpServlet {
 
                 // Handle existing and new images
                 List<ProductImage> images = new ArrayList<>();
-                // Keep existing images based on what is still in the form
                 if (existingImageUrls != null) {
                     for (int i = 0; i < existingImageUrls.length; i++) {
                         ProductImage image = new ProductImage();
@@ -545,7 +561,6 @@ public class ProductManagerController extends HttpServlet {
                         images.add(image);
                     }
                 }
-                // Handle new uploaded images
                 Collection<Part> fileParts = request.getParts();
                 System.out.println("Number of file parts: " + (fileParts != null ? fileParts.size() : "null"));
                 if (fileParts != null && !fileParts.isEmpty()) {
@@ -561,8 +576,7 @@ public class ProductManagerController extends HttpServlet {
                             File tempFile = null;
                             try {
                                 tempFile = File.createTempFile("upload", fileName);
-                                try (InputStream input = filePart.getInputStream();
-                                     FileOutputStream output = new FileOutputStream(tempFile)) {
+                                try ( InputStream input = filePart.getInputStream();  FileOutputStream output = new FileOutputStream(tempFile)) {
                                     byte[] buffer = new byte[1024];
                                     int len;
                                     while ((len = input.read(buffer)) != -1) {
@@ -572,11 +586,11 @@ public class ProductManagerController extends HttpServlet {
 
                                 if (cloudinary != null) {
                                     Map uploadResult = cloudinary.uploader().upload(tempFile, ObjectUtils.asMap(
-                                        "quality", "auto",
-                                        "fetch_format", "auto",
-                                        "width", 800,
-                                        "crop", "limit",
-                                        "folder", "products"
+                                            "quality", "auto",
+                                            "fetch_format", "auto",
+                                            "width", 800,
+                                            "crop", "limit",
+                                            "folder", "products"
                                     ));
                                     String imageUrl = (String) uploadResult.get("secure_url");
                                     System.out.println("Optimized image URL: " + imageUrl);
@@ -593,11 +607,15 @@ public class ProductManagerController extends HttpServlet {
                                 }
                             } catch (IOException e) {
                                 System.err.println("IO Error processing file: " + e.getMessage());
-                                if (tempFile != null) tempFile.delete();
+                                if (tempFile != null) {
+                                    tempFile.delete();
+                                }
                                 throw e;
                             } catch (Exception e) {
                                 System.err.println("Upload error: " + e.getMessage());
-                                if (tempFile != null) tempFile.delete();
+                                if (tempFile != null) {
+                                    tempFile.delete();
+                                }
                                 throw e;
                             }
                         }
@@ -623,7 +641,7 @@ public class ProductManagerController extends HttpServlet {
                 }
             } catch (NumberFormatException e) {
                 System.err.println("NumberFormatException in update: " + e.getMessage());
-                request.setAttribute("err", "<p class='text-danger'>Invalid input format: Please check Price, Category, Brand, or Price Modifier (e.g., -5.00, 0, 5.50)</p>");
+                request.setAttribute("err", "<p class='text-danger'>Invalid input format: Please check Price, Category, Brand, or Price Modifier (e.g., 500000.00)</p>");
                 try {
                     long id = Long.parseLong(request.getParameter("id"));
                     Product updatedProduct = dao.getProductById(id);

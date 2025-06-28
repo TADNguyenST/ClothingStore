@@ -1,15 +1,76 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
-<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
-<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<%@ page import="java.util.List" %>
+<%@ page import="java.util.ArrayList" %>
+<%@ page import="model.Product" %>
+<%@ page import="java.text.NumberFormat" %>
+<%@ page import="java.util.Locale" %>
+<%@ page import="dao.CategoryDAO" %>
+<%@ page import="model.Category" %>
+<%@ page import="java.sql.SQLException" %>
 
-<%-- Đặt tiêu đề cho trang này, header.jsp sẽ dùng biến này --%>
-<c:set var="pageTitle" value="Homepage" scope="request"/>
+<%
+    String pageTitle = (String) request.getAttribute("pageTitle");
+    if (pageTitle == null) {
+        pageTitle = "Homepage";
+    }
+    List<Product> newProducts = (List<Product>) request.getAttribute("newProducts");
+    List<Product> bestSellers = (List<Product>) request.getAttribute("bestSellers");
+    NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(new Locale("vi", "VN"));
+    request.setAttribute("pageTitle", pageTitle);
 
-<%-- Nhúng header --%>
+    Long menCategoryId = null;
+    Long womenCategoryId = null;
+    boolean showMenCategory = false;
+    boolean showWomenCategory = false;
+    String categoryError = null;
+    try {
+        CategoryDAO categoryDAO = new CategoryDAO();
+        List<Category> parentCategories = categoryDAO.getParentCategories();
+        if (parentCategories == null || parentCategories.isEmpty()) {
+            System.out.println("Warning: parentCategories is null or empty from CategoryDAO.getParentCategories() in home.jsp");
+            categoryError = "No categories available. Please contact the administrator.";
+            parentCategories = new ArrayList<>();
+        } else {
+            System.out.println("Parent Categories (home.jsp): " + parentCategories.size() + " found");
+            for (Category c : parentCategories) {
+                System.out.println("Parent Category [id=" + (c != null ? c.getCategoryId() : "null")
+                        + ", name=" + (c != null && c.getName() != null ? c.getName() : "null")
+                        + ", parentCategoryId=" + (c != null ? c.getParentCategoryId() : "null")
+                        + ", isActive=" + (c != null ? c.isActive() : "null") + "]");
+            }
+
+            List<Category> parentCats = parentCategories;
+
+            if (!parentCats.isEmpty()) {
+                menCategoryId = parentCats.get(0).getCategoryId();
+                showMenCategory = true;
+                if (parentCats.size() > 1) {
+                    womenCategoryId = parentCats.get(1).getCategoryId();
+                    showWomenCategory = true;
+                } else {
+                    System.out.println("Warning: Only one parent category found, hiding Women section");
+                    categoryError = "Only one category available.";
+                }
+            } else {
+                System.out.println("Warning: No parent categories found, hiding Men and Women sections");
+                categoryError = "No categories available. Please contact the administrator.";
+            }
+
+            System.out.println("Men Category ID: " + menCategoryId);
+            System.out.println("Women Category ID: " + womenCategoryId);
+        }
+    } catch (Exception e) {
+        System.err.println("Error fetching categories in home.jsp: " + e.getMessage());
+        e.printStackTrace();
+        showMenCategory = false;
+        showWomenCategory = false;
+        categoryError = "Error loading categories: " + e.getMessage();
+    }
+%>
+
 <jsp:include page="/WEB-INF/views/common/header.jsp" />
 
 <style>
-    /* CSS cho riêng trang chủ */
     .hero-banner {
         height: 85vh;
         background-size: cover;
@@ -114,6 +175,11 @@
         font-weight: 600;
         color: #111;
     }
+    .product-card .btn-container {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+    }
     .promo-banner {
         background-color: #e9ecef;
         padding: 4rem 1rem;
@@ -122,6 +188,11 @@
     .promo-banner h2 {
         font-weight: 700;
         font-size: 2.5rem;
+    }
+    .error-message {
+        color: red;
+        font-weight: 500;
+        margin-top: 20px;
     }
 </style>
 
@@ -135,56 +206,87 @@
 
 <div class="container my-5 py-5">
     <div class="row g-4">
+        <% if (showMenCategory) {%>
         <div class="col-md-6">
             <div class="category-showcase-card">
                 <img src="https://images.unsplash.com/photo-1552374196-1ab2a1c593e8?q=80&w=1974&auto=format&fit=crop" alt="Men's Fashion">
                 <div class="content">
                     <h2>Men</h2>
-                    <a href="#" class="btn btn-outline-light mt-2">Shop Collection</a>
+                    <a href="<%= request.getContextPath()%>/ProductList/men" class="btn btn-outline-light mt-2">Shop Collection</a>
                 </div>
             </div>
         </div>
+        <% } %>
+        <% if (showWomenCategory) {%>
         <div class="col-md-6">
             <div class="category-showcase-card">
                 <img src="https://images.unsplash.com/photo-1581338834647-b0fb40704e21?q=80&w=1974&auto=format&fit=crop" alt="Women's Fashion">
                 <div class="content">
                     <h2>Women</h2>
-                    <a href="#" class="btn btn-outline-light mt-2">Shop Collection</a>
+                    <a href="<%= request.getContextPath()%>/ProductList/women" class="btn btn-outline-light mt-2">Shop Collection</a>
                 </div>
             </div>
         </div>
+        <% } %>
+        <% if (!showMenCategory && !showWomenCategory && categoryError != null) {%>
+        <div class="col-12 text-center">
+            <p class="error-message"><%= categoryError%></p>
+        </div>
+        <% } %>
     </div>
 
     <div class="text-center mt-5 pt-5">
         <h2 class="section-title">New Arrivals</h2>
     </div>
     <div class="row">
-        <c:forEach items="${newProducts}" var="product">
-            <div class="col-lg-3 col-md-4 col-6">
-                <div class="product-card">
-                    <div class="product-image">
-                        <a href="#">
-                            <img src="${not empty product.imageUrl ? product.imageUrl : 'https://placehold.co/400x500/f0f0f0/333?text=No+Image'}" alt="${product.name}">
-                        </a>
-                    </div>
-                    <a href="#" class="product-title">${product.name}</a>
-                    <p class="product-price">
-                        <fmt:formatNumber value="${product.price}" type="currency" currencyCode="VND" />
-                    </p>
-                    <form action="${pageContext.request.contextPath}/customer/cart" method="post">
+        <%
+            if (newProducts != null && !newProducts.isEmpty()) {
+                for (Product product : newProducts) {
+                    String imageUrl = product.getImageUrl() != null ? product.getImageUrl() : "https://placehold.co/400x500/f0f0f0/333?text=No+Image";
+                    String name = product.getName() != null ? product.getName() : "Unknown Product";
+                    String price = product.getPrice() != null ? currencyFormat.format(product.getPrice()) : "N/A";
+                    Long variantId = product.getDefaultVariantId();
+                    boolean hasVariant = variantId != null && variantId != 0;
+        %>
+        <div class="col-lg-3 col-md-4 col-6">
+            <div class="product-card">
+                <div class="product-image">
+                    <a href="<%= request.getContextPath()%>/ProductList/detail?productId=<%= product.getProductId()%>">
+                        <img src="<%= imageUrl%>" alt="<%= name%>">
+                    </a>
+                </div>
+                <a href="<%= request.getContextPath()%>/ProductList/detail?productId=<%= product.getProductId()%>" class="product-title"><%= name%></a>
+                <p class="product-price"><%= price%></p>
+                <div class="btn-container">
+                    <form action="<%= request.getContextPath()%>/customer/cart" method="post">
                         <input type="hidden" name="action" value="add">
-                        <input type="hidden" name="variantId" value="${product.defaultVariantId}">
+                        <input type="hidden" name="variantId" value="<%= hasVariant ? variantId : 0%>">
                         <input type="hidden" name="quantity" value="1">
-                        <button type="submit" class="btn btn-dark btn-sm">Add to Cart</button>
+                        <button type="submit" class="btn btn-dark btn-sm" <%= hasVariant ? "" : "disabled"%>>Add to Cart</button>
+                    </form>
+                    <form action="<%= request.getContextPath()%>/customer/checkout" method="post">
+                        <input type="hidden" name="action" value="buy">
+                        <input type="hidden" name="variantId" value="<%= hasVariant ? variantId : 0%>">
+                        <input type="hidden" name="quantity" value="1">
+                        <button type="submit" class="btn btn-primary btn-sm" <%= hasVariant ? "" : "disabled"%>>Buy Now</button>
                     </form>
                 </div>
             </div>
-        </c:forEach>
+        </div>
+        <%
+            }
+        } else {
+        %>
+        <div class="col-12 text-center">
+            <p>No new products available.</p>
+        </div>
+        <%
+            }
+        %>
     </div>
     <div class="text-center mt-4">
         <a href="#" class="btn btn-outline-dark">View All New Arrivals</a>
     </div>
-
 </div>
 
 <div class="promo-banner my-5">
@@ -200,25 +302,50 @@
         <h2 class="section-title">Best Sellers</h2>
     </div>
     <div class="row">
-        <c:forEach items="${bestSellers}" var="product">
-            <div class="col-lg-3 col-md-4 col-6">
-                <div class="product-card">
-                    <div class="product-image">
-                        <a href="#"><img src="${not empty product.imageUrl ? product.imageUrl : 'https://placehold.co/400x500/e0e0e0/333?text=No+Image'}" alt="${product.name}"></a>
-                    </div>
-                    <a href="#" class="product-title">${product.name}</a>
-                    <p class="product-price">
-                        <fmt:formatNumber value="${product.price}" type="currency" currencyCode="VND" />
-                    </p>
-                    <form action="${pageContext.request.contextPath}/customer/cart" method="post">
+        <%
+            if (bestSellers != null && !bestSellers.isEmpty()) {
+                for (Product product : bestSellers) {
+                    String imageUrl = product.getImageUrl() != null ? product.getImageUrl() : "https://placehold.co/400x500/e0e0e0/333?text=No+Image";
+                    String name = product.getName() != null ? product.getName() : "Unknown Product";
+                    String price = product.getPrice() != null ? currencyFormat.format(product.getPrice()) : "N/A";
+                    Long variantId = product.getDefaultVariantId();
+                    boolean hasVariant = variantId != null && variantId != 0;
+        %>
+        <div class="col-lg-3 col-md-4 col-6">
+            <div class="product-card">
+                <div class="product-image">
+                    <a href="<%= request.getContextPath()%>/ProductList/detail?productId=<%= product.getProductId()%>">
+                        <img src="<%= imageUrl%>" alt="<%= name%>">
+                    </a>
+                </div>
+                <a href="<%= request.getContextPath()%>/ProductList/detail?productId=<%= product.getProductId()%>" class="product-title"><%= name%></a>
+                <p class="product-price"><%= price%></p>
+                <div class="btn-container">
+                    <form action="<%= request.getContextPath()%>/customer/cart" method="post">
                         <input type="hidden" name="action" value="add">
-                        <input type="hidden" name="variantId" value="${product.defaultVariantId}">
+                        <input type="hidden" name="variantId" value="<%= hasVariant ? variantId : 0%>">
                         <input type="hidden" name="quantity" value="1">
-                        <button type="submit" class="btn btn-dark btn-sm">Add to Cart</button>
+                        <button type="submit" class="btn btn-dark btn-sm" <%= hasVariant ? "" : "disabled"%>>Add to Cart</button>
+                    </form>
+                    <form action="<%= request.getContextPath()%>/customer/checkout" method="post">
+                        <input type="hidden" name="action" value="buy">
+                        <input type="hidden" name="variantId" value="<%= hasVariant ? variantId : 0%>">
+                        <input type="hidden" name="quantity" value="1">
+                        <button type="submit" class="btn btn-primary btn-sm" <%= hasVariant ? "" : "disabled"%>>Buy Now</button>
                     </form>
                 </div>
             </div>
-        </c:forEach>
+        </div>
+        <%
+            }
+        } else {
+        %>
+        <div class="col-12 text-center">
+            <p>No best sellers available.</p>
+        </div>
+        <%
+            }
+        %>
     </div>
 </div>
 

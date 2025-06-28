@@ -5,30 +5,31 @@ import java.util.Date;
 import java.util.List;
 
 public class Product {
-
     private Long productId;
     private String name;
     private String description;
     private BigDecimal price;
     private Category category;
+    private Long categoryId;
     private Brand brand;
+    private Long brandId;
     private String material;
     private String status;
     private Date createdAt;
     private Date updatedAt;
     private List<ProductVariant> variants;
     private List<ProductImage> images;
-
-    // ===== TRƯỜNG MỚI ĐƯỢC THÊM VÀO =====
-    private String imageUrl; // Để lưu ảnh đại diện, tiện cho việc hiển thị
-    private long defaultVariantId; // Để lưu ID biến thể mặc định cho nút "Add to Cart"
+    private String imageUrl;
+    private Long defaultVariantId;
+    private BigDecimal defaultVariantPrice;
+    private String formattedPrice;
 
     public Product() {
     }
 
     public Product(Long productId, String name, String description, BigDecimal price,
-            Category category, Brand brand, String material, String status,
-            Date createdAt, Date updatedAt) {
+                   Category category, Brand brand, String material, String status,
+                   Date createdAt, Date updatedAt) {
         this.productId = productId;
         this.name = name;
         this.description = description;
@@ -41,25 +42,28 @@ public class Product {
         this.updatedAt = updatedAt;
     }
 
-    // ===== GETTER VÀ SETTER CHO 2 TRƯỜNG MỚI =====
-    public String getImageUrl() {
-        return imageUrl;
-    }
-
-    public void setImageUrl(String imageUrl) {
+    public Product(Long productId, String name, String description, BigDecimal price,
+                   Category category, Brand brand, String material, String status,
+                   Date createdAt, Date updatedAt, List<ProductVariant> variants,
+                   List<ProductImage> images, String imageUrl, Long defaultVariantId,
+                   BigDecimal defaultVariantPrice) {
+        this.productId = productId;
+        this.name = name;
+        this.description = description;
+        this.price = price;
+        this.category = category;
+        this.brand = brand;
+        this.material = material;
+        this.status = status;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
+        this.variants = variants;
+        this.images = images;
         this.imageUrl = imageUrl;
-    }
-
-    public long getDefaultVariantId() {
-        return defaultVariantId;
-    }
-
-    public void setDefaultVariantId(long defaultVariantId) {
         this.defaultVariantId = defaultVariantId;
+        this.defaultVariantPrice = defaultVariantPrice;
     }
 
-    // ===== CÁC GETTER, SETTER CŨ GIỮ NGUYÊN =====
-    // ... (Toàn bộ các getter và setter cũ của bạn ở đây) ...
     public Long getProductId() {
         return productId;
     }
@@ -100,12 +104,28 @@ public class Product {
         this.category = category;
     }
 
+    public Long getCategoryId() {
+        return categoryId;
+    }
+
+    public void setCategoryId(Long categoryId) {
+        this.categoryId = categoryId;
+    }
+
     public Brand getBrand() {
         return brand;
     }
 
     public void setBrand(Brand brand) {
         this.brand = brand;
+    }
+
+    public Long getBrandId() {
+        return brandId;
+    }
+
+    public void setBrandId(Long brandId) {
+        this.brandId = brandId;
     }
 
     public String getMaterial() {
@@ -156,8 +176,38 @@ public class Product {
         this.images = images;
     }
 
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
+    }
+
+    public Long getDefaultVariantId() {
+        return defaultVariantId;
+    }
+
+    public void setDefaultVariantId(Long defaultVariantId) {
+        this.defaultVariantId = defaultVariantId;
+    }
+
+    public BigDecimal getDefaultVariantPrice() {
+        return defaultVariantPrice;
+    }
+
+    public void setDefaultVariantPrice(BigDecimal defaultVariantPrice) {
+        this.defaultVariantPrice = defaultVariantPrice;
+    }
+    public String getFormattedPrice() {
+        return formattedPrice;
+    }
+    public void setFormattedPrice(String formattedPrice) {
+        this.formattedPrice = formattedPrice;
+    }
+
     public String getSeoUrl() {
-        String slug = name.toLowerCase().replaceAll("[^a-z0-9]+", "-");
-        return "/product/" + productId + "/" + slug;
+        String slug = name != null ? name.toLowerCase().replaceAll("[^a-z0-9]+", "-") : "";
+        return productId != null ? "/product/" + productId + "/" + slug : "#";
     }
 }

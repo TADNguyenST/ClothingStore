@@ -14,6 +14,9 @@ public class CategoryDAO extends DBContext {
         String sql = "INSERT INTO categories (name, description, parent_category_id, is_active, created_at) "
                 + "VALUES (?, ?, ?, ?, GETDATE())";
         try {
+            if (conn == null) {
+                throw new SQLException("Database connection is null");
+            }
             PreparedStatement ps = conn.prepareStatement(sql);
             System.out.println("Inserting: name=" + name + ", parentId=" + parentCategoryId + ", isActive=" + isActive);
             ps.setString(1, name);
@@ -36,6 +39,9 @@ public class CategoryDAO extends DBContext {
         String sql = "SELECT category_id, name, description, parent_category_id, is_active, created_at "
                 + "FROM categories WHERE category_id = ?";
         try {
+            if (conn == null) {
+                throw new SQLException("Database connection is null");
+            }
             PreparedStatement ps = conn.prepareStatement(sql);
             ps.setLong(1, categoryId);
             ResultSet rs = ps.executeQuery();
@@ -62,6 +68,9 @@ public class CategoryDAO extends DBContext {
     public boolean deleteCategory(long categoryId) {
         String sql = "DELETE FROM categories WHERE category_id = ?";
         try {
+            if (conn == null) {
+                throw new SQLException("Database connection is null");
+            }
             String checkSql = "SELECT COUNT(*) FROM products WHERE category_id = ?";
             PreparedStatement psCheck = conn.prepareStatement(checkSql);
             psCheck.setLong(1, categoryId);
@@ -82,6 +91,9 @@ public class CategoryDAO extends DBContext {
     public boolean updateCategory(long id, String name, String description, Long parentCategoryId, boolean isActive) {
         String sql = "UPDATE categories SET name = ?, description = ?, parent_category_id = ?, is_active = ? WHERE category_id = ?";
         try {
+            if (conn == null) {
+                throw new SQLException("Database connection is null");
+            }
             PreparedStatement ps = conn.prepareStatement(sql);
             ps.setString(1, name);
             ps.setString(2, description);
@@ -102,8 +114,12 @@ public class CategoryDAO extends DBContext {
 
     public List<Category> getAllCategories() {
         List<Category> list = new ArrayList<>();
-        String sql = "SELECT category_id, name, description, parent_category_id, is_active, created_at FROM categories";
+        String sql = "SELECT category_id, name, description, parent_category_id, is_active, created_at "
+                + "FROM categories WHERE is_active = 1";
         try {
+            if (conn == null) {
+                throw new SQLException("Database connection is null");
+            }
             PreparedStatement ps = conn.prepareStatement(sql);
             ResultSet rs = ps.executeQuery();
             while (rs.next()) {
@@ -124,6 +140,37 @@ public class CategoryDAO extends DBContext {
             return list;
         } catch (SQLException e) {
             throw new RuntimeException("Error fetching categories: " + e.getMessage(), e);
+        }
+    }
+
+    public List<Category> getParentCategories() {
+        List<Category> list = new ArrayList<>();
+        String sql = "SELECT category_id, name, description, parent_category_id, is_active, created_at "
+                    + "FROM categories WHERE parent_category_id IS NULL AND is_active = 1";
+        try {
+            if (conn == null) {
+                throw new SQLException("Database connection is null");
+            }
+            PreparedStatement ps = conn.prepareStatement(sql);
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                Long parentCategoryId = rs.getLong("parent_category_id");
+                if (rs.wasNull()) {
+                    parentCategoryId = null;
+                }
+                Category category = new Category(
+                        rs.getLong("category_id"),
+                        rs.getString("name"),
+                        rs.getString("description"),
+                        parentCategoryId,
+                        rs.getBoolean("is_active"),
+                        rs.getTimestamp("created_at")
+                );
+                list.add(category);
+            }
+            return list;
+        } catch (SQLException e) {
+            throw new RuntimeException("Error fetching parent categories: " + e.getMessage(), e);
         }
     }
 
@@ -148,6 +195,9 @@ public class CategoryDAO extends DBContext {
         }
 
         try {
+            if (conn == null) {
+                throw new SQLException("Database connection is null");
+            }
             PreparedStatement ps = conn.prepareStatement(sql.toString());
             for (int i = 0; i < params.size(); i++) {
                 ps.setObject(i + 1, params.get(i));
@@ -173,6 +223,7 @@ public class CategoryDAO extends DBContext {
             throw new RuntimeException("Error searching categories: " + e.getMessage(), e);
         }
     }
+    
 
     public static void main(String[] args) {
         CategoryDAO dao = new CategoryDAO();
