@@ -1,7 +1,25 @@
 <%-- ================ FILE: /WEB-INF/views/common/header.jsp ================ --%>
+<%@page import="dao.CategoryDAO"%>
+<%@page import="java.util.ArrayList"%>
+<%@page import="java.util.List"%>
+<%@page import="model.Category"%>
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
-
+<%
+    CategoryDAO cateDAO = new CategoryDAO();
+    List<Category> allCategories = cateDAO.getAllCategories();
+    List<Category> parentCategories = new ArrayList<>();
+    if (allCategories != null) {
+        for (Category cat : allCategories) {
+            if (cat.getParentCategoryId() == null) {
+                parentCategories.add(cat);
+            }
+        }
+    }
+    // Get selected filter values from request parameters
+    String selectedParentCategoryId = request.getParameter("parentCategoryId");
+    String selectedCategoryId = request.getParameter("categoryId");
+%>
 <!DOCTYPE html>
 <html lang="en">
     <head>
@@ -91,6 +109,17 @@
                 border: 1px solid #f0f0f0;
                 box-shadow: 0 10px 20px rgba(0,0,0,0.05);
             }
+            /* CSS cho thanh tìm kiếm autocomplete */
+            .suggestion-item:hover {
+                background-color: #f5f5f5;
+            }
+            .search-bar input {
+                border-radius: 0;
+                padding: 0.5rem;
+            }
+            #suggestions {
+                box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            }
         </style>
     </head>
     <body class="d-flex flex-column min-vh-100">
@@ -107,35 +136,55 @@
                         <span class="navbar-toggler-icon"></span>
                     </button>
                     <div class="collapse navbar-collapse" id="mainNavbar">
+                        <%-- FILE: /WEB-INF/views/common/header.jsp (chỉ phần menu) --%>
                         <ul class="navbar-nav mx-auto mb-2 mb-lg-0">
                             <li class="nav-item">
                                 <a class="nav-link" href="${pageContext.request.contextPath}/home">Home</a>
                             </li>
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" id="menDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Men</a>
-                                <ul class="dropdown-menu" aria-labelledby="menDropdown">
-                                    <li><a class="dropdown-item" href="#">T-Shirts</a></li>
-                                    <li><a class="dropdown-item" href="#">Jeans</a></li>
-                                    <li><a class="dropdown-item" href="#">Jackets & Coats</a></li>
+                            <%
+                                if (parentCategories != null && !parentCategories.isEmpty()) {
+                                    for (Category parentCategory : parentCategories) {
+                                        String selected = selectedParentCategoryId != null && selectedParentCategoryId.equals(String.valueOf(parentCategory.getCategoryId())) ? "active" : "";
+                            %>
+                            <li class="nav-item dropdown <%= selected%>">
+                                <a class="nav-link dropdown-toggle" href="#" id="<%= parentCategory.getName().toLowerCase().replaceAll(" ", "")%>Dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <%= parentCategory.getName()%>
+                                </a>
+                                <ul class="dropdown-menu" aria-labelledby="<%= parentCategory.getName().toLowerCase().replaceAll(" ", "")%>Dropdown">
+                                    <%
+                                        List<Category> subCategories = new ArrayList<>();
+                                        for (Category cat : allCategories) {
+                                            if (cat.getParentCategoryId() != null && cat.getParentCategoryId().equals(parentCategory.getCategoryId()) && cat.isActive()) {
+                                                subCategories.add(cat);
+                                            }
+                                        }
+                                        if (!subCategories.isEmpty()) {
+                                            for (Category subCategory : subCategories) {
+                                    %>
+                                    <li><a class="dropdown-item" href="${pageContext.request.contextPath}/ProductList?categoryId=<%= subCategory.getCategoryId()%>&parentCategoryId=<%= parentCategory.getCategoryId()%>"><%= subCategory.getName()%></a></li>
+                                        <%
+                                            }
+                                        %>
                                     <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item" href="#">Shop All Men</a></li>
+                                        <%
+                                            }
+                                        %>
+                                    <li><a class="dropdown-item" href="${pageContext.request.contextPath}/ProductList?parentCategoryId=<%= parentCategory.getCategoryId()%>">Shop All <%= parentCategory.getName()%></a></li>
                                 </ul>
                             </li>
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" id="womenDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Women</a>
-                                <ul class="dropdown-menu" aria-labelledby="womenDropdown">
-                                    <li><a class="dropdown-item" href="#">Dresses</a></li>
-                                    <li><a class="dropdown-item" href="#">Tops</a></li>
-                                    <li><a class="dropdown-item" href="#">Skirts</a></li>
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item" href="#">Shop All Women</a></li>
-                                </ul>
-                            </li>
-                            <li class="nav-item"><a class="nav-link" href="#">Sale</a></li>
-                            <li class="nav-item"><a class="nav-link" href="#">Blog</a></li>
+                            <%
+                                    }
+                                }
+                            %>
+                            <li class="nav-item"><a class="nav-link" href="${pageContext.request.contextPath}/ProductList/sale">Sale</a></li>
+                            <li class="nav-item"><a class="nav-link" href="${pageContext.request.contextPath}/blog">Blog</a></li>
                         </ul>
                         <div class="d-flex align-items-center header-actions">
-                            <a href="#" class="nav-link d-none d-lg-inline-block"><i class="fas fa-search"></i></a>
+                            <%-- Thanh tìm kiếm autocomplete --%>
+                            <div class="search-bar position-relative">
+                                <input type="text" id="searchInput" class="form-control" placeholder="Tìm kiếm sản phẩm..." style="width: 200px;">
+                                <div id="suggestions" class="position-absolute w-100" style="border: 1px solid #eee; background: white; display: none; z-index: 1000; max-height: 300px; overflow-y: auto;"></div>
+                            </div>
                             <div class="nav-item dropdown user-dropdown">
                                 <a class="nav-link dropdown-toggle" href="#" id="userAccountDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="fas fa-user"></i></a>
                                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userAccountDropdown">
@@ -165,6 +214,85 @@
                     </div>
                 </div>
             </nav>
+            <%-- Script jQuery cho autocomplete --%>
+            <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+            <script>
+            $(document).ready(function() {
+                $("#searchInput").on("input", function() {
+                    var keyword = $(this).val().trim();
+                    if (keyword.length >= 1) {
+                        $.ajax({
+                            url: "${pageContext.request.contextPath}/ProductList",
+                            type: "GET",
+                            data: { action: "autocomplete", keyword: keyword },
+                            success: function(data) {
+                                $("#suggestions").show().html(data);
+                            },
+                            error: function() {
+                                $("#suggestions").hide();
+                            }
+                        });
+                    } else {
+                        $("#suggestions").hide();
+                    }
+                });
+
+                // Ẩn gợi ý khi click ra ngoài
+                $(document).click(function(e) {
+                    if (!$(e.target).closest('#searchInput, #suggestions').length) {
+                        $("#suggestions").hide();
+                    }
+                });
+            });
+            </script>
         </header>
 
         <main class="flex-grow-1">
+            <script>
+                const allCategories = [
+                <%
+                    if (allCategories != null) {
+                        for (Category cat : allCategories) {
+                            if (cat.getParentCategoryId() != null) { // Only include child categories
+                %>
+                    {
+                        id: <%= cat.getCategoryId()%>,
+                        name: "<%= cat.getName()%>",
+                        parentId: <%= cat.getParentCategoryId()%>
+                    },
+                <%
+                            }
+                        }
+                    }
+                %>
+                ];
+
+                // Function to populate child category dropdown
+                function populateChildCategories(parentId, selectedCategoryId) {
+                    const categorySelect = document.getElementById('categoryId');
+                    // Clear existing options
+                    categorySelect.innerHTML = '<option value="">All Child Categories</option>';
+
+                    // Filter child categories based on parentId
+                    const childCategories = allCategories.filter(cat => cat.parentId == parentId);
+
+                    // Add new options
+                    childCategories.forEach(cat => {
+                        const option = document.createElement('option');
+                        option.value = cat.id;
+                        option.textContent = cat.name;
+                        if (cat.id == selectedCategoryId) {
+                            option.selected = true;
+                        }
+                        categorySelect.appendChild(option);
+                    });
+                }
+
+                // Initialize child categories on page load if a parent category is selected
+                document.addEventListener('DOMContentLoaded', function () {
+                    const parentCategoryId = document.getElementById('parentCategoryId')?.value;
+                    if (parentCategoryId) {
+                        populateChildCategories(parentCategoryId, '<%= selectedCategoryId != null ? selectedCategoryId : ""%>');
+                    }
+                });
+            </script>

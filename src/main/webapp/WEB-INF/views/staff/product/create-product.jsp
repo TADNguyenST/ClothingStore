@@ -67,7 +67,7 @@
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">Price</label>
-                                    <input type="text" name="price" class="form-control" placeholder="e.g., 1.000.000,00" required>
+                                    <input type="text" name="price" min="1000" max="1000000" class="form-control" placeholder="e.g., 1.000.000" required>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">Parent Category</label>
@@ -122,7 +122,7 @@
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">Material</label>
-                                    <input type="text" name="material" class="form-control">
+                                    <input type="text" name="material" class="form-control" required>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">Status</label>
