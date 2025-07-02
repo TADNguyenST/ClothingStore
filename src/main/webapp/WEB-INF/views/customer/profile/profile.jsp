@@ -1,18 +1,20 @@
-<%--
-    File: /WEB-INF/views/customer/profile.jsp
-    Description: Trang My Account tích hợp giao diện đẹp và sidebar điều hướng.
+<%-- 
+    Document   : profile
+    Created on : Jun 23, 2025, 2:12:53 AM
+    Author     : Khoa
 --%>
+
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<fmt:setLocale value="en_US" />
 
 <c:set var="pageTitle" value="My Account" scope="request"/>
 <jsp:include page="/WEB-INF/views/common/header.jsp" />
 
 <style>
-    /* Toàn bộ CSS từ file profile.jsp mới của Khoa */
     .profile-section-container {
-        background: #f4f7f6; /* Nền nhẹ cho toàn bộ khu vực */
+        background: #f4f7f6;
         padding: 2rem 0;
     }
     .profile-card {
@@ -43,10 +45,12 @@
         font-size: 1.5rem;
         font-weight: 600;
         color: #333;
+        margin-bottom: 0.5rem;
     }
     .profile-subtitle {
         color: #777;
         font-size: 0.95rem;
+        margin-bottom: 1.5rem;
     }
     .section-title {
         font-size: 1rem;
@@ -150,47 +154,58 @@
             <div class="col-lg-9">
                 <div class="profile-card">
                     <div class="profile-header">
-                        <div class="profile-avatar">
-                            <%-- Lấy ký tự đầu của tên làm avatar --%>
-                            <c:if test="${not empty user.fullName}">${user.fullName.substring(0,1)}</c:if>
+                       <c:choose>
+    <c:when test="${not empty customer.avatarUrl}">
+        <img src="${customer.avatarUrl}" alt="Avatar"
+             style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 0 auto 1rem; display: block;" />
+    </c:when>
+    <c:otherwise>
+        <div class="profile-avatar">
+            <c:if test="${not empty user.fullName}">${user.fullName.substring(0,1)}</c:if>
+        </div>
+    </c:otherwise>
+</c:choose>
+                        <h2>${user.fullName}</h2>
+                        
+                        <div class="loyalty-points">
+                            <div class="points-label">Loyalty Points</div>
+                            <div class="points-value">${customer.loyaltyPoints}</div>
+                        </div>
+                        
+                        <h3 class="section-title">Account Information</h3>
+                        <div class="profile-info">
+                            <div class="info-item">
+                                <span class="info-label">Phone Number</span>
+                                <p class="info-value">${not empty user.phoneNumber ? user.phoneNumber : 'Not set'}</p>
                             </div>
-                            <h2>${user.fullName}</h2>
-                        <p class="profile-subtitle">${user.email}</p>
-                    </div>
-
-                    <div class="loyalty-points">
-                        <div class="points-label">Loyalty Points</div>
-                        <div class="points-value">${customer.loyaltyPoints}</div>
-                    </div>
-
-                    <h3 class="section-title">Account Information</h3>
-                    <div class="profile-info">
-                        <div class="info-item">
-                            <span class="info-label">Phone Number</span>
-                            <p class="info-value">${not empty user.phoneNumber ? user.phoneNumber : 'Not set'}</p>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">Gender</span>
-                            <p class="info-value">${not empty customer.gender ? customer.gender : 'Not set'}</p>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">Birth Date</span>
-                            <p class="info-value">
-                                <c:if test="${not empty customer.birthDate}">
-                                <fmt:formatDate value="${customer.birthDate}" pattern="dd MMMM, yyyy" />
-                            </c:if>
-                            <c:if test="${empty customer.birthDate}">Not set</c:if>
+                            <div class="info-item">
+                                <span class="info-label">Gender</span>
+                                <p class="info-value">${not empty customer.gender ? customer.gender : 'Not set'}</p>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Email</span>
+                                <p class="info-value">${user.email}</p>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Birth Date</span>
+                                <p class="info-value">
+                                    <c:if test="${not empty customer.birthDate}">
+                                        <fmt:formatDate value="${customer.birthDate}" pattern="dd MMMM, yyyy" />
+                                    </c:if>
+                                    <c:if test="${empty customer.birthDate}">Not set</c:if>
                                 </p>
                             </div>
                             <div class="info-item">
                                 <span class="info-label">Member Since</span>
                                 <p class="info-value"><fmt:formatDate value="${user.createdAt}" pattern="dd MMMM, yyyy" /></p>
+                            </div>
                         </div>
                     </div>
 
                     <div class="profile-actions">
-                        <a href="${pageContext.request.contextPath}/customer/edit-profile" class="btn-profile btn-primary">Edit Profile</a>
-                        <a href="${pageContext.request.contextPath}/customer/change-password" class="btn-profile btn-outline">Change Password</a>
+                        <a href="${pageContext.request.contextPath}/EditProfile" class="btn-profile btn-primary">Edit Profile</a>
+                        <a href="${pageContext.request.contextPath}/ChangePassword" class="btn-profile btn-outline">Change Password</a>
                     </div>
                 </div>
             </div>

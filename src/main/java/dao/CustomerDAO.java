@@ -25,6 +25,7 @@ public class CustomerDAO {
                 customer.setBirthDate(rs.getDate("birth_date"));
                 customer.setGender(rs.getString("gender"));
                 customer.setCreatedAt(rs.getTimestamp("created_at"));
+                customer.setAvatarUrl(rs.getString("avatar_url"));
                 return customer;
             }
         } catch (Exception e) {
@@ -58,35 +59,36 @@ public class CustomerDAO {
     }
 
     //Edit Profile
-    public boolean updateCustomerProfile(Users user, Customer customer) {
-        String updateUserSql = "UPDATE users SET full_name = ?, phone_number = ?, updated_at = GETDATE() WHERE user_id = ?";
-        String updateCustomerSql = "UPDATE customers SET gender = ?, birth_date = ? WHERE user_id = ?";
-        try ( Connection conn = new DBContext().getConnection()) {
-            conn.setAutoCommit(false);
+public boolean updateCustomerProfile(Users user, Customer customer) {
+    String updateUserSql = "UPDATE users SET full_name = ?, phone_number = ?, updated_at = GETDATE() WHERE user_id = ?";
+    String updateCustomerSql = "UPDATE customers SET gender = ?, birth_date = ?, avatar_url = ? WHERE user_id = ?";
+    try (Connection conn = new DBContext().getConnection()) {
+        conn.setAutoCommit(false);
 
-            try (
-                     PreparedStatement psUser = conn.prepareStatement(updateUserSql);  PreparedStatement psCustomer = conn.prepareStatement(updateCustomerSql)) {
-                // Update users
-                psUser.setString(1, user.getFullName());
-                psUser.setString(2, user.getPhoneNumber());
-                psUser.setLong(3, user.getUserId());
-                psUser.executeUpdate();
+        try (
+            PreparedStatement psUser = conn.prepareStatement(updateUserSql);
+            PreparedStatement psCustomer = conn.prepareStatement(updateCustomerSql)) {
 
-                // Update customers
-                psCustomer.setString(1, customer.getGender());
-                psCustomer.setDate(2, customer.getBirthDate());
-                psCustomer.setLong(3, customer.getUserId());
-                psCustomer.executeUpdate();
+            psUser.setString(1, user.getFullName());
+            psUser.setString(2, user.getPhoneNumber());
+            psUser.setLong(3, user.getUserId());
+            psUser.executeUpdate();
 
-                conn.commit();
-                return true;
-            } catch (Exception e) {
-                conn.rollback();
-                e.printStackTrace();
-            }
+            psCustomer.setString(1, customer.getGender());
+            psCustomer.setDate(2, customer.getBirthDate());
+            psCustomer.setString(3, customer.getAvatarUrl());
+            psCustomer.setLong(4, customer.getUserId());
+            psCustomer.executeUpdate();
+
+            conn.commit();
+            return true;
         } catch (Exception e) {
+            conn.rollback();
             e.printStackTrace();
         }
-        return false;
+    } catch (Exception e) {
+        e.printStackTrace();
     }
+    return false;
+}
 }
