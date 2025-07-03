@@ -312,7 +312,7 @@
 
                 <div class="login-footer">
                     <p>Don't have an account? <a href="${pageContext.request.contextPath}/Register">Create Account</a></p>
-                    <p><a href="${pageContext.request.contextPath}/ResetPassword">Forgot Password?</a></p>
+                    <p><a href="${pageContext.request.contextPath}/ForgotPassword">Forgot Password?</a></p>
                 </div>
             </div>
         </div>

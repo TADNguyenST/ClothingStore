@@ -29,17 +29,7 @@ public class UserDAO extends DBContext {
             ResultSet rs = ps.executeQuery();
 
             if (rs.next()) {
-                Users user = new Users();
-                user.setUserId(rs.getLong("user_id"));
-                user.setEmail(rs.getString("email"));
-                user.setPassword(rs.getString("password"));
-                user.setFullName(rs.getString("full_name"));
-                user.setPhoneNumber(rs.getString("phone_number"));
-                user.setStatus(rs.getString("status"));
-                user.setRole(rs.getString("role"));
-                user.setCreatedAt(rs.getTimestamp("created_at"));
-                user.setUpdatedAt(rs.getTimestamp("updated_at"));
-                return user;
+                return map(rs);                 // gom vào hàm map()
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -128,4 +118,35 @@ public class UserDAO extends DBContext {
         }
         return false;
     }
+
+    //Forgot Password 
+    public Users getUserByEmail(String email) {
+        String sql = "SELECT * FROM users WHERE email = ?";
+        try ( Connection c = getConnection();  PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setString(1, email);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                return map(rs);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    // ====== Mapping ResultSet -=> Users ======
+    private Users map(ResultSet rs) throws SQLException {
+        Users u = new Users();
+        u.setUserId(rs.getLong("user_id"));
+        u.setEmail(rs.getString("email"));
+        u.setPassword(rs.getString("password"));
+        u.setFullName(rs.getString("full_name"));
+        u.setPhoneNumber(rs.getString("phone_number"));
+        u.setStatus(rs.getString("status"));
+        u.setRole(rs.getString("role"));
+        u.setCreatedAt(rs.getTimestamp("created_at"));
+        u.setUpdatedAt(rs.getTimestamp("updated_at"));
+        return u;
+    }
+//Login with Google
 }
