@@ -53,7 +53,7 @@ public class LoginController extends HttpServlet {
             }
 
             UserDAO dao = new UserDAO();
-            Users user = dao.checkLogin(email, password); // KHÔNG MÃ HÓA password
+            Users user = dao.checkLogin(email, password); // Truyền password thô, hash ở DAO
 
             if (user != null && "Customer".equalsIgnoreCase(user.getRole()) && "Active".equalsIgnoreCase(user.getStatus())) {
                 HttpSession session = request.getSession();

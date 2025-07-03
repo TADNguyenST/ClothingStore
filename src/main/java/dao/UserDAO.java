@@ -12,6 +12,7 @@ import java.sql.Statement;
 import model.Customer;
 import model.Users;
 import util.DBContext;
+import util.PasswordUtil;
 
 public class UserDAO extends DBContext {
 //Login
@@ -20,8 +21,11 @@ public class UserDAO extends DBContext {
         String sql = "SELECT * FROM users WHERE email = ? AND password = ? AND status = 'Active'";
         try ( Connection conn = getConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
 
+            // Mã hóa mật khẩu trước khi kiểm tra
+            String hashedPassword = PasswordUtil.hashPassword(password);
+
             ps.setString(1, email);
-            ps.setString(2, password);
+            ps.setString(2, hashedPassword);
             ResultSet rs = ps.executeQuery();
 
             if (rs.next()) {
@@ -54,12 +58,16 @@ public class UserDAO extends DBContext {
         }
         return false;
     }
-// Change Password
 
+// Change Password
     public boolean updatePassword(long userId, String newPassword) {
         String sql = "UPDATE users SET password = ?, updated_at = GETDATE() WHERE user_id = ?";
         try ( Connection conn = getConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, newPassword);
+
+            // Mã hóa mật khẩu mới trước khi lưu
+            String hashedPassword = PasswordUtil.hashPassword(newPassword);
+
+            ps.setString(1, hashedPassword);
             ps.setLong(2, userId);
             return ps.executeUpdate() > 0;
         } catch (Exception e) {
@@ -67,6 +75,7 @@ public class UserDAO extends DBContext {
         }
         return false;
     }
+
     // Dang ky
     private final DBContext dbContext = new DBContext();
 
@@ -77,9 +86,12 @@ public class UserDAO extends DBContext {
 
         try ( Connection conn = dbContext.getConnection();  PreparedStatement psUser = conn.prepareStatement(insertUser, Statement.RETURN_GENERATED_KEYS)) {
 
+            // Mã hóa mật khẩu trước khi lưu vào DB
+            String hashedPassword = PasswordUtil.hashPassword(user.getPassword());
+
             // Insert users
             psUser.setString(1, user.getEmail());
-            psUser.setString(2, user.getPassword());
+            psUser.setString(2, hashedPassword);
             psUser.setString(3, user.getFullName());
             psUser.setString(4, user.getPhoneNumber());
             int rows = psUser.executeUpdate();

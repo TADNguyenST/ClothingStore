@@ -19,7 +19,7 @@ import model.Users;
  *
  * @author Khoa
  */
-@WebServlet(name = "ChangePasswordController", urlPatterns = {"/customer/change-password"})
+@WebServlet(name = "ChangePasswordController", urlPatterns = {"/ChangePassword"})
 public class ChangePasswordController extends HttpServlet {
 
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
@@ -92,7 +92,7 @@ public class ChangePasswordController extends HttpServlet {
 
     @Override
     public String getServletInfo() {
-        return "Short description";
+        return "ChangePassword";
     }
 
 }

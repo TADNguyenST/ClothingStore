@@ -3,481 +3,412 @@
     Created on : Jun 23, 2025, 2:12:53 AM
     Author     : Khoa
 --%>
-
-<%-- 
-    Document   : edit-profile
-    Created on : Jun 23, 2025, 2:12:53 AM
-    Author     : Khoa
---%>
-<%@ page contentType="text/html;charset=UTF-8" language="java" %>
-<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
-
-<%-- Đặt tiêu đề cho trang này, header.jsp sẽ dùng biến này --%>
-<c:set var="pageTitle" value="Edit Profile" scope="request"/>
-
-<%-- Nhúng header --%>
+<%@ page contentType="text/html;charset=UTF-8" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <jsp:include page="/WEB-INF/views/common/header.jsp" />
 
 <style>
-    /* CSS cho trang edit profile - Compact Responsive Design */
-    .edit-profile-container {
-        min-height: 70vh;
-        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-        padding: 1.5rem 1rem;
-    }
-
-    .edit-profile-card {
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-        padding: 1.5rem;
-        position: relative;
-        overflow: hidden;
-        margin: 0 auto;
-        max-width: 600px;
-        width: 100%;
-    }
-
-    .edit-profile-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 3px;
-        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-    }
-
-    .edit-profile-header {
-        text-align: center;
-        margin-bottom: 1.5rem;
-        position: relative;
-    }
-
-    .edit-profile-avatar {
-        width: 50px;
-        height: 50px;
-        border-radius: 50%;
+    body {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        margin: 0;
+        padding: 0;
+    }
+
+    .edit-profile-container {
+        min-height: calc(100vh - 120px);
+        padding: 20px 0;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+    }
+
+    .profile-card {
+        display: flex;
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        max-width: 900px;
+        width: 100%;
+        margin: 0 20px;
+    }
+
+    .profile-left {
+        flex: 0 0 400px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 30px 20px;
+        color: white;
+        position: relative;
+    }
+
+    .avatar-container {
+        position: relative;
+        margin-bottom: 20px;
+    }
+
+    .avatar {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        border: 3px solid rgba(255, 255, 255, 0.3);
+        object-fit: cover;
+        background: rgba(255, 255, 255, 0.1);
         display: flex;
         align-items: center;
         justify-content: center;
-        margin: 0 auto 0.8rem;
-        font-size: 1.4rem;
+        font-size: 40px;
+        color: rgba(255, 255, 255, 0.7);
+    }
+
+    .change-avatar-btn {
+        margin-top: 10px;
+        background: rgba(255, 255, 255, 0.2);
+        border: 2px dashed rgba(255, 255, 255, 0.5);
         color: white;
+        padding: 6px 12px;
+        border-radius: 15px;
+        font-size: 11px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(10px);
+        display: block;
+        text-align: center;
+    }
+
+    .change-avatar-btn:hover {
+        background: rgba(255, 255, 255, 0.3);
+        border-color: rgba(255, 255, 255, 0.8);
+    }
+
+    .profile-title {
+        font-size: 24px;
         font-weight: 700;
-        text-transform: uppercase;
-        box-shadow: 0 6px 15px rgba(102, 126, 234, 0.3);
+        margin-bottom: 6px;
+        text-align: center;
     }
 
-    .edit-profile-header h2 {
-        font-size: clamp(1.1rem, 3.5vw, 1.4rem);
-        font-weight: 700;
-        color: #333;
-        text-transform: uppercase;
-        letter-spacing: 0.8px;
-        margin-bottom: 0.3rem;
+    .profile-subtitle {
+        font-size: 14px;
+        opacity: 0.8;
+        text-align: center;
+        font-weight: 300;
     }
 
-    .edit-profile-subtitle {
-        color: #666;
-        font-size: clamp(0.8rem, 2vw, 0.9rem);
-        margin: 0;
-    }
-
-    .edit-form {
-        background: #f8f9fa;
-        border-radius: 8px;
-        padding: 1.2rem;
-        margin-bottom: 1rem;
+    .profile-right {
+        flex: 1;
+        padding: 30px 40px;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        overflow-y: auto;
     }
 
     .form-group {
-        margin-bottom: 1.2rem;
+        margin-bottom: 20px;
     }
 
     .form-label {
         display: block;
         font-weight: 600;
-        color: #333;
+        color: #374151;
+        margin-bottom: 6px;
+        font-size: 13px;
         text-transform: uppercase;
-        font-size: clamp(0.7rem, 1.8vw, 0.8rem);
-        letter-spacing: 0.4px;
-        margin-bottom: 0.4rem;
+        letter-spacing: 0.5px;
     }
 
-    .form-input, .form-select {
+    .form-input {
         width: 100%;
-        padding: 0.7rem 0.8rem;
-        border: 2px solid #e9ecef;
-        border-radius: 6px;
-        font-size: clamp(0.9rem, 2.2vw, 1rem);
-        color: #555;
+        padding: 12px 16px;
+        border: 2px solid #e5e7eb;
+        border-radius: 10px;
+        font-size: 14px;
+        transition: all 0.3s ease;
+        background: #f9fafb;
+        box-sizing: border-box;
+    }
+
+    .form-input:focus {
+        outline: none;
+        border-color: #667eea;
         background: white;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .form-select {
+        width: 100%;
+        padding: 12px 16px;
+        border: 2px solid #e5e7eb;
+        border-radius: 10px;
+        font-size: 14px;
+        background: #f9fafb;
+        cursor: pointer;
         transition: all 0.3s ease;
         box-sizing: border-box;
     }
 
-    .form-input:focus, .form-select:focus {
+    .form-select:focus {
         outline: none;
         border-color: #667eea;
-        box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+        background: white;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
     }
 
-    .form-input:hover, .form-select:hover {
-        border-color: #667eea;
+    .date-input {
+        position: relative;
     }
 
-    .form-select {
-        cursor: pointer;
-        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
-        background-position: right 0.5rem center;
-        background-repeat: no-repeat;
-        background-size: 1.2em 1.2em;
-        padding-right: 2.2rem;
-        appearance: none;
-    }
-
-    .form-actions {
-        display: flex;
-        gap: 0.8rem;
-        justify-content: center;
-        flex-wrap: wrap;
-        margin-top: 1.5rem;
-    }
-
-    .btn-form {
-        padding: 0.7rem 1.2rem;
-        border-radius: 6px;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.8px;
-        text-decoration: none;
+    .date-input input[type="date"] {
+        width: 100%;
+        padding: 12px 16px;
+        border: 2px solid #e5e7eb;
+        border-radius: 10px;
+        font-size: 14px;
+        background: #f9fafb;
         transition: all 0.3s ease;
-        border: none;
-        cursor: pointer;
-        font-size: clamp(0.75rem, 1.8vw, 0.85rem);
-        text-align: center;
-        min-width: 100px;
-        flex: 1;
-        max-width: 140px;
+        box-sizing: border-box;
     }
 
-    .btn-save {
+    .date-input input[type="date"]:focus {
+        outline: none;
+        border-color: #667eea;
+        background: white;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .button-group {
+        display: flex;
+        gap: 12px;
+        margin-top: 20px;
+    }
+
+    .btn-primary {
+        flex: 1;
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
 
-    .btn-save:hover {
+    .btn-primary:hover {
         transform: translateY(-1px);
         box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
     }
 
-    .btn-cancel {
+    .btn-secondary {
+        flex: 1;
         background: transparent;
         color: #667eea;
         border: 2px solid #667eea;
+        padding: 12px 24px;
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
 
-    .btn-cancel:hover {
+    .btn-secondary:hover {
         background: #667eea;
         color: white;
         transform: translateY(-1px);
         text-decoration: none;
     }
 
-    /* Alert Messages */
-    .alert {
-        padding: 0.8rem;
-        border-radius: 6px;
-        margin-bottom: 1.2rem;
-        font-weight: 500;
-        text-align: center;
-        font-size: clamp(0.8rem, 2vw, 0.9rem);
-    }
-
     .alert-success {
-        background-color: #d4edda;
-        color: #155724;
-        border: 1px solid #c3e6cb;
+        background: #d1fae5;
+        color: #065f46;
+        padding: 12px 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        border-left: 4px solid #10b981;
     }
 
-    .alert-error {
-        background-color: #f8d7da;
-        color: #721c24;
-        border: 1px solid #f5c6cb;
+    .alert-danger {
+        background: #fee2e2;
+        color: #991b1b;
+        padding: 12px 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        border-left: 4px solid #ef4444;
     }
 
-    /* Responsive Breakpoints */
-
-    /* Large Desktop (1200px+) */
-    @media (min-width: 1200px) {
-        .edit-profile-container {
-            padding: 2rem 1.5rem;
-        }
-
-        .edit-profile-card {
-            padding: 2rem;
-            max-width: 650px;
-        }
-
-        .edit-form {
-            padding: 1.5rem;
-        }
+    .file-input-wrapper {
+        position: relative;
+        overflow: hidden;
+        display: inline-block;
+        width: 100%;
     }
 
-    /* Desktop (992px - 1199px) */
-    @media (min-width: 992px) and (max-width: 1199px) {
-        .edit-profile-container {
-            padding: 1.8rem 1.2rem;
-        }
-
-        .edit-profile-card {
-            padding: 1.8rem;
-        }
+    .file-input {
+        position: absolute;
+        left: -9999px;
     }
 
-    /* Tablet (768px - 991px) */
-    @media (min-width: 768px) and (max-width: 991px) {
-        .edit-profile-container {
-            padding: 1.5rem 1rem;
-        }
-
-        .edit-profile-card {
-            padding: 1.5rem;
-            max-width: 550px;
-        }
-
-        .edit-form {
-            padding: 1.2rem;
-        }
-
-        .form-actions {
-            gap: 0.7rem;
-        }
-
-        .btn-form {
-            flex: 1 1 calc(50% - 0.35rem);
-            max-width: 120px;
-        }
+    .file-input-label {
+        display: block;
+        padding: 12px 16px;
+        border: 2px dashed #d1d5db;
+        border-radius: 10px;
+        background: #f9fafb;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        color: #6b7280;
+        font-size: 14px;
     }
 
-    /* Small Tablet (576px - 767px) */
-    @media (min-width: 576px) and (max-width: 767px) {
-        .edit-profile-container {
-            padding: 1.2rem 0.8rem;
-        }
+    .file-input-label:hover {
+        border-color: #667eea;
+        background: rgba(102, 126, 234, 0.05);
+        color: #667eea;
+    }
 
-        .edit-profile-card {
-            padding: 1.2rem;
-            max-width: 500px;
-        }
-
-        .edit-form {
-            padding: 1rem;
-        }
-
-        .form-actions {
+    @media (max-width: 768px) {
+        .profile-card {
             flex-direction: column;
-            gap: 0.7rem;
-        }
-
-        .btn-form {
-            width: 100%;
+            margin: 10px;
             max-width: none;
+        }
+
+        .profile-left {
             flex: none;
+            padding: 20px;
         }
 
-        .edit-profile-avatar {
-            width: 45px;
-            height: 45px;
-            font-size: 1.3rem;
-        }
-    }
-
-    /* Mobile (320px - 575px) */
-    @media (max-width: 575px) {
-        .edit-profile-container {
-            padding: 1rem 0.5rem;
-            min-height: auto;
+        .profile-right {
+            padding: 20px;
         }
 
-        .edit-profile-card {
-            padding: 1rem;
-            margin: 0;
-            border-radius: 8px;
-        }
-
-        .edit-form {
-            padding: 0.8rem;
-            margin-bottom: 0.8rem;
-        }
-
-        .form-actions {
+        .button-group {
             flex-direction: column;
-            gap: 0.6rem;
-        }
-
-        .btn-form {
-            width: 100%;
-            max-width: none;
-            flex: none;
-            padding: 0.6rem 1rem;
-        }
-
-        .edit-profile-avatar {
-            width: 40px;
-            height: 40px;
-            font-size: 1.2rem;
-            margin-bottom: 0.6rem;
-        }
-
-        .edit-profile-header {
-            margin-bottom: 1.2rem;
-        }
-
-        .form-group {
-            margin-bottom: 1rem;
         }
     }
 
-    /* Extra Small Mobile (320px and below) */
-    @media (max-width: 320px) {
-        .edit-profile-container {
-            padding: 0.8rem 0.3rem;
-        }
-
-        .edit-profile-card {
-            padding: 0.8rem;
-        }
-
-        .edit-form {
-            padding: 0.6rem;
-        }
-
-        .edit-profile-avatar {
-            width: 35px;
-            height: 35px;
-            font-size: 1rem;
-        }
-
-        .btn-form {
-            padding: 0.5rem 0.8rem;
-            font-size: 0.75rem;
-        }
-    }
-
-    /* Landscape Mobile Optimization */
-    @media (max-height: 500px) and (orientation: landscape) {
-        .edit-profile-container {
-            min-height: auto;
-            padding: 0.8rem;
-        }
-
-        .edit-profile-header {
-            margin-bottom: 1rem;
-        }
-
-        .edit-form {
-            margin-bottom: 0.8rem;
-        }
-
-        .form-actions {
-            margin-top: 1rem;
-        }
-    }
-
-    /* Print Styles */
-    @media print {
-        .edit-profile-container {
-            background: none;
-            padding: 0;
-        }
-
-        .edit-profile-card {
-            box-shadow: none;
-            border: 1px solid #ccc;
-        }
-
-        .form-actions {
-            display: none;
+    @media (max-width: 1200px) {
+        .profile-left {
+            flex: 0 0 350px;
         }
     }
 </style>
 
 <div class="edit-profile-container">
-    <div class="edit-profile-card">
-        <div class="edit-profile-header">
-            <div class="edit-profile-avatar">
-                ${user.fullName.substring(0,1)}
+    <div class="profile-card">
+        <div class="profile-left">
+            <div class="avatar-container">
+                <c:choose>
+                    <c:when test="${not empty customer.avatarUrl}">
+                        <img src="${customer.avatarUrl}" alt="Avatar" class="avatar" id="avatarPreview">
+                    </c:when>
+                    <c:otherwise>
+                        <div class="avatar" id="avatarPreview">👤</div>
+                    </c:otherwise>
+                </c:choose>
+                <label for="avatar" class="change-avatar-btn">📷 Change Avatar</label>
             </div>
-            <h2>Edit Profile</h2>
-            <p class="edit-profile-subtitle">Update your account information</p>
+            <h1 class="profile-title">EDIT PROFILE</h1>
+            <p class="profile-subtitle">Update your account information</p>
         </div>
 
-        <!-- ✅ Hiển thị thông báo -->
-        <c:if test="${not empty success}">
-            <div class="alert alert-success">
-                ${success}
-            </div>
-        </c:if>
-        <c:if test="${not empty error}">
-            <div class="alert alert-error">
-                ${error}
-            </div>
-        </c:if>
+        <div class="profile-right">
+            <c:if test="${not empty success}">
+                <div class="alert-success">${success}</div>
+            </c:if>
+            <c:if test="${not empty err}">
+                <div class="alert-danger">${err}</div>
+            </c:if>
 
-        <!-- Form chỉnh sửa thông tin -->
-        <div class="edit-form">
-            <form action="${pageContext.request.contextPath}/EditProfile" method="post">
+            <form action="${pageContext.request.contextPath}/EditProfile" method="post" enctype="multipart/form-data">
                 <div class="form-group">
-                    <label class="form-label" for="fullName">Full Name</label>
-                    <input type="text" id="fullName" name="fullName" class="form-input"
-                           value="${user.fullName}" required placeholder="Enter your full name"/>
+                    <label class="form-label">Full Name</label>
+                    <input type="text" name="full_name" value="${user.fullName}" class="form-input" required>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" for="phoneNumber">Phone Number</label>
-                    <input type="text" id="phoneNumber" name="phoneNumber" class="form-input"
-                           value="${user.phoneNumber}" required placeholder="Enter your phone number"/>
+                    <label class="form-label">Phone Number</label>
+                    <input type="text" name="phone_number" value="${user.phoneNumber}" class="form-input" required>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" for="gender">Gender</label>
-                    <select name="gender" id="gender" class="form-select">
+                    <label class="form-label">Gender</label>
+                    <select name="gender" class="form-select" required>
                         <option value="Male" ${customer.gender == 'Male' ? 'selected' : ''}>Male</option>
                         <option value="Female" ${customer.gender == 'Female' ? 'selected' : ''}>Female</option>
+                        <option value="Other" ${customer.gender == 'Other' ? 'selected' : ''}>Other</option>
                     </select>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" for="birthDate">Birth Date</label>
-                    <input type="date" id="birthDate" name="birthDate" class="form-input"
-                           value="${customer.birthDate}"/>
+                    <label class="form-label">Birth Date</label>
+                    <div class="date-input">
+                        <input type="date" name="birth_date" value="${customer.birthDate}" required>
+                    </div>
                 </div>
 
-                <div class="form-actions">
-                    <button type="submit" class="btn-form btn-save">Save Changes</button>
-                    <a href="${pageContext.request.contextPath}/Profile" class="btn-form btn-cancel">Back Profile</a>
+                <div class="form-group">
+                    <div class="file-input-wrapper">
+                        <input type="file" name="avatar" accept="image/*" class="file-input" id="avatar">
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button type="submit" class="btn-primary">Save Changes</button>
+                    <a href="${pageContext.request.contextPath}/Profile" class="btn-secondary">Back Profile</a>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
-<%-- Tự động ẩn thông báo sau 3 giây --%>
 <script>
-    setTimeout(function () {
-        const alerts = document.querySelectorAll('.alert');
-        alerts.forEach(alert => {
-            alert.style.transition = 'opacity 0.5s ease';
-            alert.style.opacity = '0';
-            setTimeout(() => alert.style.display = 'none', 500);
-        });
-    }, 3000);
+    // Preview avatar when file is selected
+    document.getElementById('avatar').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const avatarPreview = document.getElementById('avatarPreview');
+                avatarPreview.innerHTML = '';
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                img.className = 'avatar';
+                img.style.width = '100%';
+                img.style.height = '100%';
+                img.style.objectFit = 'cover';
+                avatarPreview.appendChild(img);
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    // Update file input label when file is selected
+    document.getElementById('avatar').addEventListener('change', function(e) {
+        const label = document.querySelector('.file-input-label');
+        if (e.target.files.length > 0) {
+            label.textContent = e.target.files[0].name;
+        } else {
+            label.textContent = 'Choose new avatar image or drag and drop';
+        }
+    });
 </script>
 
-<%-- Nhúng footer --%>
 <jsp:include page="/WEB-INF/views/common/footer.jsp" />
-
-

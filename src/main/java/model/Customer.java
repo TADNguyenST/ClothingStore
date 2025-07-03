@@ -16,6 +16,7 @@ public class Customer {
     private Date birthDate;
     private String gender;
     private Timestamp createdAt;
+    private String avatarUrl;
 
     // Default constructor
     public Customer() {
@@ -79,4 +80,11 @@ public class Customer {
     public void setCreatedAt(Timestamp createdAt) {
         this.createdAt = createdAt;
     }
+    public String getAvatarUrl() {
+    return avatarUrl;
+}
+
+public void setAvatarUrl(String avatarUrl) {
+    this.avatarUrl = avatarUrl;
+}
 }
