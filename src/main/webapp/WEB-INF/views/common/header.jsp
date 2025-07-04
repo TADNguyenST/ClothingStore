@@ -1,4 +1,3 @@
-<%-- ================ FILE: /WEB-INF/views/common/header.jsp ================ --%>
 <%@page import="dao.CategoryDAO"%>
 <%@page import="java.util.ArrayList"%>
 <%@page import="java.util.List"%>
@@ -16,7 +15,6 @@
             }
         }
     }
-    // Get selected filter values from request parameters
     String selectedParentCategoryId = request.getParameter("parentCategoryId");
     String selectedCategoryId = request.getParameter("categoryId");
 %>
@@ -37,7 +35,6 @@
         <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/style.css">
 
         <style>
-            /* CSS cho Header */
             body {
                 font-family: 'Jost', sans-serif;
             }
@@ -109,7 +106,6 @@
                 border: 1px solid #f0f0f0;
                 box-shadow: 0 10px 20px rgba(0,0,0,0.05);
             }
-            /* CSS cho thanh tìm kiếm autocomplete */
             .suggestion-item:hover {
                 background-color: #f5f5f5;
             }
@@ -136,7 +132,6 @@
                         <span class="navbar-toggler-icon"></span>
                     </button>
                     <div class="collapse navbar-collapse" id="mainNavbar">
-                        <%-- FILE: /WEB-INF/views/common/header.jsp (chỉ phần menu) --%>
                         <ul class="navbar-nav mx-auto mb-2 mb-lg-0">
                             <li class="nav-item">
                                 <a class="nav-link" href="${pageContext.request.contextPath}/home">Home</a>
@@ -180,7 +175,6 @@
                             <li class="nav-item"><a class="nav-link" href="${pageContext.request.contextPath}/blog">Blog</a></li>
                         </ul>
                         <div class="d-flex align-items-center header-actions">
-                            <%-- Thanh tìm kiếm autocomplete --%>
                             <div class="search-bar position-relative">
                                 <input type="text" id="searchInput" class="form-control" placeholder="Tìm kiếm sản phẩm..." style="width: 200px;">
                                 <div id="suggestions" class="position-absolute w-100" style="border: 1px solid #eee; background: white; display: none; z-index: 1000; max-height: 300px; overflow-y: auto;"></div>
@@ -195,12 +189,12 @@
                                             <li><a class="dropdown-item" href="#">My Orders</a></li>
                                             <li><hr class="dropdown-divider"></li>
                                             <li><a class="dropdown-item" href="${pageContext.request.contextPath}/Logout">Logout</a></li>
-                                            </c:when>
-                                            <c:otherwise>
+                                        </c:when>
+                                        <c:otherwise>
                                             <li><a class="dropdown-item" href="${pageContext.request.contextPath}/Login">Login</a></li>
                                             <li><a class="dropdown-item" href="${pageContext.request.contextPath}/Register">Register</a></li>
-                                            </c:otherwise>
-                                        </c:choose>
+                                        </c:otherwise>
+                                    </c:choose>
                                 </ul>
                             </div>
                             <a href="#" class="nav-link d-none d-lg-inline-block"><i class="fas fa-heart"></i></a>
@@ -214,7 +208,6 @@
                     </div>
                 </div>
             </nav>
-            <%-- Script jQuery cho autocomplete --%>
             <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
             <script>
             $(document).ready(function() {
@@ -237,7 +230,6 @@
                     }
                 });
 
-                // Ẩn gợi ý khi click ra ngoài
                 $(document).click(function(e) {
                     if (!$(e.target).closest('#searchInput, #suggestions').length) {
                         $("#suggestions").hide();
@@ -253,7 +245,7 @@
                 <%
                     if (allCategories != null) {
                         for (Category cat : allCategories) {
-                            if (cat.getParentCategoryId() != null) { // Only include child categories
+                            if (cat.getParentCategoryId() != null) {
                 %>
                     {
                         id: <%= cat.getCategoryId()%>,
@@ -267,16 +259,12 @@
                 %>
                 ];
 
-                // Function to populate child category dropdown
                 function populateChildCategories(parentId, selectedCategoryId) {
                     const categorySelect = document.getElementById('categoryId');
-                    // Clear existing options
                     categorySelect.innerHTML = '<option value="">All Child Categories</option>';
 
-                    // Filter child categories based on parentId
                     const childCategories = allCategories.filter(cat => cat.parentId == parentId);
 
-                    // Add new options
                     childCategories.forEach(cat => {
                         const option = document.createElement('option');
                         option.value = cat.id;
@@ -288,7 +276,6 @@
                     });
                 }
 
-                // Initialize child categories on page load if a parent category is selected
                 document.addEventListener('DOMContentLoaded', function () {
                     const parentCategoryId = document.getElementById('parentCategoryId')?.value;
                     if (parentCategoryId) {

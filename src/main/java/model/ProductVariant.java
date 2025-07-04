@@ -1,6 +1,7 @@
 package model;
 
 import java.math.BigDecimal;
+import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -42,15 +43,17 @@ public class ProductVariant {
         this.sku = generateSku();
     }
 
-    // Hàm sinh SKU với xử lý null và thêm thời gian
+    // Hàm sinh SKU với xử lý null và định dạng priceModifier
     private String generateSku() {
         String brandSafe = (brand != null ? brand : "UNKNOWN").replaceAll("\\s+", "");
         String sizeSafe = (size != null ? size : "NOSIZE").replaceAll("\\s+", "");
         String colorSafe = (color != null ? color : "NOCOLOR").replaceAll("\\s+", "");
         String productNameSafe = (productName != null ? productName : "NOPRODUCT").replaceAll("\\s+", "");
-        String priceSafe = (priceModifier != null ? priceModifier.toString() : "0");
+        // Định dạng priceModifier với dấu chấm cứ 3 số
+        DecimalFormat decimalFormat = new DecimalFormat("#,###");
+        String priceSafe = (priceModifier != null ? decimalFormat.format(priceModifier) : "0");
         return String.format("%s-%s-%s-%s-%s", brandSafe, sizeSafe, colorSafe, 
-                            productNameSafe, priceSafe.replace(".", "")).toUpperCase();
+                            productNameSafe, priceSafe.replace(",", ".")).toUpperCase();
     }
 
     public Long getVariantId() {
@@ -75,7 +78,7 @@ public class ProductVariant {
 
     public void setSize(String size) {
         this.size = size;
-        if (brand != null && productName != null) { // Chỉ cập nhật SKU nếu đã có brand và productName
+        if (brand != null && productName != null) {
             this.sku = generateSku();
         }
     }

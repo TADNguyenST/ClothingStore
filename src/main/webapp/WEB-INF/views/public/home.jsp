@@ -142,43 +142,65 @@
         font-weight: 600;
     }
     .product-card {
-        border: none;
+        border: 1px solid #eee;
         text-align: center;
-        margin-bottom: 2rem;
+        margin-bottom: 1.5rem;
+        border-radius: 5px;
+        overflow: hidden;
+        background: #fff;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        padding: 10px;
+    }
+    .product-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.08);
     }
     .product-card .product-image {
         overflow: hidden;
-        margin-bottom: 1rem;
+        margin-bottom: 0.8rem;
     }
     .product-card img {
         width: 100%;
         transition: transform 0.4s ease;
-        aspect-ratio: 4 / 5;
+        aspect-ratio: 1 / 2.2; /* Taller aspect ratio for even more vertical height */
         object-fit: cover;
+        max-height: 320px; /* Increased height for taller image */
     }
     .product-card:hover img {
         transform: scale(1.05);
     }
     .product-card .product-title {
-        font-size: 1rem;
+        font-size: 0.85rem;
         font-weight: 500;
         color: #333;
         text-decoration: none;
-        display: block;
-        height: 40px;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        height: 34px;
+        padding: 0 6px;
+        margin-bottom: 5px;
     }
     .product-card .product-title:hover {
         color: #000;
     }
     .product-card .product-price {
-        font-size: 1.1rem;
+        font-size: 0.95rem;
         font-weight: 600;
         color: #111;
+        margin-bottom: 8px;
     }
     .product-card .btn-container {
         display: flex;
         justify-content: center;
-        gap: 10px;
+        gap: 6px;
+        padding: 0 6px 8px 6px;
+    }
+    .product-card .btn-custom-sm {
+        padding: 0.25rem 0.7rem;
+        font-size: 0.75rem;
+        line-height: 1.5;
     }
     .promo-banner {
         background-color: #e9ecef;
@@ -193,6 +215,30 @@
         color: red;
         font-weight: 500;
         margin-top: 20px;
+    }
+    @media (max-width: 1200px) {
+        .col-lg-3 {
+            flex: 0 0 33.333333%;
+            max-width: 33.333333%;
+        }
+    }
+    @media (max-width: 992px) {
+        .col-lg-3 {
+            flex: 0 0 50%;
+            max-width: 50%;
+        }
+    }
+    @media (max-width: 768px) {
+        .col-md-6 {
+            flex: 0 0 50%;
+            max-width: 50%;
+        }
+    }
+    @media (max-width: 576px) {
+        .col-md-6 {
+            flex: 0 0 100%;
+            max-width: 100%;
+        }
     }
 </style>
 
@@ -248,7 +294,7 @@
                     Long variantId = product.getDefaultVariantId();
                     boolean hasVariant = variantId != null && variantId != 0;
         %>
-        <div class="col-lg-3 col-md-4 col-6">
+        <div class="col-lg-3 col-md-6 col-sm-6 col-12">
             <div class="product-card">
                 <div class="product-image">
                     <a href="<%= request.getContextPath()%>/ProductList/detail?productId=<%= product.getProductId()%>">
@@ -262,13 +308,13 @@
                         <input type="hidden" name="action" value="add">
                         <input type="hidden" name="variantId" value="<%= hasVariant ? variantId : 0%>">
                         <input type="hidden" name="quantity" value="1">
-                        <button type="submit" class="btn btn-dark btn-sm" <%= hasVariant ? "" : "disabled"%>>Add to Cart</button>
+                        <button type="submit" class="btn btn-dark btn-custom-sm" <%= hasVariant ? "" : "disabled"%>>Add to Cart</button>
                     </form>
                     <form action="<%= request.getContextPath()%>/customer/checkout" method="post">
                         <input type="hidden" name="action" value="buy">
                         <input type="hidden" name="variantId" value="<%= hasVariant ? variantId : 0%>">
                         <input type="hidden" name="quantity" value="1">
-                        <button type="submit" class="btn btn-primary btn-sm" <%= hasVariant ? "" : "disabled"%>>Buy Now</button>
+                        <button type="submit" class="btn btn-primary btn-custom-sm" <%= hasVariant ? "" : "disabled"%>>Buy Now</button>
                     </form>
                 </div>
             </div>
@@ -305,13 +351,13 @@
         <%
             if (bestSellers != null && !bestSellers.isEmpty()) {
                 for (Product product : bestSellers) {
-                    String imageUrl = product.getImageUrl() != null ? product.getImageUrl() : "https://placehold.co/400x500/e0e0e0/333?text=No+Image";
+                    String imageUrl = product.getImageUrl() != null ? product.getImageUrl() : "https://placehold.co/400x500/f0f0f0/333?text=No+Image";
                     String name = product.getName() != null ? product.getName() : "Unknown Product";
                     String price = product.getPrice() != null ? currencyFormat.format(product.getPrice()) : "N/A";
                     Long variantId = product.getDefaultVariantId();
                     boolean hasVariant = variantId != null && variantId != 0;
         %>
-        <div class="col-lg-3 col-md-4 col-6">
+        <div class="col-lg-3 col-md-6 col-sm-6 col-12">
             <div class="product-card">
                 <div class="product-image">
                     <a href="<%= request.getContextPath()%>/ProductList/detail?productId=<%= product.getProductId()%>">
@@ -325,13 +371,13 @@
                         <input type="hidden" name="action" value="add">
                         <input type="hidden" name="variantId" value="<%= hasVariant ? variantId : 0%>">
                         <input type="hidden" name="quantity" value="1">
-                        <button type="submit" class="btn btn-dark btn-sm" <%= hasVariant ? "" : "disabled"%>>Add to Cart</button>
+                        <button type="submit" class="btn btn-dark btn-custom-sm" <%= hasVariant ? "" : "disabled"%>>Add to Cart</button>
                     </form>
                     <form action="<%= request.getContextPath()%>/customer/checkout" method="post">
                         <input type="hidden" name="action" value="buy">
                         <input type="hidden" name="variantId" value="<%= hasVariant ? variantId : 0%>">
                         <input type="hidden" name="quantity" value="1">
-                        <button type="submit" class="btn btn-primary btn-sm" <%= hasVariant ? "" : "disabled"%>>Buy Now</button>
+                        <button type="submit" class="btn btn-primary btn-custom-sm" <%= hasVariant ? "" : "disabled"%>>Buy Now</button>
                     </form>
                 </div>
             </div>
