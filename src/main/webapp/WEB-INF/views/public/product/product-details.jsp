@@ -10,6 +10,25 @@
     Product product = (Product) request.getAttribute("product");
     String error = (String) request.getAttribute("error");
     NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(new Locale("vi", "VN"));
+
+    // Tìm giá thấp nhất và biến thể mặc định
+    ProductVariant defaultVariant = null;
+    double lowestPrice = Double.MAX_VALUE;
+    if (product != null && product.getVariants() != null && !product.getVariants().isEmpty()) {
+        for (ProductVariant variant : product.getVariants()) {
+            if (variant.getPriceModifier() != null) {
+                double price = variant.getPriceModifier().doubleValue();
+                if (price < lowestPrice) {
+                    lowestPrice = price;
+                    defaultVariant = variant;
+                }
+            }
+        }
+    }
+    // Nếu không có biến thể nào hợp lệ, đặt giá mặc định là giá của sản phẩm
+    if (lowestPrice == Double.MAX_VALUE) {
+        lowestPrice = product != null && product.getPrice() != null ? product.getPrice().doubleValue() : 0;
+    }
 %>
 
 <jsp:include page="/WEB-INF/views/common/header.jsp" />
@@ -21,7 +40,6 @@
         padding: 40px 20px;
     }
 
-    /* === BẮT ĐẦU CSS MỚI CHO GALLERY ẢNH === */
     .image-gallery-container {
         display: flex;
         gap: 12px;
@@ -82,16 +100,24 @@
     .nav-arrow:hover {
         background-color: white;
     }
-    .nav-arrow.prev { left: 10px; }
-    .nav-arrow.next { right: 10px; }
-    /* === KẾT THÚC CSS MỚI CHO GALLERY ẢNH === */
+    .nav-arrow.prev {
+        left: 10px;
+    }
+    .nav-arrow.next {
+        right: 10px;
+    }
 
     .product-detail-container .product-title {
         font-size: 2rem;
         font-weight: 700;
-        margin-bottom: 20px;
+        margin-bottom: 10px;
     }
-    .product-detail-container .product-price {
+    .product-detail-container .product-original-price {
+        font-size: 1.2rem;
+        color: #666;
+        margin-bottom: 5px;
+    }
+    .product-detail-container .product-current-price {
         font-size: 1.5rem;
         font-weight: 600;
         color: #111;
@@ -110,6 +136,9 @@
     .product-detail-container .variant-selector label {
         font-weight: 600;
         margin-right: 10px;
+    }
+    .product-detail-container .variant-selector select {
+        width: 200px;
     }
     .product-detail-container .quantity-selector {
         display: flex;
@@ -175,105 +204,117 @@
 </style>
 
 <div class="product-detail-container">
-    <% if (error != null && !error.isEmpty()) { %>
-        <p class="error-message"><%= error %></p>
+    <% if (error != null && !error.isEmpty()) {%>
+    <p class="error-message"><%= error%></p>
     <% } else if (product != null) { %>
-        <div class="row">
-            
-            <div class="col-md-6">
-                <div class="image-gallery-container">
-                    <div class="thumbnail-column">
-                        <%
-                            if (product.getImages() != null && !product.getImages().isEmpty()) {
-                                for (ProductImage image : product.getImages()) {
-                        %>
-                                    <img src="<%= image.getImageUrl() %>" alt="Thumbnail" class="<%= image.isMain() ? "active" : "" %>"
-                                         onclick="updateMainImage(this)">
-                        <%
+    <div class="row">
+        <div class="col-md-6">
+            <div class="image-gallery-container">
+                <div class="thumbnail-column">
+                    <%
+                        if (product.getImages() != null && !product.getImages().isEmpty()) {
+                            for (ProductImage image : product.getImages()) {
+                    %>
+                    <img src="<%= image.getImageUrl() != null ? image.getImageUrl() : "https://placehold.co/80x95"%>" 
+                         alt="Thumbnail" 
+                         class="<%= image.isMain() ? "active" : ""%>"
+                         onclick="updateMainImage(this)">
+                    <%
+                        }
+                    } else {
+                    %>
+                    <img src="https://placehold.co/80x95" alt="No Thumbnail" class="active" onclick="updateMainImage(this)">
+                    <%
+                        }
+                    %>
+                </div>
+                <div class="main-image-wrapper">
+                    <%
+                        String mainImageUrl = product.getImageUrl() != null ? product.getImageUrl() : "https://placehold.co/500x600/f0f0f0/333?text=No+Image";
+                        if (product.getImages() != null && !product.getImages().isEmpty()) {
+                            for (ProductImage image : product.getImages()) {
+                                if (image.isMain()) {
+                                    mainImageUrl = image.getImageUrl() != null ? image.getImageUrl() : "https://placehold.co/500x600";
+                                    break;
                                 }
                             }
-                        %>
-                    </div>
-
-                    <div class="main-image-wrapper">
-                         <%
-                             String mainImageUrl = product.getImageUrl() != null ? product.getImageUrl() : "https://placehold.co/500x600/f0f0f0/333?text=No+Image";
-                             if (product.getImages() != null && !product.getImages().isEmpty()) {
-                                 for (ProductImage image : product.getImages()) {
-                                     if (image.isMain()) {
-                                         mainImageUrl = image.getImageUrl();
-                                         break;
-                                     }
-                                 }
-                             }
-                         %>
-                        <img src="<%= mainImageUrl %>" alt="<%= product.getName() != null ? product.getName() : "Product Image" %>" class="product-image-main">
-                        
-                        <button class="nav-arrow prev" onclick="navigateImage(-1)">&#10094;</button>
-                        <button class="nav-arrow next" onclick="navigateImage(1)">&#10095;</button>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <h1 class="product-title"><%= product.getName() != null ? product.getName() : "Unknown Product" %></h1>
-                <p class="product-status">Tình trạng: <%= product.getStatus() != null ? product.getStatus() : "N/A" %> | Mã SKU: <%= (product.getVariants() != null && !product.getVariants().isEmpty()) ? product.getVariants().get(0).getSku() : "N/A" %></p>
-                <p class="product-price"><%= product.getPrice() != null ? currencyFormat.format(product.getPrice()) : "N/A" %></p>
-                <div class="product-info">
-                    <p><strong>Description:</strong> <%= product.getDescription() != null ? product.getDescription() : "No description available" %></p>
-                    <p><strong>Category:</strong> <%= product.getCategory() != null ? product.getCategory().getName() : "N/A" %></p>
-                    <p><strong>Brand:</strong> <%= product.getBrand() != null ? product.getBrand().getName() : "N/A" %></p>
-                    <p><strong>Material:</strong> <%= product.getMaterial() != null ? product.getMaterial() : "N/A" %></p>
-                </div>
-                <div class="variant-selector">
-                    <label for="variantSelect">Select Variant:</label>
-                    <select id="variantSelect" name="variantId" class="form-select">
-                        <%
-                            if (product.getVariants() != null && !product.getVariants().isEmpty()) {
-                                for (ProductVariant variant : product.getVariants()) {
-                                    String variantLabel = (variant.getSize() != null ? variant.getSize() : "") + " - " + 
-                                                        (variant.getColor() != null ? variant.getColor() : "") + 
-                                                        (variant.getPriceModifier() != null ? " (" + currencyFormat.format(variant.getPriceModifier()) + ")" : "");
-                        %>
-                            <option value="<%= variant.getVariantId() %>" <%= product.getDefaultVariantId() != null && product.getDefaultVariantId().equals(variant.getVariantId()) ? "selected" : "" %>>
-                                <%= variantLabel %>
-                            </option>
-                        <%
-                                }
-                            } else {
-                        %>
-                            <option value="0">No variants available</option>
-                        <%
-                            }
-                        %>
-                    </select>
-                </div>
-                <div class="quantity-selector">
-                    <button onclick="decreaseQuantity()">-</button>
-                    <input type="number" id="quantity" value="1" min="1" readonly>
-                    <button onclick="increaseQuantity()">+</button>
-                </div>
-                <div class="btn-container">
-                    <a href="#" class="btn btn-dark">Thêm Vào Giỏ</a>
-                    <a href="#" class="btn btn-orange">Mua Ngay</a>
-                </div>
-                <div class="shipping-info">
-                    <ul>
-                        <li>⚡ Sản phẩm hiện có 4 người đang xem</li>
-                        <li>🚚 Giao hàng toàn quốc: Thanh toán (COD) khi nhận hàng</li>
-                        <li>🎁 Miễn phí giao hàng: Theo chính sách</li>
-                        <li>🔄 Đổi trả trong 7 ngày: Nếu không vừa hoặc lỗi</li>
-                        <li>📞 Hỗ trợ 24/7: Theo chính sách</li>
-                    </ul>
+                        }
+                    %>
+                    <img src="<%= mainImageUrl%>" alt="<%= product.getName() != null ? product.getName() : "Product Image"%>" class="product-image-main">
+                    <button class="nav-arrow prev" onclick="navigateImage(-1)">❮</button>
+                    <button class="nav-arrow next" onclick="navigateImage(1)">❯</button>
                 </div>
             </div>
         </div>
+        <div class="col-md-6">
+            <h1 class="product-title"><%= product.getName() != null ? product.getName() : "Unknown Product"%></h1>
+            <p class="product-current-price" id="productPrice"><%= currencyFormat.format(lowestPrice)%></p>
+            <p class="product-status">Tình trạng: <%= product.getStatus() != null ? product.getStatus() : "N/A"%> </p>
+            <div class="product-info">
+                <p><strong>Description:</strong> <%= product.getDescription() != null ? product.getDescription() : "No description available"%></p>
+                <p><strong>Category:</strong> <%= product.getCategory() != null ? product.getCategory().getName() : "N/A"%></p>
+                <p><strong>Brand:</strong> <%= product.getBrand() != null ? product.getBrand().getName() : "N/A"%></p>
+                <p><strong>Material:</strong> <%= product.getMaterial() != null ? product.getMaterial() : "N/A"%></p>
+            </div>
+            <div class="variant-selector">
+                <label for="variantSelect">Select Variant:</label>
+                <select id="variantSelect" name="variantId" class="form-select" onchange="updatePrice()">
+                    <%
+                        if (product.getVariants() != null && !product.getVariants().isEmpty()) {
+                            for (ProductVariant variant : product.getVariants()) {
+                                String size = variant.getSize() != null ? 
+                                    variant.getSize().substring(0, 1).toUpperCase() + 
+                                    variant.getSize().substring(1).toLowerCase() : "N/A";
+                                String color = variant.getColor() != null ? 
+                                    variant.getColor().substring(0, 1).toUpperCase() + 
+                                    variant.getColor().substring(1).toLowerCase() : "N/A";
+                                String variantLabel = size + " - " + color;
+                                double finalPrice = variant.getPriceModifier() != null ? 
+                                    variant.getPriceModifier().doubleValue() : 0;
+                    %>
+                    <option value="<%= variant.getVariantId()%>" 
+                            data-price="<%= finalPrice%>"
+                            data-sku="<%= variant.getSku() != null ? variant.getSku() : "N/A"%>"
+                            <%= defaultVariant != null && defaultVariant.getVariantId().equals(variant.getVariantId()) ? "selected" : ""%>>
+                        <%= variantLabel%> - <%= currencyFormat.format(finalPrice)%>
+                    </option>
+                    <%
+                        }
+                    } else {
+                    %>
+                    <option value="0" data-price="0">No variants available</option>
+                    <%
+                        }
+                    %>
+                </select>
+            </div>
+            <div class="quantity-selector">
+                <button onclick="decreaseQuantity()">-</button>
+                <input type="number" id="quantity" value="1" min="1" readonly>
+                <button onclick="increaseQuantity()">+</button>
+            </div>
+            <div class="btn-container">
+                <a href="#" class="btn btn-dark" onclick="addToCart()">Thêm Vào Giỏ</a>
+                <a href="#" class="btn btn-orange" onclick="buyNow()">Mua Ngay</a>
+            </div>
+            <div class="shipping-info">
+                <ul>
+                    <li>⚡ Sản phẩm hiện có 4 người đang xem</li>
+                    <li>🚚 Giao hàng toàn quốc: Thanh toán (COD) khi nhận hàng</li>
+                    <li>🎁 Miễn phí giao hàng: Theo chính sách</li>
+                    <li>🔄 Đổi trả trong 7 ngày: Nếu không vừa hoặc lỗi</li>
+                    <li>📞 Hỗ trợ 24/7: Theo chính sách</li>
+                </ul>
+            </div>
+        </div>
+    </div>
     <% } else { %>
-        <p class="text-center">No product details available.</p>
-    <% } %>
+    <p class="text-center">No product details available.</p>
+    <% }%>
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
         const mainImage = document.querySelector('.product-image-main');
         const thumbnails = document.querySelectorAll('.thumbnail-column img');
         let currentIndex = 0;
@@ -284,7 +325,7 @@
             }
         });
 
-        window.updateMainImage = function(selectedThumb) {
+        window.updateMainImage = function (selectedThumb) {
             mainImage.src = selectedThumb.src;
             thumbnails.forEach(t => t.classList.remove('active'));
             selectedThumb.classList.add('active');
@@ -293,9 +334,9 @@
                     currentIndex = index;
                 }
             });
-        }
+        };
 
-        window.navigateImage = function(direction) {
+        window.navigateImage = function (direction) {
             let newIndex = currentIndex + direction;
             if (newIndex >= thumbnails.length) {
                 newIndex = 0;
@@ -303,17 +344,52 @@
                 newIndex = thumbnails.length - 1;
             }
             updateMainImage(thumbnails[newIndex]);
-        }
-        
+        };
+
         const quantityInput = document.getElementById('quantity');
-        window.decreaseQuantity = function() {
+        window.decreaseQuantity = function () {
             let value = parseInt(quantityInput.value);
-            if (value > 1) quantityInput.value = value - 1;
-        }
-        window.increaseQuantity = function() {
+            if (value > 1)
+                quantityInput.value = value - 1;
+        };
+        window.increaseQuantity = function () {
             let value = parseInt(quantityInput.value);
             quantityInput.value = value + 1;
-        }
+        };
+
+        // Hàm định dạng tiền tệ VNĐ
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('vi-VN', {style: 'currency', currency: 'VND'}).format(amount);
+        };
+
+        // Cập nhật giá và SKU khi chọn variant
+        window.updatePrice = function () {
+            const select = document.getElementById("variantSelect");
+            const priceElement = document.getElementById("productPrice");
+            const selectedOption = select.options[select.selectedIndex];
+            const finalPrice = parseFloat(selectedOption.getAttribute('data-price')) || 0;
+            console.log('Selected variant ID:', selectedOption.value, 'Final Price:', finalPrice); // Debug
+            priceElement.innerText = formatCurrency(finalPrice);
+        };
+
+        // Gọi updatePrice lần đầu để hiển thị giá mặc định
+        updatePrice();
+
+        // Hàm thêm vào giỏ hàng
+        window.addToCart = function () {
+            const variantId = document.getElementById("variantSelect").value;
+            const quantity = document.getElementById("quantity").value;
+            console.log('Add to cart: productId=${product.productId}, variantId=' + variantId, 'quantity=' + quantity); // Debug
+            window.location.href = "${pageContext.request.contextPath}/AddToCart?productId=${product.productId}&variantId=" + variantId + "&quantity=" + quantity;
+        };
+
+        // Hàm mua ngay
+        window.buyNow = function () {
+            const variantId = document.getElementById("variantSelect").value;
+            const quantity = document.getElementById("quantity").value;
+            console.log('Buy now: productId=${product.productId}, variantId=' + variantId, 'quantity=' + quantity); // Debug
+            window.location.href = "${pageContext.request.contextPath}/BuyNow?productId=${product.productId}&variantId=" + variantId + "&quantity=" + quantity;
+        };
     });
 </script>
 
