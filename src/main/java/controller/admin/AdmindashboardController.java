@@ -1,11 +1,13 @@
 package controller.admin;
 
+import jakarta.servlet.annotation.WebServlet; // ✅ thêm dòng này
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import jakarta.servlet.ServletException;
 
+@WebServlet(name = "AdmindashboardController", urlPatterns = {"/Admindashboard"}) // ✅ thêm dòng này
 public class AdmindashboardController extends HttpServlet {
 
     private static final long serialVersionUID = 1L;
@@ -13,6 +15,15 @@ public class AdmindashboardController extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         // ... (authentication and authorization part, if any) ...
+
+        // ✅ Kiểm tra đăng nhập và role phải là Admin
+        jakarta.servlet.http.HttpSession session = request.getSession(false);
+        model.Users user = (session != null) ? (model.Users) session.getAttribute("admin") : null; // ✅ sửa "user" → "admin"
+
+        if (user == null || !"Admin".equalsIgnoreCase(user.getRole())) {
+            response.sendRedirect(request.getContextPath() + "/AdminLogin");
+            return;
+        }
 
         String action = request.getParameter("action");
         String module = request.getParameter("module");

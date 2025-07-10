@@ -148,5 +148,36 @@ public class UserDAO extends DBContext {
         u.setUpdatedAt(rs.getTimestamp("updated_at"));
         return u;
     }
-//Login with Google
+//Detail
+
+    public Users getUserById(long userId) {
+        String sql = "SELECT * FROM users WHERE user_id = ?";
+        try ( Connection conn = getConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, userId);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                return map(rs);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+//Login Admin
+    public Users checkAdminLogin(String email, String password) {
+        String sql = "SELECT * FROM users WHERE email = ? AND password = ? AND role = 'Admin' AND status = 'Active'";
+        try ( Connection conn = getConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, email);
+            ps.setString(2, password); // KHÔNG mã hóa password
+            ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) {
+                return map(rs); // Sử dụng phương thức map có sẵn
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
 }

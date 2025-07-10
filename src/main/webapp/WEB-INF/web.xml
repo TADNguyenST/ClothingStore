@@ -61,7 +61,7 @@
     </servlet-mapping>
     <servlet-mapping>
         <servlet-name>AdmindashboardController</servlet-name>
-        <url-pattern>/admindashboard</url-pattern>
+        <url-pattern>/Admindashboard</url-pattern>
     </servlet-mapping>
     <servlet-mapping>
         <servlet-name>ProductManagerController</servlet-name>
