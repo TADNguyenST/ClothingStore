@@ -1,158 +1,179 @@
-/*
- * Click nbproject://SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbproject://SystemFileSystem/Templates/JSP_Servlet/Servlet.java to edit this template
- */
 package controller.admin;
 
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
 import dao.BrandDAO;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.Part;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import model.Brand;
 
-/**
- *
- * @author DANGVUONGTHINH
- */
 @WebServlet(name = "BrandManagerController", urlPatterns = {"/BrandManager"})
+@MultipartConfig(maxFileSize = 10485760) // Limit 10MB per file
 public class BrandManagerController extends HttpServlet {
 
     private final BrandDAO brandDAO = new BrandDAO();
+    private Cloudinary cloudinary;
 
     @Override
-protected void doGet(HttpServletRequest request, HttpServletResponse response)
-        throws ServletException, IOException {
-    String action = request.getParameter("action");
-    if (action == null) {
-        action = "list";
+    public void init() {
+        try {
+            cloudinary = new Cloudinary(ObjectUtils.asMap(
+                    "cloud_name", "da36bkpx5",
+                    "api_key", "342541776882536",
+                    "api_secret", "F_90gUaX6jfD8yJI8FxCY1Hurbg"
+            ));
+            if (cloudinary == null) {
+                System.err.println("Failed to initialize Cloudinary!");
+            } else {
+                System.out.println("Cloudinary initialized successfully.");
+            }
+        } catch (Exception e) {
+            System.err.println("Error initializing Cloudinary: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
-    // Set currentModule for sidebar
-    request.setAttribute("currentModule", "brand");
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        String action = request.getParameter("action");
+        if (action == null) {
+            action = "list";
+        }
 
-    switch (action.toLowerCase()) {
-        case "list":
-            request.setAttribute("currentAction", "brandList");
-            List<Brand> brands = brandDAO.getAll();
-            request.setAttribute("brands", brands);
-            if (brands.isEmpty()) {
-                request.setAttribute("err", "<p class='text-danger'>No brands found</p>");
-            }
-            request.getRequestDispatcher("/WEB-INF/views/admin/brand/brands.jsp").forward(request, response);
-            break;
+        // Set currentModule for sidebar
+        request.setAttribute("currentModule", "brand");
 
-        case "search":
-            request.setAttribute("currentAction", "brandList");
-            String search = request.getParameter("search");
-            try {
-                brands = brandDAO.searchBrandsByName(search != null ? search.trim() : "");
+        switch (action.toLowerCase()) {
+            case "list":
+                request.setAttribute("currentAction", "brandList");
+                List<Brand> brands = brandDAO.getAll();
                 request.setAttribute("brands", brands);
-                request.setAttribute("search", search); // Persist search parameter
                 if (brands.isEmpty()) {
-                    request.setAttribute("err", "<p class='text-danger'>No brands found matching the search criteria</p>");
+                    request.setAttribute("err", "<p class='text-danger'>No brands found</p>");
                 }
-            } catch (Exception e) {
-                request.setAttribute("err", "<p class='text-danger'>Error searching brands: " + e.getMessage() + "</p>");
-                System.out.println("Error in search action: " + e.getMessage());
-            }
-            request.getRequestDispatcher("/WEB-INF/views/admin/brand/brands.jsp").forward(request, response);
-            break;
+                request.getRequestDispatcher("/WEB-INF/views/admin/brand/brands.jsp").forward(request, response);
+                break;
 
-        case "filter":
-            request.setAttribute("currentAction", "brandList");
-            String status = request.getParameter("status");
-            try {
-                if (status != null && !status.isEmpty()) {
-                    boolean isActive = status.equals("active");
-                    brands = brandDAO.getBrandsByStatus(isActive);
-                } else {
-                    brands = brandDAO.getAll();
+            case "search":
+                request.setAttribute("currentAction", "brandList");
+                String search = request.getParameter("search");
+                try {
+                    brands = brandDAO.searchBrandsByName(search != null ? search.trim() : "");
+                    request.setAttribute("brands", brands);
+                    request.setAttribute("search", search);
+                    if (brands.isEmpty()) {
+                        request.setAttribute("err", "<p class='text-danger'>No brands found matching the search criteria</p>");
+                    }
+                } catch (Exception e) {
+                    request.setAttribute("err", "<p class='text-danger'>Error searching brands: " + e.getMessage() + "</p>");
+                    System.out.println("Error in search action: " + e.getMessage());
                 }
-                request.setAttribute("brands", brands);
-                request.setAttribute("status", status); // Persist status parameter
-                if (brands.isEmpty()) {
-                    request.setAttribute("err", "<p class='text-danger'>No brands found matching the filter criteria</p>");
+                request.getRequestDispatcher("/WEB-INF/views/admin/brand/brands.jsp").forward(request, response);
+                break;
+
+            case "filter":
+                request.setAttribute("currentAction", "brandList");
+                String status = request.getParameter("status");
+                try {
+                    if (status != null && !status.isEmpty()) {
+                        boolean isActive = status.equals("active");
+                        brands = brandDAO.getBrandsByStatus(isActive);
+                    } else {
+                        brands = brandDAO.getAll();
+                    }
+                    request.setAttribute("brands", brands);
+                    request.setAttribute("status", status);
+                    if (brands.isEmpty()) {
+                        request.setAttribute("err", "<p class='text-danger'>No brands found matching the filter criteria</p>");
+                    }
+                } catch (Exception e) {
+                    request.setAttribute("err", "<p class='text-danger'>Error filtering brands: " + e.getMessage() + "</p>");
+                    System.out.println("Error in filter action: " + e.getMessage());
                 }
-            } catch (Exception e) {
-                request.setAttribute("err", "<p class='text-danger'>Error filtering brands: " + e.getMessage() + "</p>");
-                System.out.println("Error in filter action: " + e.getMessage());
-            }
-            request.getRequestDispatcher("/WEB-INF/views/admin/brand/brands.jsp").forward(request, response);
-            break;
+                request.getRequestDispatcher("/WEB-INF/views/admin/brand/brands.jsp").forward(request, response);
+                break;
 
-        case "create":
-            request.setAttribute("currentAction", "brandForm");
-            request.getRequestDispatcher("/WEB-INF/views/admin/brand/create-brand.jsp").forward(request, response);
-            break;
+            case "create":
+                request.setAttribute("currentAction", "brandForm");
+                request.getRequestDispatcher("/WEB-INF/views/admin/brand/create-brand.jsp").forward(request, response);
+                break;
 
-        case "edit":
-            request.setAttribute("currentAction", "brandForm");
-            try {
-                long id = Long.parseLong(request.getParameter("id"));
-                Brand brand = brandDAO.getBrandById(id);
-                if (brand == null) {
-                    request.setAttribute("err", "<p class='text-danger'>Brand not found</p>");
+            case "edit":
+                request.setAttribute("currentAction", "brandForm");
+                try {
+                    long id = Long.parseLong(request.getParameter("id"));
+                    Brand brand = brandDAO.getBrandById(id);
+                    if (brand == null) {
+                        request.setAttribute("err", "<p class='text-danger'>Brand not found</p>");
+                        request.setAttribute("brands", brandDAO.getAll());
+                        request.getRequestDispatcher("/WEB-INF/views/admin/brand/brands.jsp").forward(request, response);
+                    } else {
+                        request.setAttribute("brand", brand);
+                        request.getRequestDispatcher("/WEB-INF/views/admin/brand/edit-brand.jsp").forward(request, response);
+                    }
+                } catch (NumberFormatException e) {
+                    request.setAttribute("err", "<p class='text-danger'>Invalid brand ID</p>");
                     request.setAttribute("brands", brandDAO.getAll());
                     request.getRequestDispatcher("/WEB-INF/views/admin/brand/brands.jsp").forward(request, response);
-                } else {
-                    request.setAttribute("brand", brand);
-                    request.getRequestDispatcher("/WEB-INF/views/admin/brand/edit-brand.jsp").forward(request, response);
                 }
-            } catch (NumberFormatException e) {
-                request.setAttribute("err", "<p class='text-danger'>Invalid brand ID</p>");
+                break;
+
+            case "delete":
+                request.setAttribute("currentAction", "brandList");
+                try {
+                    long id = Long.parseLong(request.getParameter("id"));
+                    boolean result = brandDAO.deleteBrand(id);
+                    if (result) {
+                        request.setAttribute("msg", "<p class='text-success'>Brand deleted successfully</p>");
+                    } else {
+                        request.setAttribute("err", "<p class='text-danger'>Failed to delete brand</p>");
+                    }
+                } catch (NumberFormatException e) {
+                    request.setAttribute("err", "<p class='text-danger'>Invalid brand ID</p>");
+                } catch (RuntimeException e) {
+                    request.setAttribute("err", "<p class='text-danger'>" + e.getMessage() + "</p>");
+                }
                 request.setAttribute("brands", brandDAO.getAll());
                 request.getRequestDispatcher("/WEB-INF/views/admin/brand/brands.jsp").forward(request, response);
-            }
-            break;
+                break;
 
-        case "delete":
-            request.setAttribute("currentAction", "brandList");
-            try {
-                long id = Long.parseLong(request.getParameter("id"));
-                boolean result = brandDAO.deleteBrand(id);
-                if (result) {
-                    request.setAttribute("msg", "<p class='text-success'>Brand deleted successfully</p>");
-                } else {
-                    request.setAttribute("err", "<p class='text-danger'>Failed to delete brand</p>");
-                }
-            } catch (NumberFormatException e) {
-                request.setAttribute("err", "<p class='text-danger'>Invalid brand ID</p>");
-            } catch (RuntimeException e) {
-                request.setAttribute("err", "<p class='text-danger'>" + e.getMessage() + "</p>");
-            }
-            request.setAttribute("brands", brandDAO.getAll());
-            request.getRequestDispatcher("/WEB-INF/views/admin/brand/brands.jsp").forward(request, response);
-            break;
-
-        case "detail":
-            request.setAttribute("currentAction", "brandDetails");
-            try {
-                long id = Long.parseLong(request.getParameter("id"));
-                Brand brand = brandDAO.getBrandById(id);
-                if (brand == null) {
-                    request.setAttribute("err", "<p class='text-danger'>Brand not found</p>");
+            case "detail":
+                request.setAttribute("currentAction", "brandDetails");
+                try {
+                    long id = Long.parseLong(request.getParameter("id"));
+                    Brand brand = brandDAO.getBrandById(id);
+                    if (brand == null) {
+                        request.setAttribute("err", "<p class='text-danger'>Brand not found</p>");
+                        request.setAttribute("brands", brandDAO.getAll());
+                        request.getRequestDispatcher("/WEB-INF/views/admin/brand/brands.jsp").forward(request, response);
+                    } else {
+                        request.setAttribute("brand", brand);
+                        request.getRequestDispatcher("/WEB-INF/views/admin/brand/brandDetail.jsp").forward(request, response);
+                    }
+                } catch (NumberFormatException e) {
+                    request.setAttribute("err", "<p class='text-danger'>Invalid brand ID</p>");
                     request.setAttribute("brands", brandDAO.getAll());
                     request.getRequestDispatcher("/WEB-INF/views/admin/brand/brands.jsp").forward(request, response);
-                } else {
-                    request.setAttribute("brand", brand);
-                    request.getRequestDispatcher("/WEB-INF/views/admin/brand/brandDetail.jsp").forward(request, response);
                 }
-            } catch (NumberFormatException e) {
-                request.setAttribute("err", "<p class='text-danger'>Invalid brand ID</p>");
-                request.setAttribute("brands", brandDAO.getAll());
-                request.getRequestDispatcher("/WEB-INF/views/admin/brand/brands.jsp").forward(request, response);
-            }
-            break;
+                break;
 
-        default:
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid action");
+            default:
+                response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid action");
+        }
     }
-}
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
@@ -172,11 +193,58 @@ protected void doGet(HttpServletRequest request, HttpServletResponse response)
                 try {
                     String name = request.getParameter("name");
                     String description = request.getParameter("description");
-                    String logoUrl = request.getParameter("logoUrl");
                     boolean isActive = request.getParameter("isActive") != null && request.getParameter("isActive").equals("true");
+                    String existingLogoUrl = request.getParameter("logoUrl"); // For fallback if no new file is uploaded
+                    String logoUrl = null;
 
                     if (name == null || name.trim().isEmpty()) {
                         throw new IllegalArgumentException("Brand name is required");
+                    }
+
+                    // Handle logo file upload
+                    Part filePart = request.getPart("logo");
+                    if (filePart != null && filePart.getSize() > 0) {
+                        String fileName = filePart.getSubmittedFileName();
+                        if (fileName != null && !fileName.toLowerCase().matches(".*\\.(jpg|jpeg|png|gif)$")) {
+                            throw new IllegalArgumentException("Invalid image format for logo: " + fileName);
+                        }
+
+                        File tempFile = null;
+                        try {
+                            tempFile = File.createTempFile("upload", fileName);
+                            try (InputStream input = filePart.getInputStream(); FileOutputStream output = new FileOutputStream(tempFile)) {
+                                byte[] buffer = new byte[1024];
+                                int len;
+                                while ((len = input.read(buffer)) != -1) {
+                                    output.write(buffer, 0, len);
+                                }
+                            }
+
+                            if (cloudinary != null) {
+                                Map uploadResult = cloudinary.uploader().upload(tempFile, ObjectUtils.asMap(
+                                        "quality", "auto",
+                                        "fetch_format", "auto",
+                                        "width", 400, // Smaller size for logos
+                                        "crop", "limit",
+                                        "folder", "brands"
+                                ));
+                                logoUrl = (String) uploadResult.get("secure_url");
+                                System.out.println("Uploaded logo URL: " + logoUrl);
+                                tempFile.delete();
+                            } else {
+                                throw new IllegalStateException("Cloudinary not initialized!");
+                            }
+                        } catch (IOException | IllegalStateException e) {
+                            System.err.println("Error processing logo file: " + e.getMessage());
+                            if (tempFile != null) {
+                                tempFile.delete();
+                            }
+                            throw e;
+                        }
+                    } else if (existingLogoUrl != null && !existingLogoUrl.trim().isEmpty()) {
+                        logoUrl = existingLogoUrl; // Use existing URL if no new file is uploaded
+                    } else {
+                        throw new IllegalArgumentException("A logo image is required");
                     }
 
                     Brand brand = new Brand();
@@ -192,6 +260,7 @@ protected void doGet(HttpServletRequest request, HttpServletResponse response)
                     request.setAttribute("err", "<p class='text-danger'>" + e.getMessage() + "</p>");
                     request.getRequestDispatcher("/WEB-INF/views/admin/brand/create-brand.jsp").forward(request, response);
                 } catch (Exception e) {
+                    System.err.println("Error creating brand: " + e.getMessage());
                     request.setAttribute("err", "<p class='text-danger'>Error creating brand: " + e.getMessage() + "</p>");
                     request.getRequestDispatcher("/WEB-INF/views/admin/brand/create-brand.jsp").forward(request, response);
                 }
@@ -203,11 +272,58 @@ protected void doGet(HttpServletRequest request, HttpServletResponse response)
                     long id = Long.parseLong(request.getParameter("id"));
                     String name = request.getParameter("name");
                     String description = request.getParameter("description");
-                    String logoUrl = request.getParameter("logoUrl");
                     boolean isActive = request.getParameter("isActive") != null && request.getParameter("isActive").equals("true");
+                    String existingLogoUrl = request.getParameter("logoUrl"); // For fallback if no new file is uploaded
+                    String logoUrl = null;
 
                     if (name == null || name.trim().isEmpty()) {
                         throw new IllegalArgumentException("Brand name is required");
+                    }
+
+                    // Handle logo file upload
+                    Part filePart = request.getPart("logo");
+                    if (filePart != null && filePart.getSize() > 0) {
+                        String fileName = filePart.getSubmittedFileName();
+                        if (fileName != null && !fileName.toLowerCase().matches(".*\\.(jpg|jpeg|png|gif)$")) {
+                            throw new IllegalArgumentException("Invalid image format for logo: " + fileName);
+                        }
+
+                        File tempFile = null;
+                        try {
+                            tempFile = File.createTempFile("upload", fileName);
+                            try (InputStream input = filePart.getInputStream(); FileOutputStream output = new FileOutputStream(tempFile)) {
+                                byte[] buffer = new byte[1024];
+                                int len;
+                                while ((len = input.read(buffer)) != -1) {
+                                    output.write(buffer, 0, len);
+                                }
+                            }
+
+                            if (cloudinary != null) {
+                                Map uploadResult = cloudinary.uploader().upload(tempFile, ObjectUtils.asMap(
+                                        "quality", "auto",
+                                        "fetch_format", "auto",
+                                        "width", 400, // Smaller size for logos
+                                        "crop", "limit",
+                                        "folder", "brands"
+                                ));
+                                logoUrl = (String) uploadResult.get("secure_url");
+                                System.out.println("Uploaded logo URL: " + logoUrl);
+                                tempFile.delete();
+                            } else {
+                                throw new IllegalStateException("Cloudinary not initialized!");
+                            }
+                        } catch (IOException | IllegalStateException e) {
+                            System.err.println("Error processing logo file: " + e.getMessage());
+                            if (tempFile != null) {
+                                tempFile.delete();
+                            }
+                            throw e;
+                        }
+                    } else if (existingLogoUrl != null && !existingLogoUrl.trim().isEmpty()) {
+                        logoUrl = existingLogoUrl; // Use existing URL if no new file is uploaded
+                    } else {
+                        throw new IllegalArgumentException("A logo image is required");
                     }
 
                     Brand brand = new Brand();
@@ -216,7 +332,7 @@ protected void doGet(HttpServletRequest request, HttpServletResponse response)
                     brand.setDescription(description);
                     brand.setLogoUrl(logoUrl);
                     brand.setActive(isActive);
-                    brand.setCreatedAt(new Date()); // Giữ nguyên created_at hoặc lấy từ DB nếu cần
+                    brand.setCreatedAt(new Date()); // Consider fetching from DB if you want to preserve the original created_at
 
                     boolean result = brandDAO.updateBrand(brand);
                     if (result) {
@@ -236,6 +352,7 @@ protected void doGet(HttpServletRequest request, HttpServletResponse response)
                     }
                     request.getRequestDispatcher("/WEB-INF/views/admin/brand/edit-brand.jsp").forward(request, response);
                 } catch (Exception e) {
+                    System.err.println("Error updating brand: " + e.getMessage());
                     request.setAttribute("err", "<p class='text-danger'>Error updating brand: " + e.getMessage() + "</p>");
                     try {
                         long id = Long.parseLong(request.getParameter("id"));

@@ -51,7 +51,7 @@
                             <%-- Edit Form --%>
                             <c:choose>
                                 <c:when test="${not empty brand}">
-                                    <form action="${pageContext.request.contextPath}/BrandManager" method="post" onsubmit="return validateForm()">
+                                    <form action="${pageContext.request.contextPath}/BrandManager" method="post" enctype="multipart/form-data" onsubmit="return validateForm()">
                                         <input type="hidden" name="action" value="update">
                                         <input type="hidden" name="id" value="${brand.brandId}">
                                         <div class="mb-3">
@@ -64,9 +64,21 @@
                                             <textarea class="form-control" id="description" name="description" rows="4" placeholder="Enter brand description">${brand.description}</textarea>
                                         </div>
                                         <div class="mb-3">
-                                            <label for="logoUrl" class="form-label">Logo URL</label>
-                                            <input type="url" class="form-control" id="logoUrl" name="logoUrl" value="${brand.logoUrl}" placeholder="Enter logo URL (e.g., https://example.com/logo.png)">
-                                            <div class="invalid-feedback">Please enter a valid URL.</div>
+                                            <label class="form-label">Current Logo</label>
+                                            <c:if test="${not empty brand.logoUrl}">
+                                                <div class="mb-2">
+                                                    <img src="${brand.logoUrl}" alt="Brand Logo" style="max-width: 200px; max-height: 100px; object-fit: contain;">
+                                                </div>
+                                                <input type="hidden" name="logoUrl" value="${brand.logoUrl}">
+                                            </c:if>
+                                            <c:if test="${empty brand.logoUrl}">
+                                                <p class="text-muted">No logo uploaded</p>
+                                            </c:if>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="logo" class="form-label">New Logo (optional)</label>
+                                            <input type="file" class="form-control" id="logo" name="logo" accept="image/jpeg,image/png,image/gif">
+                                            <div class="invalid-feedback">Please upload a valid image file (jpg, jpeg, png, gif).</div>
                                         </div>
                                         <div class="mb-3">
                                             <label for="isActive" class="form-label">Status</label>
@@ -125,6 +137,7 @@
         function validateForm() {
             let isValid = true;
             const nameInput = document.getElementById('name');
+            const logoInput = document.getElementById('logo');
             const logoUrlInput = document.getElementById('logoUrl');
 
             // Validate name
@@ -135,17 +148,18 @@
                 nameInput.classList.remove('is-invalid');
             }
 
-            // Validate logo URL
-            if (logoUrlInput.value.trim() !== '') {
-                const urlPattern = /^(https?:\/\/[^\s$.?#].[^\s]*)$/;
-                if (!urlPattern.test(logoUrlInput.value)) {
-                    logoUrlInput.classList.add('is-invalid');
+            // Validate logo file (if provided)
+            if (logoInput.files && logoInput.files.length > 0) {
+                const file = logoInput.files[0];
+                const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
+                if (!validTypes.includes(file.type)) {
+                    logoInput.classList.add('is-invalid');
                     isValid = false;
                 } else {
-                    logoUrlInput.classList.remove('is-invalid');
+                    logoInput.classList.remove('is-invalid');
                 }
             } else {
-                logoUrlInput.classList.remove('is-invalid');
+                logoInput.classList.remove('is-invalid');
             }
 
             return isValid;

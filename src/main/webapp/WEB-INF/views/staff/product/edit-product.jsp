@@ -54,7 +54,7 @@
         DecimalFormatSymbols symbols = new DecimalFormatSymbols();
         symbols.setGroupingSeparator('.');
         symbols.setDecimalSeparator(',');
-        DecimalFormat df = new DecimalFormat("#,###.##", symbols);
+        DecimalFormat df = new DecimalFormat("#,###", symbols);
         return df.format(price);
     }
 %>
@@ -98,7 +98,10 @@
                         <div class="box-body">
                             <%-- Error Message --%>
                             <% if (err != null && !err.isEmpty()) { %>
-                                <p class="text-danger"><%= err %></p>
+                                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                    <%= err %>
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
                             <% } %>
 
                             <%-- Edit Product Form --%>
@@ -108,6 +111,7 @@
                                 <div class="mb-3">
                                     <label class="form-label">Name</label>
                                     <input type="text" name="name" class="form-control" value="<%= product.getName() != null ? product.getName() : "" %>" required>
+                                    <div class="invalid-feedback">Product name is required.</div>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">Description</label>
@@ -115,7 +119,8 @@
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">Price</label>
-                                    <input type="text" name="price" class="form-control" value="<%= formatPrice(product.getPrice()) %>" placeholder="e.g., 1000000,00" required>
+                                    <input type="text" name="price" class="form-control" value="<%= formatPrice(product.getPrice()) %>" placeholder="e.g., 1000000 or 1000.000" required>
+                                    <div class="invalid-feedback">Invalid price format.</div>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">Parent Category</label>
@@ -156,6 +161,7 @@
                                             }
                                         %>
                                     </select>
+                                    <div class="invalid-feedback">Category is required.</div>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">Brand</label>
@@ -173,6 +179,7 @@
                                             }
                                         %>
                                     </select>
+                                    <div class="invalid-feedback">Brand is required.</div>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">Material</label>
@@ -196,16 +203,34 @@
                                         <div class="row">
                                             <div class="col-md-4">
                                                 <input type="hidden" name="variantId" value="<%= variant.getVariantId() != null ? variant.getVariantId() : "" %>">
-                                                <input type="text" name="size" class="form-control" placeholder="Size" value="<%= variant.getSize() != null ? variant.getSize() : "" %>" required>
+                                                <select name="size" class="form-control" required onchange="validateField(this)">
+                                                    <option value="" disabled>Select Size</option>
+                                                    <option value="S" <%= "S".equals(variant.getSize()) ? "selected" : "" %>>S</option>
+                                                    <option value="M" <%= "M".equals(variant.getSize()) ? "selected" : "" %>>M</option>
+                                                    <option value="L" <%= "L".equals(variant.getSize()) ? "selected" : "" %>>L</option>
+                                                    <option value="XL" <%= "XL".equals(variant.getSize()) ? "selected" : "" %>>XL</option>
+                                                    <option value="XS" <%= "XS".equals(variant.getSize()) ? "selected" : "" %>>XS</option>
+                                                </select>
+                                                <div class="invalid-feedback">Invalid size.</div>
                                             </div>
                                             <div class="col-md-4">
-                                                <input type="text" name="color" class="form-control" placeholder="Color" value="<%= variant.getColor() != null ? variant.getColor() : "" %>" required>
+                                                <select name="color" class="form-control" required onchange="validateField(this)">
+                                                    <option value="" disabled>Select Color</option>
+                                                    <option value="Red" <%= "Red".equals(variant.getColor()) ? "selected" : "" %>>Red</option>
+                                                    <option value="Blue" <%= "Blue".equals(variant.getColor()) ? "selected" : "" %>>Blue</option>
+                                                    <option value="Green" <%= "Green".equals(variant.getColor()) ? "selected" : "" %>>Green</option>
+                                                    <option value="Black" <%= "Black".equals(variant.getColor()) ? "selected" : "" %>>Black</option>
+                                                    <option value="White" <%= "White".equals(variant.getColor()) ? "selected" : "" %>>White</option>
+                                                    <option value="Yellow" <%= "Yellow".equals(variant.getColor()) ? "selected" : "" %>>Yellow</option>
+                                                </select>
+                                                <div class="invalid-feedback">Invalid color.</div>
                                             </div>
                                             <div class="col-md-3">
-                                                <input type="text" name="priceModifier" class="form-control" placeholder="Price Modifier (e.g., -5,00, 0,00)" value="<%= formatPrice(variant.getPriceModifier()) %>" required>
+                                                <input type="text" name="priceModifier" class="form-control" placeholder="e.g., 0 or 5000" value="<%= formatPrice(variant.getPriceModifier()) %>" required oninput="validateField(this)">
+                                                <div class="invalid-feedback">Invalid price modifier.</div>
                                             </div>
                                             <div class="col-md-1">
-                                                <button type="button" class="btn btn-danger btn-sm" onclick="this.parentElement.parentElement.parentElement.remove()">
+                                                <button type="button" class="btn btn-danger btn-sm" onclick="this.parentElement.parentElement.parentElement.remove(); updateVariantOptions()">
                                                     <i class="bi bi-trash"></i> Remove
                                                 </button>
                                             </div>
@@ -218,16 +243,34 @@
                                     <div class="variant-row mb-3">
                                         <div class="row">
                                             <div class="col-md-4">
-                                                <input type="text" name="size" class="form-control" placeholder="Size" required>
+                                                <select name="size" class="form-control" required onchange="validateField(this)">
+                                                    <option value="" disabled selected>Select Size</option>
+                                                    <option value="S">S</option>
+                                                    <option value="M">M</option>
+                                                    <option value="L">L</option>
+                                                    <option value="XL">XL</option>
+                                                    <option value="XS">XS</option>
+                                                </select>
+                                                <div class="invalid-feedback">Invalid size.</div>
                                             </div>
                                             <div class="col-md-4">
-                                                <input type="text" name="color" class="form-control" placeholder="Color" required>
+                                                <select name="color" class="form-control" required onchange="validateField(this)">
+                                                    <option value="" disabled selected>Select Color</option>
+                                                    <option value="Red">Red</option>
+                                                    <option value="Blue">Blue</option>
+                                                    <option value="Green">Green</option>
+                                                    <option value="Black">Black</option>
+                                                    <option value="White">White</option>
+                                                    <option value="Yellow">Yellow</option>
+                                                </select>
+                                                <div class="invalid-feedback">Invalid color.</div>
                                             </div>
                                             <div class="col-md-3">
-                                                <input type="text" name="priceModifier" class="form-control" placeholder="Price Modifier (e.g., -5,00, 0,00)" required>
+                                                <input type="text" name="priceModifier" class="form-control" placeholder="e.g., 0 or 5000" required oninput="validateField(this)">
+                                                <div class="invalid-feedback">Invalid price modifier.</div>
                                             </div>
                                             <div class="col-md-1">
-                                                <button type="button" class="btn btn-danger btn-sm" onclick="this.parentElement.parentElement.parentElement.remove()">
+                                                <button type="button" class="btn btn-danger btn-sm" onclick="this.parentElement.parentElement.parentElement.remove(); updateVariantOptions()">
                                                     <i class="bi bi-trash"></i> Remove
                                                 </button>
                                             </div>
@@ -284,7 +327,7 @@
                                                 </div>
                                             </div>
                                             <div class="col-md-2">
-                                                <button type="button" class="btn btn-danger btn-sm" onclick="this.parentElement.parentElement.parentElement.remove()">
+                                                <button type="button" class="btn btn-danger btn-sm" onclick="removeImage(this)">
                                                     <i class="bi bi-trash"></i> Remove
                                                 </button>
                                             </div>
@@ -315,31 +358,53 @@
     <%-- JS for active menu, form handling, and image management --%>
     <script>
         function addVariant() {
+            console.log("Adding new variant...");
             const container = document.getElementById('variants-container');
             const variantDiv = document.createElement('div');
             variantDiv.className = 'variant-row mb-3';
             variantDiv.innerHTML = `
                 <div class="row">
                     <div class="col-md-4">
-                        <input type="text" name="size" class="form-control" placeholder="Size" required>
+                        <select name="size" class="form-control" required onchange="validateField(this)">
+                            <option value="" disabled selected>Select Size</option>
+                            <option value="S">S</option>
+                            <option value="M">M</option>
+                            <option value="L">L</option>
+                            <option value="XL">XL</option>
+                            <option value="XS">XS</option>
+                        </select>
+                        <div class="invalid-feedback">Invalid size.</div>
                     </div>
                     <div class="col-md-4">
-                        <input type="text" name="color" class="form-control" placeholder="Color" required>
+                        <select name="color" class="form-control" required onchange="validateField(this)">
+                            <option value="" disabled selected>Select Color</option>
+                            <option value="Red">Red</option>
+                            <option value="Blue">Blue</option>
+                            <option value="Green">Green</option>
+                            <option value="Black">Black</option>
+                            <option value="White">White</option>
+                            <option value="Yellow">Yellow</option>
+                        </select>
+                        <div class="invalid-feedback">Invalid color.</div>
                     </div>
                     <div class="col-md-3">
-                        <input type="text" name="priceModifier" class="form-control" placeholder="Price Modifier (e.g., -5,00, 0,00)" required>
+                        <input type="text" name="priceModifier" class="form-control" placeholder="e.g., 0 or 5000" required oninput="validateField(this)">
+                        <div class="invalid-feedback">Invalid price modifier.</div>
                     </div>
                     <div class="col-md-1">
-                        <button type="button" class="btn btn-danger btn-sm" onclick="this.parentElement.parentElement.parentElement.remove()">
+                        <button type="button" class="btn btn-danger btn-sm" onclick="this.parentElement.parentElement.parentElement.remove(); updateVariantOptions()">
                             <i class="bi bi-trash"></i> Remove
                         </button>
                     </div>
                 </div>
             `;
             container.appendChild(variantDiv);
+            updateVariantOptions();
+            console.log("Variant added successfully.");
         }
 
         function addImage() {
+            console.log("Adding new image...");
             const container = document.getElementById('images-container');
             const imageDiv = document.createElement('div');
             imageDiv.className = 'image-row mb-3';
@@ -362,6 +427,7 @@
                 </div>
             `;
             container.appendChild(imageDiv);
+            console.log("Image added successfully.");
         }
 
         function removeImage(button) {
@@ -377,14 +443,73 @@
                 checkboxes.forEach(cb => {
                     if (cb !== checkbox) {
                         cb.checked = false;
-                        cb.disabled = true; // Vô hiệu hóa các checkbox khác
+                        cb.disabled = true;
                     }
                 });
             } else {
                 checkboxes.forEach(cb => {
-                    cb.disabled = false; // Kích hoạt lại nếu không có checkbox nào được chọn
+                    cb.disabled = false;
                 });
             }
+        }
+
+        function validateField(field) {
+            const variantRow = field.closest('.variant-row');
+            const name = field.name;
+            const value = field.value;
+            const validSizes = ['S', 'M', 'L', 'XL', 'XS'];
+            const validColors = ['Red', 'Blue', 'Green', 'Black', 'White', 'Yellow'];
+            const numberRegex = /^\d+(\.\d{3})*$|^\d+$/;
+
+            // Clear previous validation state for this field
+            field.classList.remove('is-invalid');
+
+            // Validate the specific field
+            if (name === 'size' && (!value || !validSizes.includes(value))) {
+                field.classList.add('is-invalid');
+            } else if (name === 'color' && (!value || !validColors.includes(value))) {
+                field.classList.add('is-invalid');
+            } else if (name === 'priceModifier') {
+                const modifierStr = value.replace(/\./g, '');
+                if (!modifierStr || !numberRegex.test(modifierStr) || parseInt(modifierStr) < 0) {
+                    field.classList.add('is-invalid');
+                }
+            }
+
+            // Check for duplicates only for the current variant
+            if ((name === 'size' || name === 'color') && value) {
+                const size = variantRow.querySelector('select[name="size"]').value;
+                const color = variantRow.querySelector('select[name="color"]').value;
+                if (size && color) {
+                    const variants = document.querySelectorAll('.variant-row');
+                    let duplicateCount = 0;
+                    variants.forEach(variant => {
+                        const vSize = variant.querySelector('select[name="size"]').value;
+                        const vColor = variant.querySelector('select[name="color"]').value;
+                        if (vSize === size && vColor === color) {
+                            duplicateCount++;
+                        }
+                    });
+                    if (duplicateCount > 1) {
+                        variantRow.querySelector('select[name="size"]').classList.add('is-invalid');
+                        variantRow.querySelector('select[name="color"]').classList.add('is-invalid');
+                    } else {
+                        variantRow.querySelector('select[name="size"]').classList.remove('is-invalid');
+                        variantRow.querySelector('select[name="color"]').classList.remove('is-invalid');
+                    }
+                }
+            }
+        }
+
+        function updateVariantOptions() {
+            console.log("Updating variant options...");
+            const variants = document.querySelectorAll('.variant-row');
+            variants.forEach(variant => {
+                const size = variant.querySelector('select[name="size"]');
+                const color = variant.querySelector('select[name="color"]');
+                validateField(size);
+                validateField(color);
+            });
         }
 
         function filterChildCategories() {
@@ -401,7 +526,6 @@
                 }
             });
 
-            // Only reset if the selected category's parent doesn't match the new parent category
             const selectedOption = categorySelect.options[categorySelect.selectedIndex];
             if (selectedOption && selectedOption.getAttribute('data-parent-id') !== parentCategoryId) {
                 categorySelect.value = '';
@@ -412,77 +536,119 @@
             // Form validation
             document.querySelector('form').addEventListener('submit', function(e) {
                 console.log("Form submit triggered...");
+                const nameInput = document.querySelector('input[name="name"]');
                 const priceInput = document.querySelector('input[name="price"]');
-                const sizes = document.querySelectorAll('input[name="size"]');
-                const colors = document.querySelectorAll('input[name="color"]');
+                const categorySelect = document.querySelector('select[name="categoryId"]');
+                const brandSelect = document.querySelector('select[name="brandId"]');
+                const sizes = document.querySelectorAll('select[name="size"]');
+                const colors = document.querySelectorAll('select[name="color"]');
                 const priceModifiers = document.querySelectorAll('input[name="priceModifier"]');
                 const images = document.querySelectorAll('input[name="images"]');
                 const existingImages = document.querySelectorAll('input[name="existingImageUrl"]');
-                const numberRegex = /^-?\d+(?:[.,]\d{1,2})?$/; // Allow both comma and dot as decimal
+                const numberRegex = /^\d+(\.\d{3})*$|^\d+$/;
+                const errors = [];
 
-                // Remove thousand separators and normalize decimal
-                const priceStr = priceInput.value.replace(/\./g, '').replace(',', '.');
-                if (!numberRegex.test(priceStr) || parseFloat(priceStr) <= 0) {
-                    e.preventDefault();
-                    alert('Price must be a valid positive number (e.g., 1000000,00)');
-                    return;
+                // Clear previous validation states
+                nameInput.classList.remove('is-invalid');
+                priceInput.classList.remove('is-invalid');
+                categorySelect.classList.remove('is-invalid');
+                brandSelect.classList.remove('is-invalid');
+                sizes.forEach(s => s.classList.remove('is-invalid'));
+                colors.forEach(c => c.classList.remove('is-invalid'));
+                priceModifiers.forEach(p => p.classList.remove('is-invalid'));
+
+                // Validate name
+                if (!nameInput.value.trim()) {
+                    errors.push('Product name is required.');
+                    nameInput.classList.add('is-invalid');
                 }
 
-                const price = parseFloat(priceStr);
+                // Validate price
+                const priceStr = priceInput.value.replace(/\./g, '');
+                if (!numberRegex.test(priceStr) || parseInt(priceStr) <= 0) {
+                    errors.push('Invalid price format.');
+                    priceInput.classList.add('is-invalid');
+                }
+                const price = parseInt(priceStr);
 
+                // Validate category
+                if (!categorySelect.value) {
+                    errors.push('Category is required.');
+                    categorySelect.classList.add('is-invalid');
+                }
+
+                // Validate brand
+                if (!brandSelect.value) {
+                    errors.push('Brand is required.');
+                    brandSelect.classList.add('is-invalid');
+                }
+
+                // Validate variants
                 if (sizes.length === 0) {
-                    e.preventDefault();
-                    alert('At least one variant is required');
-                    return;
-                }
-                for (let i = 0; i < sizes.length; i++) {
-                    if (!sizes[i].value.trim()) {
-                        e.preventDefault();
-                        alert('Size cannot be empty for variant ' + (i + 1));
-                        return;
-                    }
-                    if (!colors[i].value.trim()) {
-                        e.preventDefault();
-                        alert('Color cannot be empty for variant ' + (i + 1));
-                        return;
-                    }
-                    const modifierStr = priceModifiers[i].value.replace(/\./g, '').replace(',', '.');
-                    if (!modifierStr.trim() || !numberRegex.test(modifierStr)) {
-                        e.preventDefault();
-                        alert('Price Modifier must be a valid number for variant ' + (i + 1) + ' (e.g., -5,00, 0,00, 5,50)');
-                        return;
-                    }
-                    const modifier = parseFloat(modifierStr);
-                    if (price + modifier < 0) {
-                        e.preventDefault();
-                        alert('Price Modifier for variant ' + (i + 1) + ' makes total price negative (' + (price + modifier) + '). Total price must be non-negative.');
-                        return;
+                    errors.push('At least one variant is required.');
+                } else {
+                    const validSizes = ['S', 'M', 'L', 'XL', 'XS'];
+                    const validColors = ['Red', 'Blue', 'Green', 'Black', 'White', 'Yellow'];
+                    const variantKeys = new Set();
+                    for (let i = 0; i < sizes.length; i++) {
+                        const size = sizes[i].value;
+                        const color = colors[i].value;
+                        const modifierStr = priceModifiers[i].value.replace(/\./g, '');
+                        if (!size || !validSizes.includes(size)) {
+                            errors.push(`Invalid size in variant ${i + 1}.`);
+                            sizes[i].classList.add('is-invalid');
+                        }
+                        if (!color || !validColors.includes(color)) {
+                            errors.push(`Invalid color in variant ${i + 1}.`);
+                            colors[i].classList.add('is-invalid');
+                        }
+                        if (!modifierStr || !numberRegex.test(modifierStr)) {
+                            errors.push(`Invalid price modifier in variant ${i + 1}.`);
+                            priceModifiers[i].classList.add('is-invalid');
+                        } else {
+                            const modifier = parseInt(modifierStr);
+                            if (modifier < 0) {
+                                errors.push(`Price modifier in variant ${i + 1} cannot be negative.`);
+                                priceModifiers[i].classList.add('is-invalid');
+                            }
+                            if (price + modifier < price) {
+                                errors.push(`Price modifier in variant ${i + 1} makes total price less than base price.`);
+                                priceModifiers[i].classList.add('is-invalid');
+                            }
+                        }
+                        if (size && color) {
+                            const variantKey = size + '|' + color;
+                            if (variantKeys.has(variantKey)) {
+                                errors.push(`Duplicate size and color in variant ${i + 1}.`);
+                                sizes[i].classList.add('is-invalid');
+                                colors[i].classList.add('is-invalid');
+                            }
+                            variantKeys.add(variantKey);
+                        }
                     }
                 }
 
-                // Kiểm tra ảnh
+                // Validate images
                 if (images.length === 0 && existingImages.length === 0) {
-                    e.preventDefault();
-                    alert('At least one image is required');
-                    return;
+                    errors.push('At least one image is required.');
                 }
                 for (let i = 0; i < images.length; i++) {
                     if (images[i].value && !images[i].value.match(/\.(jpg|jpeg|png|gif)$/i)) {
-                        e.preventDefault();
-                        alert('Invalid image format for upload ' + (i + 1));
-                        return;
+                        errors.push(`Invalid image format for upload ${i + 1}.`);
                     }
                 }
 
                 const mainImages = document.querySelectorAll('input[name="isMainImage"]:checked');
                 if (mainImages.length > 1) {
-                    e.preventDefault();
-                    alert('Only one image can be set as the main image');
-                    return;
+                    errors.push('Only one main image is allowed.');
                 } else if (mainImages.length === 0 && existingImages.length > 0) {
+                    errors.push('A main image is required.');
+                }
+
+                // Display all errors in one alert
+                if (errors.length > 0) {
                     e.preventDefault();
-                    alert('Please select at least one image as the main image');
-                    return;
+                    alert('Please correct the following:\n- ' + errors.join('\n- '));
                 }
             });
 
@@ -505,6 +671,19 @@
 
             // Initialize child category dropdown
             filterChildCategories();
+
+            // Bind input event for variant updates
+            const variantsContainer = document.getElementById('variants-container');
+            if (variantsContainer) {
+                variantsContainer.addEventListener('input', updateVariantOptions);
+                variantsContainer.addEventListener('click', function(e) {
+                    if (e.target.closest('.btn-danger')) {
+                        updateVariantOptions();
+                    }
+                });
+            } else {
+                console.error("Variants container not found!");
+            }
         });
     </script>
 </body>

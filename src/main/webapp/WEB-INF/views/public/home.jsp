@@ -330,9 +330,6 @@
             }
         %>
     </div>
-    <div class="text-center mt-4">
-        <a href="#" class="btn btn-outline-dark">View All New Arrivals</a>
-    </div>
 </div>
 
 <div class="promo-banner my-5">

@@ -45,7 +45,7 @@
                             </c:if>
 
                             <%-- Create Form --%>
-                            <form action="${pageContext.request.contextPath}/BrandManager" method="post" onsubmit="return validateForm()">
+                            <form action="${pageContext.request.contextPath}/BrandManager" method="post" enctype="multipart/form-data" onsubmit="return validateForm()">
                                 <input type="hidden" name="action" value="create">
                                 <div class="mb-3">
                                     <label for="name" class="form-label">Name <span class="text-danger">*</span></label>
@@ -57,9 +57,9 @@
                                     <textarea class="form-control" id="description" name="description" rows="4" placeholder="Enter brand description"></textarea>
                                 </div>
                                 <div class="mb-3">
-                                    <label for="logoUrl" class="form-label">Logo URL</label>
-                                    <input type="url" class="form-control" id="logoUrl" name="logoUrl" placeholder="Enter logo URL (e.g., https://example.com/logo.png)">
-                                    <div class="invalid-feedback">Please enter a valid URL.</div>
+                                    <label for="logo" class="form-label">Logo <span class="text-danger">*</span></label>
+                                    <input type="file" class="form-control" id="logo" name="logo" accept="image/jpeg,image/png,image/gif" required>
+                                    <div class="invalid-feedback">Please upload a valid image file (jpg, jpeg, png, gif).</div>
                                 </div>
                                 <div class="mb-3 form-check">
                                     <input type="checkbox" class="form-check-input" id="isActive" name="isActive" value="true" checked>
@@ -81,7 +81,7 @@
     <script src="${pageContext.request.contextPath}/admin-dashboard/js/admin-js.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 
-    <%-- JS for active menu --%>
+    <%-- JS for active menu and form validation --%>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const currentAction = "${requestScope.currentAction}";
@@ -107,7 +107,7 @@
         function validateForm() {
             let isValid = true;
             const nameInput = document.getElementById('name');
-            const logoUrlInput = document.getElementById('logoUrl');
+            const logoInput = document.getElementById('logo');
 
             // Validate name
             if (nameInput.value.trim() === '' || nameInput.value.length > 100) {
@@ -117,17 +117,19 @@
                 nameInput.classList.remove('is-invalid');
             }
 
-            // Validate logo URL
-            if (logoUrlInput.value.trim() !== '') {
-                const urlPattern = /^(https?:\/\/[^\s$.?#].[^\s]*)$/;
-                if (!urlPattern.test(logoUrlInput.value)) {
-                    logoUrlInput.classList.add('is-invalid');
+            // Validate logo file
+            if (!logoInput.files || logoInput.files.length === 0) {
+                logoInput.classList.add('is-invalid');
+                isValid = false;
+            } else {
+                const file = logoInput.files[0];
+                const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
+                if (!validTypes.includes(file.type)) {
+                    logoInput.classList.add('is-invalid');
                     isValid = false;
                 } else {
-                    logoUrlInput.classList.remove('is-invalid');
+                    logoInput.classList.remove('is-invalid');
                 }
-            } else {
-                logoUrlInput.classList.remove('is-invalid');
             }
 
             return isValid;
