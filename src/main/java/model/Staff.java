@@ -4,16 +4,17 @@
  */
 package model;
 
-
 /**
  *
  * @author DANGVUONGTHINH
  */
 public class Staff {
+
     private Long staffId;
     private Long userId;
     private String position;
     private String notes;
+    private java.sql.Timestamp createdAt;
 
     // Getters and Setters
     public Long getStaffId() {
@@ -46,5 +47,13 @@ public class Staff {
 
     public void setNotes(String notes) {
         this.notes = notes;
+    }
+
+    public java.sql.Timestamp getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(java.sql.Timestamp createdAt) {
+        this.createdAt = createdAt;
     }
 }

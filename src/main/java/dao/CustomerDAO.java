@@ -1,3 +1,7 @@
+/*
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
+ */
 package dao;
 
 import util.DBContext;
@@ -59,36 +63,37 @@ public class CustomerDAO {
     }
 
     //Edit Profile
-public boolean updateCustomerProfile(Users user, Customer customer) {
-    String updateUserSql = "UPDATE users SET full_name = ?, phone_number = ?, updated_at = GETDATE() WHERE user_id = ?";
-    String updateCustomerSql = "UPDATE customers SET gender = ?, birth_date = ?, avatar_url = ? WHERE user_id = ?";
-    try (Connection conn = new DBContext().getConnection()) {
-        conn.setAutoCommit(false);
+    public boolean updateCustomerProfile(Users user, Customer customer) {
+        String updateUserSql = "UPDATE users SET full_name = ?, phone_number = ?, updated_at = GETDATE() WHERE user_id = ?";
+        String updateCustomerSql = "UPDATE customers SET gender = ?, birth_date = ?, avatar_url = ? WHERE user_id = ?";
+        try ( Connection conn = new DBContext().getConnection()) {
+            conn.setAutoCommit(false);
 
-        try (
-            PreparedStatement psUser = conn.prepareStatement(updateUserSql);
-            PreparedStatement psCustomer = conn.prepareStatement(updateCustomerSql)) {
+            try (
+                     PreparedStatement psUser = conn.prepareStatement(updateUserSql);  PreparedStatement psCustomer = conn.prepareStatement(updateCustomerSql)) {
 
-            psUser.setString(1, user.getFullName());
-            psUser.setString(2, user.getPhoneNumber());
-            psUser.setLong(3, user.getUserId());
-            psUser.executeUpdate();
+                psUser.setString(1, user.getFullName());
+                psUser.setString(2, user.getPhoneNumber());
+                psUser.setLong(3, user.getUserId());
+                psUser.executeUpdate();
 
-            psCustomer.setString(1, customer.getGender());
-            psCustomer.setDate(2, customer.getBirthDate());
-            psCustomer.setString(3, customer.getAvatarUrl());
-            psCustomer.setLong(4, customer.getUserId());
-            psCustomer.executeUpdate();
+                psCustomer.setString(1, customer.getGender());
+                psCustomer.setDate(2, customer.getBirthDate());
+                psCustomer.setString(3, customer.getAvatarUrl());
+                psCustomer.setLong(4, customer.getUserId());
+                psCustomer.executeUpdate();
 
-            conn.commit();
-            return true;
+                conn.commit();
+                return true;
+            } catch (Exception e) {
+                conn.rollback();
+                e.printStackTrace();
+            }
         } catch (Exception e) {
-            conn.rollback();
             e.printStackTrace();
         }
-    } catch (Exception e) {
-        e.printStackTrace();
+        return false;
     }
-    return false;
+//Login with Google
 }
-}
+

@@ -37,7 +37,7 @@ public class EmailUtil {
 
             // Nội dung HTML
             String htmlContent = ""
-                + "<p>You have just registered an account at <strong>ClothingStore</strong>.</p>"
+                + "<p>You have just submitted a request to verify an account at <strong>ClothingStore</strong>.</p>"
                 + "<p>Your verification code (OTP) is:</p>"
                 + "<h2 style='color: #667eea'>" + otp + "</h2>"
                 + "<p>Please enter this code to complete registration. The code is valid for 5 minutes.</p>"

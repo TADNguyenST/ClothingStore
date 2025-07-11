@@ -38,13 +38,19 @@
             </a>
             <ul class="treeview-menu">
                 <li class="${requestScope.currentAction eq 'staffList' ? 'active' : ''}">
-                    <a href="${pageContext.request.contextPath}/admindashboard?action=staffList&module=mangestaff"><i class="fa fa-circle-o"></i> Account List</a>
+                    <a href="${pageContext.request.contextPath}/StaffManagement">
+                        <i class="fa fa-circle-o"></i> Account List
+                    </a>
                 </li>
                 <li class="${requestScope.currentAction eq 'staffForm' ? 'active' : ''}">
-                    <a href="${pageContext.request.contextPath}/admindashboard?action=staffForm&module=mangestaff"><i class="fa fa-circle-o"></i> Add New Account</a>
+                    <a href="${pageContext.request.contextPath}/CreateAccount">
+                        <i class="fa fa-circle-o"></i> Add Staff
+                    </a>
                 </li>
                 <li class="${requestScope.currentAction eq 'staffDetails' ? 'active' : ''}">
-                    <a href="${pageContext.request.contextPath}/admindashboard?action=staffDetails&module=mangestaff"><i class="fa fa-circle-o"></i> Account Details</a>
+                    <a href="${pageContext.request.contextPath}/admindashboard?action=staffDetails&module=mangestaff">
+                        <i class="fa fa-circle-o"></i> Account Details
+                    </a>
                 </li>
             </ul>
         </li>
