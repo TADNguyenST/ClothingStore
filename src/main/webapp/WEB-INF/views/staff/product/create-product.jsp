@@ -20,7 +20,7 @@
         DecimalFormatSymbols symbols = new DecimalFormatSymbols();
         symbols.setGroupingSeparator('.');
         symbols.setDecimalSeparator(',');
-        DecimalFormat df = new DecimalFormat("#,###.##", symbols);
+        DecimalFormat df = new DecimalFormat("#,###", symbols);
         return df.format(price);
     }
 %>
@@ -58,16 +58,18 @@
                             <form action="${pageContext.request.contextPath}/ProductManager" method="post" enctype="multipart/form-data" class="mt-3">
                                 <input type="hidden" name="action" value="create">
                                 <div class="mb-3">
-                                    <label class="form-label">Name</label>
+                                    <label class="form-label">Name <span class="text-danger">*</span></label>
                                     <input type="text" name="name" class="form-control" required>
+                                    <div class="invalid-feedback">Product name is required.</div>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">Description</label>
                                     <textarea name="description" class="form-control"></textarea>
                                 </div>
                                 <div class="mb-3">
-                                    <label class="form-label">Price</label>
-                                    <input type="text" name="price" min="1000" max="1000000" class="form-control" placeholder="e.g., 1.000.000" required>
+                                    <label class="form-label">Price <span class="text-danger">*</span></label>
+                                    <input type="text" name="price" class="form-control" placeholder="e.g., 450000 or 450.000" required>
+                                    <div class="invalid-feedback">Invalid price format.</div>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">Parent Category</label>
@@ -87,7 +89,7 @@
                                     </select>
                                 </div>
                                 <div class="mb-3">
-                                    <label class="form-label">Category</label>
+                                    <label class="form-label">Category <span class="text-danger">*</span></label>
                                     <select name="categoryId" id="categoryId" class="form-select" required>
                                         <option value="">Select a category</option>
                                         <%
@@ -104,9 +106,10 @@
                                             }
                                         %>
                                     </select>
+                                    <div class="invalid-feedback">Category is required.</div>
                                 </div>
                                 <div class="mb-3">
-                                    <label class="form-label">Brand</label>
+                                    <label class="form-label">Brand <span class="text-danger">*</span></label>
                                     <select name="brandId" class="form-select" required>
                                         <option value="">Select a brand</option>
                                         <%
@@ -119,10 +122,12 @@
                                             }
                                         %>
                                     </select>
+                                    <div class="invalid-feedback">Brand is required.</div>
                                 </div>
                                 <div class="mb-3">
-                                    <label class="form-label">Material</label>
+                                    <label class="form-label">Material <span class="text-danger">*</span></label>
                                     <input type="text" name="material" class="form-control" required>
+                                    <div class="invalid-feedback">Material is required.</div>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">Status</label>
@@ -136,16 +141,34 @@
                                     <div class="variant-row mb-3">
                                         <div class="row">
                                             <div class="col-md-4">
-                                                <input type="text" name="size" class="form-control" placeholder="Size" required>
+                                                <select name="size" class="form-control" required onchange="validateField(this)">
+                                                    <option value="" disabled selected>Select Size</option>
+                                                    <option value="S">S</option>
+                                                    <option value="M">M</option>
+                                                    <option value="L">L</option>
+                                                    <option value="XL">XL</option>
+                                                    <option value="XS">XS</option>
+                                                </select>
+                                                <div class="invalid-feedback">Invalid size.</div>
                                             </div>
                                             <div class="col-md-4">
-                                                <input type="text" name="color" class="form-control" placeholder="Color" required>
+                                                <select name="color" class="form-control" required onchange="validateField(this)">
+                                                    <option value="" disabled selected>Select Color</option>
+                                                    <option value="Red">Red</option>
+                                                    <option value="Blue">Blue</option>
+                                                    <option value="Green">Green</option>
+                                                    <option value="Black">Black</option>
+                                                    <option value="White">White</option>
+                                                    <option value="Yellow">Yellow</option>
+                                                </select>
+                                                <div class="invalid-feedback">Invalid color.</div>
                                             </div>
                                             <div class="col-md-3">
-                                                <input type="text" name="priceModifier" class="form-control" placeholder="Price Modifier (e.g., -5,00, 0,00)" required>
+                                                <input type="text" name="priceModifier" class="form-control" placeholder="e.g., 0 or 5000" required oninput="validateField(this)">
+                                                <div class="invalid-feedback">Invalid price modifier.</div>
                                             </div>
                                             <div class="col-md-1">
-                                                <button type="button" class="btn btn-danger btn-sm" onclick="removeElement(this); updateVariantOptions()">
+                                                <button type="button" class="btn btn-danger btn-sm" onclick="removeElement(this)">
                                                     <i class="bi bi-trash"></i> Remove
                                                 </button>
                                             </div>
@@ -169,7 +192,7 @@
                                                 </div>
                                             </div>
                                             <div class="col-md-2">
-                                                <button type="button" class="btn btn-danger btn-sm" onclick="removeElement(this); updateVariantOptions()">
+                                                <button type="button" class="btn btn-danger btn-sm" onclick="removeElement(this)">
                                                     <i class="bi bi-trash"></i> Remove
                                                 </button>
                                             </div>
@@ -217,23 +240,40 @@
                 variantDiv.innerHTML = `
                     <div class="row">
                         <div class="col-md-4">
-                            <input type="text" name="size" class="form-control" placeholder="Size" required>
+                            <select name="size" class="form-control" required onchange="validateField(this)">
+                                <option value="" disabled selected>Select Size</option>
+                                <option value="S">S</option>
+                                <option value="M">M</option>
+                                <option value="L">L</option>
+                                <option value="XL">XL</option>
+                                <option value="XS">XS</option>
+                            </select>
+                            <div class="invalid-feedback">Invalid size.</div>
                         </div>
                         <div class="col-md-4">
-                            <input type="text" name="color" class="form-control" placeholder="Color" required>
+                            <select name="color" class="form-control" required onchange="validateField(this)">
+                                <option value="" disabled selected>Select Color</option>
+                                <option value="Red">Red</option>
+                                <option value="Blue">Blue</option>
+                                <option value="Green">Green</option>
+                                <option value="Black">Black</option>
+                                <option value="White">White</option>
+                                <option value="Yellow">Yellow</option>
+                            </select>
+                            <div class="invalid-feedback">Invalid color.</div>
                         </div>
                         <div class="col-md-3">
-                            <input type="text" name="priceModifier" class="form-control" placeholder="Price Modifier (e.g., -5,00, 0,00)" required>
+                            <input type="text" name="priceModifier" class="form-control" placeholder="e.g., 0 or 5000" required oninput="validateField(this)">
+                            <div class="invalid-feedback">Invalid price modifier.</div>
                         </div>
                         <div class="col-md-1">
-                            <button type="button" class="btn btn-danger btn-sm" onclick="removeElement(this); updateVariantOptions()">
+                            <button type="button" class="btn btn-danger btn-sm" onclick="removeElement(this)">
                                 <i class="bi bi-trash"></i> Remove
                             </button>
                         </div>
                     </div>
                 `;
                 container.appendChild(variantDiv);
-                updateVariantOptions();
                 console.log("Variant added successfully.");
             }
 
@@ -259,14 +299,13 @@
                             </div>
                         </div>
                         <div class="col-md-2">
-                            <button type="button" class="btn btn-danger btn-sm" onclick="removeElement(this); updateVariantOptions()">
+                            <button type="button" class="btn btn-danger btn-sm" onclick="removeElement(this)">
                                 <i class="bi bi-trash"></i> Remove
                             </button>
                         </div>
                     </div>
                 `;
                 container.appendChild(imageDiv);
-                updateVariantOptions();
                 console.log("Image added successfully.");
             }
 
@@ -278,26 +317,63 @@
                     checkboxes.forEach(cb => {
                         if (cb !== checkbox) {
                             cb.checked = false;
-                            cb.disabled = true; // Vô hiệu hóa các checkbox khác
+                            cb.disabled = true;
                         }
                     });
                 } else {
                     checkboxes.forEach(cb => {
-                        cb.disabled = false; // Kích hoạt lại nếu không có checkbox nào được chọn
+                        cb.disabled = false;
                     });
                 }
             }
 
-            // Hàm lấy danh sách tùy chọn biến thể (giờ không cần vì xóa No Variant)
-            function getVariantOptions() {
-                console.log("Generating variant options (no longer needed due to No Variant removal)...");
-                return ""; // Không sử dụng nữa
-            }
+            // Hàm validate field
+            function validateField(field) {
+                const variantRow = field.closest('.variant-row');
+                const name = field.name;
+                const value = field.value;
+                const validSizes = ['S', 'M', 'L', 'XL', 'XS'];
+                const validColors = ['Red', 'Blue', 'Green', 'Black', 'White', 'Yellow'];
+                const numberRegex = /^\d+(\.\d{3})*$|^\d+$/;
 
-            // Hàm cập nhật danh sách biến thể (giờ chỉ để cập nhật UI)
-            function updateVariantOptions() {
-                console.log("Updating variant options (no action needed due to No Variant removal)...");
-                // Không cần cập nhật select box nữa
+                // Clear previous validation state for this field
+                field.classList.remove('is-invalid');
+
+                // Validate the specific field
+                if (name === 'size' && (!value || !validSizes.includes(value))) {
+                    field.classList.add('is-invalid');
+                } else if (name === 'color' && (!value || !validColors.includes(value))) {
+                    field.classList.add('is-invalid');
+                } else if (name === 'priceModifier') {
+                    const modifierStr = value.replace(/\./g, '');
+                    if (!modifierStr || !numberRegex.test(modifierStr) || parseInt(modifierStr) < 0) {
+                        field.classList.add('is-invalid');
+                    }
+                }
+
+                // Check for duplicates only for the current variant
+                if ((name === 'size' || name === 'color') && value) {
+                    const size = variantRow.querySelector('select[name="size"]').value;
+                    const color = variantRow.querySelector('select[name="color"]').value;
+                    if (size && color) {
+                        const variants = document.querySelectorAll('.variant-row');
+                        let duplicateCount = 0;
+                        variants.forEach(variant => {
+                            const vSize = variant.querySelector('select[name="size"]').value;
+                            const vColor = variant.querySelector('select[name="color"]').value;
+                            if (vSize === size && vColor === color) {
+                                duplicateCount++;
+                            }
+                        });
+                        if (duplicateCount > 1) {
+                            variantRow.querySelector('select[name="size"]').classList.add('is-invalid');
+                            variantRow.querySelector('select[name="color"]').classList.add('is-invalid');
+                        } else {
+                            variantRow.querySelector('select[name="size"]').classList.remove('is-invalid');
+                            variantRow.querySelector('select[name="color"]').classList.remove('is-invalid');
+                        }
+                    }
+                }
             }
 
             // Hàm lọc danh mục con
@@ -326,76 +402,131 @@
                     form.addEventListener('submit', function(e) {
                         console.log("Form submit triggered...");
                         const priceInput = document.querySelector('input[name="price"]');
-                        const sizes = document.querySelectorAll('input[name="size"]');
-                        const colors = document.querySelectorAll('input[name="color"]');
+                        const nameInput = document.querySelector('input[name="name"]');
+                        const categorySelect = document.querySelector('select[name="categoryId"]');
+                        const brandSelect = document.querySelector('select[name="brandId"]');
+                        const materialInput = document.querySelector('input[name="material"]');
+                        const sizes = document.querySelectorAll('select[name="size"]');
+                        const colors = document.querySelectorAll('select[name="color"]');
                         const priceModifiers = document.querySelectorAll('input[name="priceModifier"]');
                         const images = document.querySelectorAll('input[name="images"]');
-                        const numberRegex = /^-?\d+(\,\d{1,2})?$/;
+                        const numberRegex = /^\d+(\.\d{3})*$|^\d+$/;
+                        const errors = [];
 
+                        // Clear previous validation states
+                        nameInput.classList.remove('is-invalid');
+                        priceInput.classList.remove('is-invalid');
+                        categorySelect.classList.remove('is-invalid');
+                        brandSelect.classList.remove('is-invalid');
+                        materialInput.classList.remove('is-invalid');
+                        sizes.forEach(s => s.classList.remove('is-invalid'));
+                        colors.forEach(c => c.classList.remove('is-invalid'));
+                        priceModifiers.forEach(p => p.classList.remove('is-invalid'));
+
+                        // Validate name
+                        if (!nameInput.value.trim()) {
+                            errors.push('Product name is required.');
+                            nameInput.classList.add('is-invalid');
+                        }
+
+                        // Validate price
                         if (priceInput) {
-                            const priceStr = priceInput.value.replace(/\./g, '').replace(',', '.');
-                            if (!numberRegex.test(priceInput.value) || parseFloat(priceStr) <= 0) {
-                                e.preventDefault();
-                                alert('Price must be a valid positive number (e.g., 1.000.000,00)');
-                                return;
+                            const priceStr = priceInput.value.replace(/\./g, '');
+                            if (!numberRegex.test(priceStr) || parseInt(priceStr) <= 0) {
+                                errors.push('Invalid price format.');
+                                priceInput.classList.add('is-invalid');
                             }
                         } else {
-                            console.error("Price input not found!");
+                            errors.push('Price input is missing.');
+                        }
+                        const price = priceInput ? parseInt(priceInput.value.replace(/\./g, '')) : 0;
+
+                        // Validate category
+                        if (!categorySelect.value) {
+                            errors.push('Category is required.');
+                            categorySelect.classList.add('is-invalid');
                         }
 
+                        // Validate brand
+                        if (!brandSelect.value) {
+                            errors.push('Brand is required.');
+                            brandSelect.classList.add('is-invalid');
+                        }
+
+                        // Validate material
+                        if (!materialInput.value.trim()) {
+                            errors.push('Material is required.');
+                            materialInput.classList.add('is-invalid');
+                        }
+
+                        // Validate variants
                         if (sizes.length === 0) {
-                            e.preventDefault();
-                            alert('At least one variant is required');
-                            return;
-                        }
-                        for (let i = 0; i < sizes.length; i++) {
-                            if (!sizes[i].value.trim()) {
-                                e.preventDefault();
-                                alert('Size cannot be empty for variant ' + (i + 1));
-                                return;
-                            }
-                            if (!colors[i].value.trim()) {
-                                e.preventDefault();
-                                alert('Color cannot be empty for variant ' + (i + 1));
-                                return;
-                            }
-                            if (!priceModifiers[i].value.trim() || !numberRegex.test(priceModifiers[i].value)) {
-                                e.preventDefault();
-                                alert('Price Modifier must be a valid number for variant ' + (i + 1) + ' (e.g., -5,00, 0,00, 5,50)');
-                                return;
-                            }
-                            const modifierStr = priceModifiers[i].value.replace(/\./g, '').replace(',', '.');
-                            const modifier = parseFloat(modifierStr);
-                            const price = priceInput ? parseFloat(priceInput.value.replace(/\./g, '').replace(',', '.')) : 0;
-                            if (price + modifier < 0) {
-                                e.preventDefault();
-                                alert('Price Modifier for variant ' + (i + 1) + ' makes total price negative (' + (price + modifier) + '). Total price must be non-negative.');
-                                return;
+                            errors.push('At least one variant is required.');
+                        } else {
+                            const validSizes = ['S', 'M', 'L', 'XL', 'XS'];
+                            const validColors = ['Red', 'Blue', 'Green', 'Black', 'White', 'Yellow'];
+                            const combinations = new Set();
+                            for (let i = 0; i < sizes.length; i++) {
+                                const size = sizes[i].value;
+                                const color = colors[i].value;
+                                const priceModifier = priceModifiers[i].value;
+                                if (!size || !validSizes.includes(size)) {
+                                    errors.push(`Invalid size in variant ${i + 1}.`);
+                                    sizes[i].classList.add('is-invalid');
+                                }
+                                if (!color || !validColors.includes(color)) {
+                                    errors.push(`Invalid color in variant ${i + 1}.`);
+                                    colors[i].classList.add('is-invalid');
+                                }
+                                if (!priceModifier || !numberRegex.test(priceModifier)) {
+                                    errors.push(`Invalid price modifier in variant ${i + 1}.`);
+                                    priceModifiers[i].classList.add('is-invalid');
+                                } else {
+                                    const modifierStr = priceModifier.replace(/\./g, '');
+                                    const modifier = parseInt(modifierStr);
+                                    if (modifier < 0) {
+                                        errors.push(`Price modifier in variant ${i + 1} cannot be negative.`);
+                                        priceModifiers[i].classList.add('is-invalid');
+                                    }
+                                    if (price + modifier < price) {
+                                        errors.push(`Price modifier in variant ${i + 1} makes total price less than base price.`);
+                                        priceModifiers[i].classList.add('is-invalid');
+                                    }
+                                }
+                                if (size && color) {
+                                    const combo = `${size}-${color}`;
+                                    if (combinations.has(combo)) {
+                                        errors.push(`Duplicate size and color in variant ${i + 1}.`);
+                                        sizes[i].classList.add('is-invalid');
+                                        colors[i].classList.add('is-invalid');
+                                    } else {
+                                        combinations.add(combo);
+                                    }
+                                }
                             }
                         }
 
+                        // Validate images
                         if (images.length === 0) {
-                            e.preventDefault();
-                            alert('At least one image is required');
-                            return;
+                            errors.push('At least one image is required.');
                         }
                         for (let i = 0; i < images.length; i++) {
                             if (!images[i].value) {
-                                e.preventDefault();
-                                alert('Please select an image for upload ' + (i + 1));
-                                return;
+                                errors.push(`Please select an image for upload ${i + 1}.`);
                             }
                         }
 
                         const mainImages = document.querySelectorAll('input[name="isMainImage"]:checked');
                         if (mainImages.length > 1) {
-                            e.preventDefault();
-                            alert('Only one image can be set as the main image');
-                            return;
+                            errors.push('Only one image can be set as the main image.');
                         } else if (mainImages.length === 0) {
+                            errors.push('A main image is required.');
+                        }
+
+                        // Display all errors in one alert
+                        if (errors.length > 0) {
                             e.preventDefault();
-                            alert('Please select at least one image as the main image');
-                            return;
+                            alert('Please correct the following:\n- ' + errors.join('\n- '));
                         }
                     });
                 } else {
@@ -404,7 +535,11 @@
 
                 const variantsContainer = document.getElementById('variants-container');
                 if (variantsContainer) {
-                    variantsContainer.addEventListener('input', updateVariantOptions);
+                    variantsContainer.addEventListener('input', function(e) {
+                        if (e.target.name === 'size' || e.target.name === 'color' || e.target.name === 'priceModifier') {
+                            validateField(e.target);
+                        }
+                    });
                     variantsContainer.addEventListener('click', function(e) {
                         if (e.target.closest('.btn-danger')) {
                             updateVariantOptions();

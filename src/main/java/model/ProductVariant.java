@@ -2,8 +2,6 @@ package model;
 
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 
 public class ProductVariant {
     private Long variantId;
@@ -13,14 +11,14 @@ public class ProductVariant {
     private BigDecimal priceModifier;
     private String sku;
 
-    // Thuộc tính tạm thời để sinh SKU
+    // Transient fields for SKU generation
     private transient String brand;
     private transient String productName;
 
     public ProductVariant() {
     }
 
-    // Constructor không sinh SKU (dùng khi lấy từ DB)
+    // Constructor without SKU generation (used when retrieving from DB)
     public ProductVariant(Long variantId, Long productId, String size, String color,
                           BigDecimal priceModifier, String sku) {
         this.variantId = variantId;
@@ -31,7 +29,7 @@ public class ProductVariant {
         this.sku = sku;
     }
 
-    // Constructor sinh SKU (dùng khi tạo mới)
+    // Constructor with SKU generation (used when creating new)
     public ProductVariant(Long productId, String size, String color,
                           BigDecimal priceModifier, String brand, String productName) {
         this.productId = productId;
@@ -43,17 +41,13 @@ public class ProductVariant {
         this.sku = generateSku();
     }
 
-    // Hàm sinh SKU với xử lý null và định dạng priceModifier
+    // Generate SKU without priceModifier
     private String generateSku() {
         String brandSafe = (brand != null ? brand : "UNKNOWN").replaceAll("\\s+", "");
         String sizeSafe = (size != null ? size : "NOSIZE").replaceAll("\\s+", "");
         String colorSafe = (color != null ? color : "NOCOLOR").replaceAll("\\s+", "");
         String productNameSafe = (productName != null ? productName : "NOPRODUCT").replaceAll("\\s+", "");
-        // Định dạng priceModifier với dấu chấm cứ 3 số
-        DecimalFormat decimalFormat = new DecimalFormat("#,###");
-        String priceSafe = (priceModifier != null ? decimalFormat.format(priceModifier) : "0");
-        return String.format("%s-%s-%s-%s-%s", brandSafe, sizeSafe, colorSafe, 
-                            productNameSafe, priceSafe.replace(",", ".")).toUpperCase();
+        return String.format("%s-%s-%s-%s", brandSafe, sizeSafe, colorSafe, productNameSafe).toUpperCase();
     }
 
     public Long getVariantId() {
@@ -78,7 +72,7 @@ public class ProductVariant {
 
     public void setSize(String size) {
         this.size = size;
-        if (brand != null && productName != null) {
+        if (brand != null && productName != null && color != null) {
             this.sku = generateSku();
         }
     }
@@ -89,7 +83,7 @@ public class ProductVariant {
 
     public void setColor(String color) {
         this.color = color;
-        if (brand != null && productName != null) {
+        if (brand != null && productName != null && size != null) {
             this.sku = generateSku();
         }
     }
@@ -100,9 +94,7 @@ public class ProductVariant {
 
     public void setPriceModifier(BigDecimal priceModifier) {
         this.priceModifier = priceModifier;
-        if (brand != null && productName != null) {
-            this.sku = generateSku();
-        }
+        // Do not regenerate SKU as it does not depend on priceModifier
     }
 
     public String getSku() {

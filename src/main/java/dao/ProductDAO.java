@@ -12,8 +12,6 @@ import model.ProductVariant;
 import model.ProductImage;
 import util.DBContext;
 import java.math.BigDecimal;
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
 import java.util.Date;
 
 /**
@@ -27,17 +25,15 @@ public class ProductDAO extends DBContext {
 
     public List<Product> getAll() {
         List<Product> list = new ArrayList<>();
-        String sql = "SELECT p.product_id, p.name, p.description, p.price, p.category_id, p.brand_id, p.material, p.status, "
-                + "p.created_at, p.updated_at, c.category_id, c.name AS category_name, c.description AS category_description, "
-                + "c.parent_category_id, c.is_active AS category_active, c.created_at AS category_created_at, "
-                + "b.brand_id, b.name AS brand_name, b.description AS brand_description, b.logo_url, b.is_active AS brand_active, "
-                + "b.created_at AS brand_created_at, "
-                + "ri.image_url AS main_image_url "
-                + "FROM products p "
-                + "LEFT JOIN categories c ON p.category_id = c.category_id "
-                + "LEFT JOIN brands b ON p.brand_id = b.brand_id "
-                + "LEFT JOIN (SELECT product_id, image_url, ROW_NUMBER() OVER(PARTITION BY product_id ORDER BY display_order, image_id) AS rn "
-                + "           FROM product_images WHERE is_main = 1) ri ON p.product_id = ri.product_id AND ri.rn = 1";
+        String sql = "SELECT p.product_id, p.name, p.description, p.price, p.category_id, p.brand_id, p.material, p.status, " +
+                     "p.created_at, p.updated_at, c.category_id, c.name AS category_name, c.description AS category_description, " +
+                     "c.parent_category_id, c.is_active AS category_active, c.created_at AS category_created_at, " +
+                     "b.brand_id, b.name AS brand_name, b.description AS brand_description, b.logo_url, b.is_active AS brand_active, " +
+                     "b.created_at AS brand_created_at, " +
+                     "(SELECT TOP 1 image_url FROM product_images WHERE product_id = p.product_id AND is_main = 1) AS main_image_url " +
+                     "FROM products p " +
+                     "LEFT JOIN categories c ON p.category_id = c.category_id " +
+                     "LEFT JOIN brands b ON p.brand_id = b.brand_id";
 
         try {
             PreparedStatement ps = conn.prepareStatement(sql);
@@ -58,18 +54,16 @@ public class ProductDAO extends DBContext {
 
     public Product getProductById(long productId) {
         Product product = null;
-        String sql = "SELECT p.product_id, p.name, p.description, p.price, p.category_id, p.brand_id, p.material, p.status, "
-                + "p.created_at, p.updated_at, c.category_id, c.name AS category_name, c.description AS category_description, "
-                + "c.parent_category_id, c.is_active AS category_active, c.created_at AS category_created_at, "
-                + "b.brand_id, b.name AS brand_name, b.description AS brand_description, b.logo_url, b.is_active AS brand_active, "
-                + "b.created_at AS brand_created_at, "
-                + "ri.image_url AS main_image_url "
-                + "FROM products p "
-                + "LEFT JOIN categories c ON p.category_id = c.category_id "
-                + "LEFT JOIN brands b ON p.brand_id = b.brand_id "
-                + "LEFT JOIN (SELECT product_id, image_url, ROW_NUMBER() OVER(PARTITION BY product_id ORDER BY display_order, image_id) AS rn "
-                + "           FROM product_images WHERE is_main = 1) ri ON p.product_id = ri.product_id AND ri.rn = 1 "
-                + "WHERE p.product_id = ?";
+        String sql = "SELECT p.product_id, p.name, p.description, p.price, p.category_id, p.brand_id, p.material, p.status, " +
+                     "p.created_at, p.updated_at, c.category_id, c.name AS category_name, c.description AS category_description, " +
+                     "c.parent_category_id, c.is_active AS category_active, c.created_at AS category_created_at, " +
+                     "b.brand_id, b.name AS brand_name, b.description AS brand_description, b.logo_url, b.is_active AS brand_active, " +
+                     "b.created_at AS brand_created_at, " +
+                     "(SELECT TOP 1 image_url FROM product_images WHERE product_id = p.product_id AND is_main = 1) AS main_image_url " +
+                     "FROM products p " +
+                     "LEFT JOIN categories c ON p.category_id = c.category_id " +
+                     "LEFT JOIN brands b ON p.brand_id = b.brand_id " +
+                     "WHERE p.product_id = ?";
 
         try {
             PreparedStatement ps = conn.prepareStatement(sql);
@@ -88,101 +82,313 @@ public class ProductDAO extends DBContext {
         return product;
     }
 
-    public long insert(String name, String description, BigDecimal price, long categoryId, long brandId,
-        String material, String status, List<ProductVariant> variants, List<ProductImage> images) {
-    String sql = "INSERT INTO products (name, description, price, category_id, brand_id, material, status, created_at) " +
-                "OUTPUT INSERTED.product_id VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+    public List<Product> filterProductsForShopWithSort(List<String> colors, List<String> sizes, BigDecimal maxPrice, 
+            List<Long> brandIds, Long parentCategoryId, Long categoryId, int page, int pageSize, String sort) {
+        List<Product> list = new ArrayList<>();
+        StringBuilder sql = new StringBuilder(
+                "SELECT p.product_id, p.name, p.price, p.created_at, p.category_id, p.brand_id, p.status, " +
+                "c.name AS category_name, c.parent_category_id, c.is_active AS category_active, " +
+                "b.name AS brand_name, b.is_active AS brand_active, " +
+                "(SELECT TOP 1 image_url FROM product_images WHERE product_id = p.product_id AND is_main = 1) AS main_image_url, " +
+                "(SELECT TOP 1 variant_id FROM product_variants WHERE product_id = p.product_id) AS default_variant_id " +
+                "FROM products p " +
+                "JOIN categories c ON p.category_id = c.category_id " +
+                "LEFT JOIN brands b ON p.brand_id = b.brand_id " +
+                "WHERE p.status = 'Active' AND c.is_active = 1"
+        );
 
-    try {
-        conn.setAutoCommit(false);
-        PreparedStatement ps = conn.prepareStatement(sql);
-        ps.setString(1, name);
-        ps.setString(2, description);
-        ps.setBigDecimal(3, price);
-        ps.setLong(4, categoryId);
-        ps.setLong(5, brandId);
-        ps.setString(6, material);
-        ps.setString(7, status);
-        ps.setTimestamp(8, new java.sql.Timestamp(new Date().getTime()));
+        List<Object> params = new ArrayList<>();
+        int offset = (page - 1) * pageSize;
 
-        ResultSet rs = ps.executeQuery();
-        long productId = 0;
-        if (rs.next()) {
-            productId = rs.getLong("product_id");
+        // Prioritize categoryId (subcategory)
+        if (categoryId != null) {
+            sql.append(" AND p.category_id = ?");
+            params.add(categoryId);
+            if (parentCategoryId != null) {
+                sql.append(" AND c.parent_category_id = ?");
+                params.add(parentCategoryId);
+            }
+            System.out.println("filterProductsForShopWithSort - Filtering by categoryId: " + categoryId + ", parentCategoryId: " + parentCategoryId);
+        } else if (parentCategoryId != null) {
+            sql.append(" AND c.parent_category_id = ?");
+            params.add(parentCategoryId);
+            System.out.println("filterProductsForShopWithSort - Filtering by parentCategoryId: " + parentCategoryId);
         } else {
-            conn.rollback();
-            System.out.println("Failed to retrieve product_id after insert");
-            return 0;
+            System.out.println("filterProductsForShopWithSort - No category filter applied.");
         }
 
-        String checkSkuSql = "SELECT sku FROM product_variants WHERE sku = ?";
-        String variantSql = "INSERT INTO product_variants (product_id, size, color, price_modifier, sku) " +
-                           "OUTPUT INSERTED.variant_id VALUES (?, ?, ?, ?, ?)";
-        PreparedStatement psCheckSku = conn.prepareStatement(checkSkuSql);
-        PreparedStatement psVariant = conn.prepareStatement(variantSql);
-
-        for (ProductVariant variant : variants) {
-            String sku = variant.getSku();
-            if (sku == null || sku.length() > 100) {
-                conn.rollback();
-                System.out.println("Invalid SKU: " + (sku == null ? "null" : "exceeds 100 characters"));
-                return 0;
+        // Filter by colors
+        if (colors != null && !colors.isEmpty()) {
+            sql.append(" AND EXISTS (SELECT 1 FROM product_variants pv WHERE pv.product_id = p.product_id AND LOWER(pv.color) IN (");
+            for (int i = 0; i < colors.size(); i++) {
+                if (i > 0) sql.append(", ");
+                sql.append("?");
+                params.add(colors.get(i).toLowerCase());
             }
+            sql.append("))");
+            System.out.println("filterProductsForShopWithSort - Filtering by colors: " + colors);
+        }
 
-            psCheckSku.setString(1, sku);
-            ResultSet rsSku = psCheckSku.executeQuery();
-            if (rsSku.next()) {
-                conn.rollback();
-                System.out.println("Duplicate SKU: " + sku);
-                return 0;
+        // Filter by sizes
+        if (sizes != null && !sizes.isEmpty()) {
+            sql.append(" AND EXISTS (SELECT 1 FROM product_variants pv WHERE pv.product_id = p.product_id AND LOWER(pv.size) IN (");
+            for (int i = 0; i < sizes.size(); i++) {
+                if (i > 0) sql.append(", ");
+                sql.append("?");
+                params.add(sizes.get(i).toLowerCase());
             }
+            sql.append("))");
+            System.out.println("filterProductsForShopWithSort - Filtering by sizes: " + sizes);
+        }
 
-            psVariant.setLong(1, productId);
-            psVariant.setString(2, variant.getSize());
-            psVariant.setString(3, variant.getColor());
-            psVariant.setBigDecimal(4, variant.getPriceModifier()); // Fixed: Use psVariant instead of ps
-            psVariant.setString(5, sku);
-            ResultSet rsVariant = psVariant.executeQuery();
-            if (rsVariant.next()) {
-                long variantId = rsVariant.getLong("variant_id");
-                String inventorySql = "INSERT INTO inventory (variant_id, quantity, reserved_quantity) VALUES (?, 0, 0)";
-                PreparedStatement psInventory = conn.prepareStatement(inventorySql);
-                psInventory.setLong(1, variantId);
-                psInventory.executeUpdate();
-            } else {
-                conn.rollback();
-                System.out.println("Failed to retrieve variant_id for SKU: " + sku);
-                return 0;
+        // Filter by max price
+        if (maxPrice != null) {
+            sql.append(" AND p.price <= ?");
+            params.add(maxPrice);
+            System.out.println("filterProductsForShopWithSort - Filtering by maxPrice: " + maxPrice);
+        }
+
+        // Filter by brandIds
+        if (brandIds != null && !brandIds.isEmpty()) {
+            sql.append(" AND p.brand_id IN (");
+            for (int i = 0; i < brandIds.size(); i++) {
+                if (i > 0) sql.append(", ");
+                sql.append("?");
+                params.add(brandIds.get(i));
             }
+            sql.append(") AND p.brand_id IS NOT NULL");
+            System.out.println("filterProductsForShopWithSort - Filtering by brandIds: " + brandIds);
         }
 
-        for (ProductImage image : images) {
-            insertProductImage(productId, image);
+        // Add sorting
+        System.out.println("filterProductsForShopWithSort - Applying sort: " + sort);
+        switch (sort != null ? sort.toLowerCase() : "created_at_desc") {
+            case "name_asc":
+                sql.append(" ORDER BY p.name ASC");
+                break;
+            case "name_desc":
+                sql.append(" ORDER BY p.name DESC");
+                break;
+            case "price_asc":
+                sql.append(" ORDER BY p.price ASC");
+                break;
+            case "price_desc":
+                sql.append(" ORDER BY p.price DESC");
+                break;
+            case "created_at_desc":
+            default:
+                sql.append(" ORDER BY p.created_at DESC");
+                break;
         }
 
-        conn.commit();
-        return productId;
-    } catch (SQLException e) {
-        try {
-            conn.rollback();
-        } catch (SQLException ex) {
-            System.out.println("Rollback error: " + ex.getMessage());
-        }
-        System.out.println("Database error: " + e.getMessage());
-        e.printStackTrace();
-        return 0;
-    } finally {
-        try {
-            conn.setAutoCommit(true);
+        sql.append(" OFFSET ? ROWS FETCH NEXT ? ROWS ONLY");
+        params.add(offset);
+        params.add(pageSize);
+
+        System.out.println("filterProductsForShopWithSort - SQL Query: " + sql.toString());
+        System.out.println("filterProductsForShopWithSort - Parameters: " + params);
+
+        try (PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+            for (int i = 0; i < params.size(); i++) {
+                ps.setObject(i + 1, params.get(i));
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Product product = new Product();
+                    product.setProductId(rs.getLong("product_id"));
+                    product.setName(rs.getString("name"));
+                    product.setPrice(rs.getBigDecimal("price"));
+                    product.setCreatedAt(rs.getTimestamp("created_at"));
+                    product.setStatus(rs.getString("status"));
+                    product.setImageUrl(rs.getString("main_image_url"));
+                    product.setDefaultVariantId(rs.getLong("default_variant_id"));
+
+                    Category category = new Category();
+                    category.setCategoryId(rs.getLong("category_id"));
+                    category.setName(rs.getString("category_name"));
+                    category.setParentCategoryId(rs.getLong("parent_category_id"));
+                    category.setActive(rs.getBoolean("category_active"));
+                    product.setCategory(category);
+
+                    Brand brand = new Brand();
+                    brand.setBrandId(rs.getLong("brand_id"));
+                    brand.setName(rs.getString("brand_name"));
+                    brand.setActive(rs.getBoolean("brand_active"));
+                    product.setBrand(brand);
+
+                    product.setVariants(getVariantsByProductId(product.getProductId()));
+                    product.setImages(getImagesByProductId(product.getProductId()));
+                    list.add(product);
+
+                    System.out.println("filterProductsForShopWithSort - Product ID: " + product.getProductId() +
+                            ", Name: " + product.getName() +
+                            ", Price: " + product.getPrice() +
+                            ", Created At: " + product.getCreatedAt());
+                }
+            }
+            System.out.println("filterProductsForShopWithSort - Returned " + list.size() + " products for sort: " + sort);
+            return list;
         } catch (SQLException e) {
-            System.out.println("AutoCommit reset error: " + e.getMessage());
+            System.err.println("filterProductsForShopWithSort - SQLException: " + e.getMessage());
+            e.printStackTrace();
+            return new ArrayList<>();
         }
     }
-}
+
+    public List<Product> getNewArrivals(int limit) {
+        List<Product> list = new ArrayList<>();
+        String sql = "SELECT TOP (?) p.product_id, p.name, p.price, p.created_at, " +
+                     "(SELECT TOP 1 image_url FROM product_images WHERE product_id = p.product_id AND is_main = 1) AS main_image_url, " +
+                     "(SELECT TOP 1 variant_id FROM product_variants WHERE product_id = p.product_id) AS default_variant_id " +
+                     "FROM products p " +
+                     "WHERE p.status = 'Active' " +
+                     "ORDER BY p.created_at DESC";
+
+        try {
+            PreparedStatement ps = conn.prepareStatement(sql);
+            ps.setInt(1, limit);
+            ResultSet rs = ps.executeQuery();
+
+            while (rs.next()) {
+                Product product = new Product();
+                product.setProductId(rs.getLong("product_id"));
+                product.setName(rs.getString("name"));
+                product.setPrice(rs.getBigDecimal("price"));
+                product.setCreatedAt(rs.getTimestamp("created_at"));
+                product.setImageUrl(rs.getString("main_image_url"));
+                product.setDefaultVariantId(rs.getLong("default_variant_id"));
+                list.add(product);
+            }
+        } catch (SQLException e) {
+            System.out.println("Error in getNewArrivals: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    public List<Product> searchProducts(String keyword) {
+        List<Product> list = new ArrayList<>();
+        String sql = "SELECT TOP 5 p.product_id, p.name, p.price, " +
+                     "(SELECT TOP 1 image_url FROM product_images WHERE product_id = p.product_id AND is_main = 1) AS main_image_url " +
+                     "FROM products p " +
+                     "WHERE p.status = 'Active' AND LOWER(p.name) LIKE LOWER(?)";
+
+        try {
+            PreparedStatement ps = conn.prepareStatement(sql);
+            ps.setString(1, "%" + keyword + "%");
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                Product product = new Product();
+                product.setProductId(rs.getLong("product_id"));
+                product.setName(rs.getString("name"));
+                product.setPrice(rs.getBigDecimal("price"));
+                String imageUrl = rs.getString("main_image_url");
+                product.setImageUrl(imageUrl != null ? imageUrl : "https://placehold.co/50x50");
+                list.add(product);
+            }
+        } catch (SQLException e) {
+            System.out.println("Error in searchProducts: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    // Other methods (unchanged)
+    public long insert(String name, String description, BigDecimal price, long categoryId, long brandId,
+            String material, String status, List<ProductVariant> variants, List<ProductImage> images) {
+        String sql = "INSERT INTO products (name, description, price, category_id, brand_id, material, status, created_at) " +
+                     "OUTPUT INSERTED.product_id VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+
+        try {
+            conn.setAutoCommit(false);
+            PreparedStatement ps = conn.prepareStatement(sql);
+            ps.setString(1, name);
+            ps.setString(2, description);
+            ps.setBigDecimal(3, price);
+            ps.setLong(4, categoryId);
+            ps.setLong(5, brandId);
+            ps.setString(6, material);
+            ps.setString(7, status);
+            ps.setTimestamp(8, new java.sql.Timestamp(new Date().getTime()));
+
+            ResultSet rs = ps.executeQuery();
+            long productId = 0;
+            if (rs.next()) {
+                productId = rs.getLong("product_id");
+            } else {
+                conn.rollback();
+                System.out.println("Failed to retrieve product_id after insert");
+                return 0;
+            }
+
+            String checkSkuSql = "SELECT sku FROM product_variants WHERE sku = ?";
+            String variantSql = "INSERT INTO product_variants (product_id, size, color, price_modifier, sku) " +
+                               "OUTPUT INSERTED.variant_id VALUES (?, ?, ?, ?, ?)";
+            PreparedStatement psCheckSku = conn.prepareStatement(checkSkuSql);
+            PreparedStatement psVariant = conn.prepareStatement(variantSql);
+
+            for (ProductVariant variant : variants) {
+                String sku = variant.getSku();
+                if (sku == null || sku.length() > 100) {
+                    conn.rollback();
+                    System.out.println("Invalid SKU: " + (sku == null ? "null" : "exceeds 100 characters"));
+                    return 0;
+                }
+
+                psCheckSku.setString(1, sku);
+                ResultSet rsSku = psCheckSku.executeQuery();
+                if (rsSku.next()) {
+                    conn.rollback();
+                    System.out.println("Duplicate SKU: " + sku);
+                    return 0;
+                }
+
+                psVariant.setLong(1, productId);
+                psVariant.setString(2, variant.getSize());
+                psVariant.setString(3, variant.getColor());
+                psVariant.setBigDecimal(4, variant.getPriceModifier());
+                psVariant.setString(5, sku);
+                ResultSet rsVariant = psVariant.executeQuery();
+                if (rsVariant.next()) {
+                    long variantId = rsVariant.getLong("variant_id");
+                    String inventorySql = "INSERT INTO inventory (variant_id, quantity, reserved_quantity) VALUES (?, 0, 0)";
+                    PreparedStatement psInventory = conn.prepareStatement(inventorySql);
+                    psInventory.setLong(1, variantId);
+                    psInventory.executeUpdate();
+                } else {
+                    conn.rollback();
+                    System.out.println("Failed to retrieve variant_id for SKU: " + sku);
+                    return 0;
+                }
+            }
+
+            for (ProductImage image : images) {
+                insertProductImage(productId, image);
+            }
+
+            conn.commit();
+            return productId;
+        } catch (SQLException e) {
+            try {
+                conn.rollback();
+            } catch (SQLException ex) {
+                System.out.println("Rollback error: " + ex.getMessage());
+            }
+            System.out.println("Database error: " + e.getMessage());
+            e.printStackTrace();
+            return 0;
+        } finally {
+            try {
+                conn.setAutoCommit(true);
+            } catch (SQLException e) {
+                System.out.println("AutoCommit reset error: " + e.getMessage());
+            }
+        }
+    }
 
     private void insertProductImage(long productId, ProductImage image) throws SQLException {
-        String sql = "INSERT INTO product_images (product_id, variant_id, image_url, display_order, is_main, created_at) "
-                + "VALUES (?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO product_images (product_id, variant_id, image_url, display_order, is_main, created_at) " +
+                     "VALUES (?, ?, ?, ?, ?, ?)";
         PreparedStatement ps = conn.prepareStatement(sql);
         ps.setLong(1, productId);
         if (image.getVariantId() == null) {
@@ -202,8 +408,8 @@ public class ProductDAO extends DBContext {
         try {
             conn.setAutoCommit(false);
 
-            String productSql = "UPDATE products SET name = ?, description = ?, price = ?, category_id = ?, brand_id = ?, "
-                    + "material = ?, status = ?, updated_at = ? WHERE product_id = ?";
+            String productSql = "UPDATE products SET name = ?, description = ?, price = ?, category_id = ?, brand_id = ?, " +
+                               "material = ?, status = ?, updated_at = ? WHERE product_id = ?";
             PreparedStatement psProduct = conn.prepareStatement(productSql);
             psProduct.setString(1, name);
             psProduct.setString(2, description);
@@ -232,10 +438,10 @@ public class ProductDAO extends DBContext {
             }
 
             String checkSkuSql = "SELECT sku FROM product_variants WHERE sku = ? AND variant_id != ?";
-            String updateVariantSql = "UPDATE product_variants SET size = ?, color = ?, price_modifier = ?, sku = ? "
-                    + "WHERE variant_id = ? AND product_id = ?";
-            String insertVariantSql = "INSERT INTO product_variants (product_id, size, color, price_modifier, sku) "
-                    + "VALUES (?, ?, ?, ?, ?); SELECT SCOPE_IDENTITY() AS variant_id;";
+            String updateVariantSql = "UPDATE product_variants SET size = ?, color = ?, price_modifier = ?, sku = ? " +
+                                     "WHERE variant_id = ? AND product_id = ?";
+            String insertVariantSql = "INSERT INTO product_variants (product_id, size, color, price_modifier, sku) " +
+                                     "VALUES (?, ?, ?, ?, ?); SELECT SCOPE_IDENTITY() AS variant_id;";
             PreparedStatement psCheckSku = conn.prepareStatement(checkSkuSql);
             PreparedStatement psUpdateVariant = conn.prepareStatement(updateVariantSql);
             PreparedStatement psInsertVariant = conn.prepareStatement(insertVariantSql);
@@ -330,6 +536,18 @@ public class ProductDAO extends DBContext {
         }
     }
 
+    public void clearMainImageFlags(long productId) {
+        String sql = "UPDATE product_images SET is_main = false WHERE product_id = ?";
+        try {
+            PreparedStatement ps = conn.prepareStatement(sql);
+            ps.setLong(1, productId);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            System.out.println("Error clearing main image flags: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
     public String getBrandNameById(long brandId) {
         String sql = "SELECT name FROM brands WHERE brand_id = ?";
         try {
@@ -365,94 +583,92 @@ public class ProductDAO extends DBContext {
         return 0;
     }
 
-   public List<Product> filterProducts(Long parentCategoryId, Long categoryId, Long brandId, String size, String color,
-        BigDecimal minPrice, BigDecimal maxPrice, String status) {
-    List<Product> list = new ArrayList<>();
-    StringBuilder sql = new StringBuilder(
-            "SELECT p.product_id, p.name, p.description, p.price, p.category_id, p.brand_id, p.material, p.status, "
-            + "p.created_at, p.updated_at, c.category_id, c.name AS category_name, c.description AS category_description, "
-            + "c.parent_category_id, c.is_active AS category_active, c.created_at AS category_created_at, "
-            + "b.brand_id, b.name AS brand_name, b.description AS brand_description, b.logo_url, b.is_active AS brand_active, "
-            + "b.created_at AS brand_created_at, "
-            + "ri.image_url AS main_image_url "
-            + "FROM products p "
-            + "JOIN categories c ON p.category_id = c.category_id "
-            + "LEFT JOIN brands b ON p.brand_id = b.brand_id "
-            + "LEFT JOIN (SELECT product_id, image_url, ROW_NUMBER() OVER(PARTITION BY product_id ORDER BY display_order, image_id) AS rn "
-            + "           FROM product_images WHERE is_main = 1) ri ON p.product_id = ri.product_id AND ri.rn = 1 "
-            + "WHERE c.is_active = 1 AND p.status = ?"
-    );
+    public List<Product> filterProducts(Long parentCategoryId, Long categoryId, Long brandId, String size, String color,
+            BigDecimal minPrice, BigDecimal maxPrice, String status) {
+        List<Product> list = new ArrayList<>();
+        StringBuilder sql = new StringBuilder(
+                "SELECT p.product_id, p.name, p.description, p.price, p.category_id, p.brand_id, p.material, p.status, " +
+                "p.created_at, p.updated_at, c.category_id, c.name AS category_name, c.description AS category_description, " +
+                "c.parent_category_id, c.is_active AS category_active, c.created_at AS category_created_at, " +
+                "b.brand_id, b.name AS brand_name, b.description AS brand_description, b.logo_url, b.is_active AS brand_active, " +
+                "b.created_at AS brand_created_at, " +
+                "(SELECT TOP 1 image_url FROM product_images WHERE product_id = p.product_id AND is_main = 1) AS main_image_url " +
+                "FROM products p " +
+                "JOIN categories c ON p.category_id = c.category_id " +
+                "LEFT JOIN brands b ON p.brand_id = b.brand_id " +
+                "WHERE c.is_active = 1 AND p.status = ?"
+        );
 
-    List<Object> params = new ArrayList<>();
-    params.add(status != null && !status.isEmpty() ? status : "Active");
+        List<Object> params = new ArrayList<>();
+        params.add(status != null && !status.isEmpty() ? status : "Active");
 
-    // Prioritize categoryId (subcategory)
-    if (categoryId != null) {
-        sql.append(" AND p.category_id = ?");
-        params.add(categoryId);
-        if (parentCategoryId != null) {
+        // Prioritize categoryId (subcategory)
+        if (categoryId != null) {
+            sql.append(" AND p.category_id = ?");
+            params.add(categoryId);
+            if (parentCategoryId != null) {
+                sql.append(" AND c.parent_category_id = ?");
+                params.add(parentCategoryId);
+            }
+        } else if (parentCategoryId != null) {
             sql.append(" AND c.parent_category_id = ?");
             params.add(parentCategoryId);
         }
-    } else if (parentCategoryId != null) {
-        sql.append(" AND c.parent_category_id = ?");
-        params.add(parentCategoryId);
-    }
 
-    if (brandId != null) {
-        sql.append(" AND p.brand_id = ?");
-        params.add(brandId);
-    }
-    if (minPrice != null) {
-        sql.append(" AND p.price >= ?");
-        params.add(minPrice);
-    }
-    if (maxPrice != null) {
-        sql.append(" AND p.price <= ?");
-        params.add(maxPrice);
-    }
-    if (size != null && !size.isEmpty()) {
-        sql.append(" AND EXISTS (SELECT 1 FROM product_variants pv WHERE pv.product_id = p.product_id AND LOWER(pv.size) LIKE LOWER(?))");
-        params.add(size + "%");
-    }
-    if (color != null && !color.isEmpty()) {
-        sql.append(" AND EXISTS (SELECT 1 FROM product_variants pv WHERE pv.product_id = p.product_id AND LOWER(pv.color) LIKE LOWER(?))");
-        params.add(color + "%");
-    }
-
-    System.out.println("filterProducts SQL: " + sql.toString());
-    System.out.println("filterProducts Params: " + params);
-
-    try {
-        PreparedStatement ps = conn.prepareStatement(sql.toString());
-        for (int i = 0; i < params.size(); i++) {
-            ps.setObject(i + 1, params.get(i));
+        if (brandId != null) {
+            sql.append(" AND p.brand_id = ?");
+            params.add(brandId);
         }
-        ResultSet rs = ps.executeQuery();
-        int rowCount = 0;
-        while (rs.next()) {
-            Product product = mapProduct(rs);
-            product.setVariants(getVariantsByProductId(product.getProductId()));
-            product.setImages(getImagesByProductId(product.getProductId()));
-            list.add(product);
-            rowCount++;
-            System.out.println("Product ID: " + product.getProductId() + ", Name: " + product.getName()
-                    + ", Category: " + (product.getCategory() != null ? product.getCategory().getName() : "N/A")
-                    + ", Parent Category ID: " + (product.getCategory() != null && product.getCategory().getParentCategoryId() != null ? product.getCategory().getParentCategoryId() : "N/A"));
+        if (minPrice != null) {
+            sql.append(" AND p.price >= ?");
+            params.add(minPrice);
         }
-        System.out.println("filterProducts returned " + rowCount + " products");
+        if (maxPrice != null) {
+            sql.append(" AND p.price <= ?");
+            params.add(maxPrice);
+        }
+        if (size != null && !size.isEmpty()) {
+            sql.append(" AND EXISTS (SELECT 1 FROM product_variants pv WHERE pv.product_id = p.product_id AND LOWER(pv.size) LIKE LOWER(?))");
+            params.add(size + "%");
+        }
+        if (color != null && !color.isEmpty()) {
+            sql.append(" AND EXISTS (SELECT 1 FROM product_variants pv WHERE pv.product_id = p.product_id AND LOWER(pv.color) LIKE LOWER(?))");
+            params.add(color + "%");
+        }
+
+        System.out.println("filterProducts SQL: " + sql.toString());
+        System.out.println("filterProducts Params: " + params);
+
+        try {
+            PreparedStatement ps = conn.prepareStatement(sql.toString());
+            for (int i = 0; i < params.size(); i++) {
+                ps.setObject(i + 1, params.get(i));
+            }
+            ResultSet rs = ps.executeQuery();
+            int rowCount = 0;
+            while (rs.next()) {
+                Product product = mapProduct(rs);
+                product.setVariants(getVariantsByProductId(product.getProductId()));
+                product.setImages(getImagesByProductId(product.getProductId()));
+                list.add(product);
+                rowCount++;
+                System.out.println("Product ID: " + product.getProductId() + ", Name: " + product.getName() +
+                        ", Category: " + (product.getCategory() != null ? product.getCategory().getName() : "N/A") +
+                        ", Parent Category ID: " + (product.getCategory() != null && product.getCategory().getParentCategoryId() != null ? product.getCategory().getParentCategoryId() : "N/A"));
+            }
+            System.out.println("filterProducts returned " + rowCount + " products");
+            return list;
+        } catch (SQLException e) {
+            System.out.println("SQLException in filterProducts: " + e.getMessage());
+            e.printStackTrace();
+        }
         return list;
-    } catch (SQLException e) {
-        System.out.println("SQLException in filterProducts: " + e.getMessage());
-        e.printStackTrace();
     }
-    return list;
-}
 
     public List<Category> getAllCategories() {
         List<Category> list = new ArrayList<>();
-        String sql = "SELECT category_id, name, description, parent_category_id, is_active, created_at "
-                + "FROM categories WHERE is_active = 1";
+        String sql = "SELECT category_id, name, description, parent_category_id, is_active, created_at " +
+                     "FROM categories WHERE is_active = 1";
 
         try {
             PreparedStatement ps = conn.prepareStatement(sql);
@@ -482,8 +698,8 @@ public class ProductDAO extends DBContext {
 
     public List<Brand> getAllBrands() {
         List<Brand> list = new ArrayList<>();
-        String sql = "SELECT brand_id, name, description, logo_url, is_active, created_at "
-                + "FROM brands WHERE is_active = 1";
+        String sql = "SELECT brand_id, name, description, logo_url, is_active, created_at " +
+                     "FROM brands WHERE is_active = 1";
 
         try {
             PreparedStatement ps = conn.prepareStatement(sql);
@@ -541,12 +757,12 @@ public class ProductDAO extends DBContext {
 
     private List<ProductVariant> getVariantsByProductId(long productId) {
         List<ProductVariant> variants = new ArrayList<>();
-        String sql = "SELECT pv.variant_id, pv.product_id, pv.size, pv.color, pv.price_modifier, pv.sku, "
-                + "b.name AS brand_name, p.name AS product_name "
-                + "FROM product_variants pv "
-                + "JOIN products p ON pv.product_id = p.product_id "
-                + "JOIN brands b ON p.brand_id = b.brand_id "
-                + "WHERE pv.product_id = ?";
+        String sql = "SELECT pv.variant_id, pv.product_id, pv.size, pv.color, pv.price_modifier, pv.sku, " +
+                     "b.name AS brand_name, p.name AS product_name " +
+                     "FROM product_variants pv " +
+                     "JOIN products p ON pv.product_id = p.product_id " +
+                     "JOIN brands b ON p.brand_id = b.brand_id " +
+                     "WHERE pv.product_id = ?";
 
         try {
             PreparedStatement ps = conn.prepareStatement(sql);
@@ -579,8 +795,8 @@ public class ProductDAO extends DBContext {
 
     private List<ProductImage> getImagesByProductId(long productId) {
         List<ProductImage> images = new ArrayList<>();
-        String sql = "SELECT image_id, product_id, variant_id, image_url, display_order, created_at, is_main "
-                + "FROM product_images WHERE product_id = ?";
+        String sql = "SELECT image_id, product_id, variant_id, image_url, display_order, created_at, is_main " +
+                     "FROM product_images WHERE product_id = ?";
 
         try {
             PreparedStatement ps = conn.prepareStatement(sql);
@@ -708,82 +924,41 @@ public class ProductDAO extends DBContext {
         }
     }
 
-
-    public List<Product> getNewArrivals(int limit) {
-        List<Product> list = new ArrayList<>();
-        String sql = "WITH RankedImages AS ("
-                + "    SELECT *, ROW_NUMBER() OVER(PARTITION BY product_id ORDER BY display_order, image_id) as rn "
-                + "    FROM product_images"
-                + "), DefaultVariants AS ("
-                + "    SELECT *, ROW_NUMBER() OVER(PARTITION BY product_id ORDER BY variant_id) as rn_variant "
-                + "    FROM product_variants"
-                + ") "
-                + "SELECT TOP (?) p.product_id, p.name, p.price, p.created_at, ri.image_url, dv.variant_id AS default_variant_id "
-                + "FROM products p "
-                + "LEFT JOIN RankedImages ri ON p.product_id = ri.product_id AND ri.rn = 1 "
-                + "LEFT JOIN DefaultVariants dv ON p.product_id = dv.product_id AND dv.rn_variant = 1 "
-                + "WHERE p.status = 'Active' "
-                + "ORDER BY p.created_at DESC";
-
-        try {
-            PreparedStatement ps = conn.prepareStatement(sql);
-            ps.setInt(1, limit);
-            ResultSet rs = ps.executeQuery();
-
-            while (rs.next()) {
-                Product product = new Product();
-                product.setProductId(rs.getLong("product_id"));
-                product.setName(rs.getString("name"));
-                product.setPrice(rs.getBigDecimal("price"));
-                product.setCreatedAt(rs.getTimestamp("created_at"));
-                product.setImageUrl(rs.getString("image_url"));
-                product.setDefaultVariantId(rs.getLong("default_variant_id"));
-                list.add(product);
-            }
-        } catch (SQLException e) {
-            System.out.println("Error in getNewArrivals: " + e.getMessage());
-            e.printStackTrace();
-        }
-        return list;
-    }
-
     public List<Product> getBestSellers(int limit) {
         List<Product> products = new ArrayList<>();
-        String sql = "WITH StockLevels AS ("
-                + "    SELECT variant_id, SUM(CASE "
-                + "        WHEN movement_type = 'In' THEN quantity_changed "
-                + "        WHEN movement_type = 'Out' THEN -quantity_changed "
-                + "        WHEN movement_type = 'Adjustment' THEN quantity_changed "
-                + "        WHEN movement_type = 'Reserved' THEN -quantity_changed "
-                + "        WHEN movement_type = 'Released' THEN quantity_changed "
-                + "        ELSE 0 END) AS current_stock "
-                + "    FROM stock_movements "
-                + "    GROUP BY variant_id "
-                + "), ProductStock AS ("
-                + "    SELECT pv.product_id, SUM(sl.current_stock) AS total_stock "
-                + "    FROM product_variants pv "
-                + "    LEFT JOIN StockLevels sl ON pv.variant_id = sl.variant_id "
-                + "    GROUP BY pv.product_id "
-                + "), RankedImages AS ("
-                + "    SELECT *, ROW_NUMBER() OVER(PARTITION BY product_id ORDER BY display_order, image_id) AS rn "
-                + "    FROM product_images "
-                + "), DefaultVariants AS ("
-                + "    SELECT *, ROW_NUMBER() OVER(PARTITION BY product_id ORDER BY variant_id) AS rn_variant "
-                + "    FROM product_variants "
-                + ") "
-                + "SELECT TOP (?) p.product_id, p.name, p.price, p.created_at, ri.image_url, dv.variant_id AS default_variant_id, ps.total_stock "
-                + "FROM products p "
-                + "LEFT JOIN ProductStock ps ON p.product_id = ps.product_id "
-                + "LEFT JOIN RankedImages ri ON p.product_id = ri.product_id AND ri.rn = 1 "
-                + "LEFT JOIN DefaultVariants dv ON p.product_id = dv.product_id AND dv.rn_variant = 1 "
-                + "WHERE p.status = 'active' "
-                + "ORDER BY ISNULL(ps.total_stock, 0) ASC, p.product_id DESC";
+        String sql = "WITH StockLevels AS (" +
+                     "    SELECT variant_id, SUM(CASE " +
+                     "        WHEN movement_type = 'In' THEN quantity_changed " +
+                     "        WHEN movement_type = 'Out' THEN -quantity_changed " +
+                     "        WHEN movement_type = 'Adjustment' THEN quantity_changed " +
+                     "        WHEN movement_type = 'Reserved' THEN -quantity_changed " +
+                     "        WHEN movement_type = 'Released' THEN quantity_changed " +
+                     "        ELSE 0 END) AS current_stock " +
+                     "    FROM stock_movements " +
+                     "    GROUP BY variant_id " +
+                     "), ProductStock AS (" +
+                     "    SELECT pv.product_id, SUM(sl.current_stock) AS total_stock " +
+                     "    FROM product_variants pv " +
+                     "    LEFT JOIN StockLevels sl ON pv.variant_id = sl.variant_id " +
+                     "    GROUP BY pv.product_id " +
+                     "), DefaultVariants AS (" +
+                     "    SELECT product_id, variant_id, ROW_NUMBER() OVER(PARTITION BY product_id ORDER BY variant_id) AS rn_variant " +
+                     "    FROM product_variants " +
+                     ") " +
+                     "SELECT TOP (?) p.product_id, p.name, p.price, p.created_at, " +
+                     "(SELECT TOP 1 image_url FROM product_images WHERE product_id = p.product_id AND is_main = 1) AS main_image_url, " +
+                     "dv.variant_id AS default_variant_id, ps.total_stock " +
+                     "FROM products p " +
+                     "LEFT JOIN ProductStock ps ON p.product_id = ps.product_id " +
+                     "LEFT JOIN DefaultVariants dv ON p.product_id = dv.product_id AND dv.rn_variant = 1 " +
+                     "WHERE p.status = 'active' " +
+                     "ORDER BY ISNULL(ps.total_stock, 0) ASC, p.product_id DESC";
 
-        try ( PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
             System.out.println("Executing getBestSellers with limit: " + limit);
             System.out.println("Connection: " + (conn != null ? "Valid" : "Null"));
             ps.setInt(1, limit);
-            try ( ResultSet rs = ps.executeQuery()) {
+            try (ResultSet rs = ps.executeQuery()) {
                 int rowCount = 0;
                 while (rs.next()) {
                     Product product = new Product();
@@ -791,13 +966,13 @@ public class ProductDAO extends DBContext {
                     product.setName(rs.getString("name"));
                     product.setPrice(rs.getBigDecimal("price"));
                     product.setCreatedAt(rs.getTimestamp("created_at"));
-                    String imageUrl = rs.getString("image_url");
+                    String imageUrl = rs.getString("main_image_url");
                     product.setImageUrl(imageUrl);
                     Long variantId = rs.getLong("default_variant_id");
                     product.setDefaultVariantId(rs.wasNull() ? null : variantId);
                     products.add(product);
-                    System.out.println("Fetched best seller: ID=" + product.getProductId() + ", Name=" + product.getName()
-                            + ", TotalStock=" + rs.getLong("total_stock") + ", ImageUrl=" + (imageUrl != null ? imageUrl : "null"));
+                    System.out.println("Fetched best seller: ID=" + product.getProductId() + ", Name=" + product.getName() +
+                            ", TotalStock=" + rs.getLong("total_stock") + ", ImageUrl=" + (imageUrl != null ? imageUrl : "null"));
                     rowCount++;
                 }
                 System.out.println("getBestSellers returned " + rowCount + " products");
@@ -815,315 +990,15 @@ public class ProductDAO extends DBContext {
         }
         return products;
     }
-    public List<Product> searchProducts(String keyword) {
-    List<Product> list = new ArrayList<>();
-    String sql = "SELECT TOP 5 p.product_id, p.name, p.price, ri.image_url AS main_image_url "
-               + "FROM products p "
-               + "LEFT JOIN (SELECT product_id, image_url, ROW_NUMBER() OVER(PARTITION BY product_id ORDER BY display_order, image_id) AS rn "
-               + "           FROM product_images WHERE is_main = 1) ri ON p.product_id = ri.product_id AND ri.rn = 1 "
-               + "WHERE p.status = 'Active' AND LOWER(p.name) LIKE LOWER(?)";
-
-    try {
-        PreparedStatement ps = conn.prepareStatement(sql);
-        ps.setString(1, "%" + keyword + "%");
-        ResultSet rs = ps.executeQuery();
-        while (rs.next()) {
-            Product product = new Product();
-            product.setProductId(rs.getLong("product_id"));
-            product.setName(rs.getString("name"));
-            product.setPrice(rs.getBigDecimal("price"));
-            String imageUrl = rs.getString("main_image_url");
-            product.setImageUrl(imageUrl != null ? imageUrl : "https://placehold.co/50x50");
-            list.add(product);
-        }
-    } catch (SQLException e) {
-        System.out.println("Error in searchProducts: " + e.getMessage());
-        e.printStackTrace();
-    }
-    return list;
-}
-    public List<Product> filterProductsForShop(List<String> colors, List<String> sizes, BigDecimal maxPrice, 
-        List<Long> brandIds, Long parentCategoryId, Long categoryId, int page, int pageSize) {
-    List<Product> list = new ArrayList<>();
-    StringBuilder sql = new StringBuilder(
-            "SELECT p.product_id, p.name, p.description, p.price, p.category_id, p.brand_id, p.material, p.status, "
-            + "p.created_at, p.updated_at, c.category_id, c.name AS category_name, c.description AS category_description, "
-            + "c.parent_category_id, c.is_active AS category_active, c.created_at AS category_created_at, "
-            + "b.brand_id, b.name AS brand_name, b.description AS brand_description, b.logo_url, b.is_active AS brand_active, "
-            + "b.created_at AS brand_created_at, "
-            + "ri.image_url AS main_image_url "
-            + "FROM products p "
-            + "JOIN categories c ON p.category_id = c.category_id "
-            + "LEFT JOIN brands b ON p.brand_id = b.brand_id "
-            + "LEFT JOIN (SELECT product_id, image_url, ROW_NUMBER() OVER(PARTITION BY product_id ORDER BY display_order, image_id) AS rn "
-            + "           FROM product_images WHERE is_main = 1) ri ON p.product_id = ri.product_id AND ri.rn = 1 "
-            + "WHERE p.status = 'Active' AND c.is_active = 1 "
-    );
-
-    List<Object> params = new ArrayList<>();
-    int offset = (page - 1) * pageSize;
-
-    // Prioritize categoryId (subcategory)
-    if (categoryId != null) {
-        sql.append(" AND p.category_id = ?");
-        params.add(categoryId);
-        if (parentCategoryId != null) {
-            sql.append(" AND c.parent_category_id = ?");
-            params.add(parentCategoryId);
-        }
-        System.out.println("filterProductsForShop - Filtering by categoryId: " + categoryId + ", parentCategoryId: " + parentCategoryId);
-    } else if (parentCategoryId != null) {
-        sql.append(" AND c.parent_category_id = ?");
-        params.add(parentCategoryId);
-        System.out.println("filterProductsForShop - Filtering by parentCategoryId: " + parentCategoryId);
-    } else {
-        System.out.println("filterProductsForShop - No category filter applied.");
-    }
-
-    // Filter by colors
-    if (colors != null && !colors.isEmpty()) {
-        sql.append(" AND EXISTS (SELECT 1 FROM product_variants pv WHERE pv.product_id = p.product_id AND LOWER(pv.color) IN (");
-        for (int i = 0; i < colors.size(); i++) {
-            if (i > 0) sql.append(", ");
-            sql.append("?");
-            params.add(colors.get(i).toLowerCase());
-        }
-        sql.append("))");
-        System.out.println("filterProductsForShop - Filtering by colors: " + colors);
-    }
-
-    // Filter by sizes
-    if (sizes != null && !sizes.isEmpty()) {
-        sql.append(" AND EXISTS (SELECT 1 FROM product_variants pv WHERE pv.product_id = p.product_id AND LOWER(pv.size) IN (");
-        for (int i = 0; i < sizes.size(); i++) {
-            if (i > 0) sql.append(", ");
-            sql.append("?");
-            params.add(sizes.get(i).toLowerCase());
-        }
-        sql.append("))");
-        System.out.println("filterProductsForShop - Filtering by sizes: " + sizes);
-    }
-
-    // Filter by max price
-    if (maxPrice != null) {
-        sql.append(" AND p.price <= ?");
-        params.add(maxPrice);
-        System.out.println("filterProductsForShop - Filtering by maxPrice: " + maxPrice);
-    }
-
-    // Filter by brandIds
-    if (brandIds != null && !brandIds.isEmpty()) {
-        sql.append(" AND p.brand_id IN (");
-        for (int i = 0; i < brandIds.size(); i++) {
-            if (i > 0) sql.append(", ");
-            sql.append("?");
-            params.add(brandIds.get(i));
-        }
-        sql.append(") AND p.brand_id IS NOT NULL");
-        System.out.println("filterProductsForShop - Filtering by brandIds: " + brandIds);
-    }
-
-    // Add pagination
-    sql.append(" ORDER BY p.product_id OFFSET ? ROWS FETCH NEXT ? ROWS ONLY");
-    params.add(offset);
-    params.add(pageSize);
-    System.out.println("filterProductsForShop - Pagination offset: " + offset + ", pageSize: " + pageSize);
-
-    System.out.println("filterProductsForShop SQL: " + sql.toString());
-    System.out.println("filterProductsForShop Params: " + params);
-
-    try (PreparedStatement ps = conn.prepareStatement(sql.toString())) {
-        for (int i = 0; i < params.size(); i++) {
-            ps.setObject(i + 1, params.get(i));
-        }
-        ResultSet rs = ps.executeQuery();
-        int rowCount = 0;
-        while (rs.next()) {
-            Product product = mapProduct(rs);
-            product.setVariants(getVariantsByProductId(product.getProductId()));
-            product.setImages(getImagesByProductId(product.getProductId()));
-            list.add(product);
-            rowCount++;
-            System.out.println("filterProductsForShop - Product ID: " + product.getProductId() + ", Name: " + product.getName()
-                    + ", Category: " + (product.getCategory() != null ? product.getCategory().getName() : "N/A")
-                    + ", Parent Category ID: " + (product.getCategory() != null && product.getCategory().getParentCategoryId() != null ? product.getCategory().getParentCategoryId() : "N/A"));
-        }
-        System.out.println("filterProductsForShop returned " + rowCount + " products");
-        return list;
-    } catch (SQLException e) {
-        System.out.println("SQLException in filterProductsForShop: " + e.getMessage());
-        e.printStackTrace();
-        return new ArrayList<>();
-    } catch (Exception e) {
-        System.out.println("Error in filterProductsForShop: " + e.getMessage());
-        e.printStackTrace();
-        return new ArrayList<>();
-    }
-}
-    public List<Product> filterProductsForShopWithSort(List<String> colors, List<String> sizes, BigDecimal maxPrice, 
-        List<Long> brandIds, Long parentCategoryId, Long categoryId, int page, int pageSize, String sort) {
-    List<Product> list = new ArrayList<>();
-    StringBuilder sql = new StringBuilder(
-            "SELECT p.product_id, p.name, p.price, p.created_at, p.category_id, p.brand_id, p.status, "
-            + "c.name AS category_name, c.parent_category_id, c.is_active AS category_active, "
-            + "b.name AS brand_name, b.is_active AS brand_active, "
-            + "ri.image_url AS main_image_url, "
-            + "dv.variant_id AS default_variant_id "
-            + "FROM products p "
-            + "JOIN categories c ON p.category_id = c.category_id "
-            + "LEFT JOIN brands b ON p.brand_id = b.brand_id "
-            + "LEFT JOIN (SELECT product_id, image_url, ROW_NUMBER() OVER(PARTITION BY product_id ORDER BY display_order, image_id) AS rn "
-            + "           FROM product_images WHERE is_main = 1) ri ON p.product_id = ri.product_id AND ri.rn = 1 "
-            + "LEFT JOIN (SELECT product_id, variant_id, ROW_NUMBER() OVER(PARTITION BY product_id ORDER BY variant_id) AS rn_variant "
-            + "           FROM product_variants) dv ON p.product_id = dv.product_id AND dv.rn_variant = 1 "
-            + "WHERE p.status = 'Active' AND c.is_active = 1 "
-    );
-
-    List<Object> params = new ArrayList<>();
-    int offset = (page - 1) * pageSize;
-
-    // Prioritize categoryId (subcategory)
-    if (categoryId != null) {
-        sql.append(" AND p.category_id = ?");
-        params.add(categoryId);
-        if (parentCategoryId != null) {
-            sql.append(" AND c.parent_category_id = ?");
-            params.add(parentCategoryId);
-        }
-        System.out.println("filterProductsForShopWithSort - Filtering by categoryId: " + categoryId + ", parentCategoryId: " + parentCategoryId);
-    } else if (parentCategoryId != null) {
-        sql.append(" AND c.parent_category_id = ?");
-        params.add(parentCategoryId);
-        System.out.println("filterProductsForShopWithSort - Filtering by parentCategoryId: " + parentCategoryId);
-    } else {
-        System.out.println("filterProductsForShopWithSort - No category filter applied.");
-    }
-
-    // Filter by colors
-    if (colors != null && !colors.isEmpty()) {
-        sql.append(" AND EXISTS (SELECT 1 FROM product_variants pv WHERE pv.product_id = p.product_id AND LOWER(pv.color) IN (");
-        for (int i = 0; i < colors.size(); i++) {
-            if (i > 0) sql.append(", ");
-            sql.append("?");
-            params.add(colors.get(i).toLowerCase());
-        }
-        sql.append("))");
-        System.out.println("filterProductsForShopWithSort - Filtering by colors: " + colors);
-    }
-
-    // Filter by sizes
-    if (sizes != null && !sizes.isEmpty()) {
-        sql.append(" AND EXISTS (SELECT 1 FROM product_variants pv WHERE pv.product_id = p.product_id AND LOWER(pv.size) IN (");
-        for (int i = 0; i < sizes.size(); i++) {
-            if (i > 0) sql.append(", ");
-            sql.append("?");
-            params.add(sizes.get(i).toLowerCase());
-        }
-        sql.append("))");
-        System.out.println("filterProductsForShopWithSort - Filtering by sizes: " + sizes);
-    }
-
-    // Filter by max price
-    if (maxPrice != null) {
-        sql.append(" AND p.price <= ?");
-        params.add(maxPrice);
-        System.out.println("filterProductsForShopWithSort - Filtering by maxPrice: " + maxPrice);
-    }
-
-    // Filter by brandIds
-    if (brandIds != null && !brandIds.isEmpty()) {
-        sql.append(" AND p.brand_id IN (");
-        for (int i = 0; i < brandIds.size(); i++) {
-            if (i > 0) sql.append(", ");
-            sql.append("?");
-            params.add(brandIds.get(i));
-        }
-        sql.append(") AND p.brand_id IS NOT NULL");
-        System.out.println("filterProductsForShopWithSort - Filtering by brandIds: " + brandIds);
-    }
-
-    // Add sorting
-    System.out.println("filterProductsForShopWithSort - Applying sort: " + sort);
-    switch (sort != null ? sort.toLowerCase() : "created_at_desc") {
-        case "name_asc":
-            sql.append(" ORDER BY p.name ASC");
-            break;
-        case "name_desc":
-            sql.append(" ORDER BY p.name DESC");
-            break;
-        case "price_asc":
-            sql.append(" ORDER BY p.price ASC");
-            break;
-        case "price_desc":
-            sql.append(" ORDER BY p.price DESC");
-            break;
-        case "created_at_desc":
-        default:
-            sql.append(" ORDER BY p.created_at DESC");
-            break;
-    }
-
-    sql.append(" OFFSET ? ROWS FETCH NEXT ? ROWS ONLY");
-    params.add(offset);
-    params.add(pageSize);
-
-    System.out.println("filterProductsForShopWithSort - SQL Query: " + sql.toString());
-    System.out.println("filterProductsForShopWithSort - Parameters: " + params);
-
-    try (PreparedStatement ps = conn.prepareStatement(sql.toString())) {
-        for (int i = 0; i < params.size(); i++) {
-            ps.setObject(i + 1, params.get(i));
-        }
-        try (ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) {
-                Product product = new Product();
-                product.setProductId(rs.getLong("product_id"));
-                product.setName(rs.getString("name"));
-                product.setPrice(rs.getBigDecimal("price"));
-                product.setCreatedAt(rs.getTimestamp("created_at"));
-                product.setStatus(rs.getString("status"));
-                product.setImageUrl(rs.getString("main_image_url"));
-                product.setDefaultVariantId(rs.getLong("default_variant_id"));
-
-                Category category = new Category();
-                category.setCategoryId(rs.getLong("category_id"));
-                category.setName(rs.getString("category_name"));
-                category.setParentCategoryId(rs.getLong("parent_category_id"));
-                category.setActive(rs.getBoolean("category_active"));
-                product.setCategory(category);
-
-                Brand brand = new Brand();
-                brand.setBrandId(rs.getLong("brand_id"));
-                brand.setName(rs.getString("brand_name"));
-                brand.setActive(rs.getBoolean("brand_active"));
-                product.setBrand(brand);
-
-                product.setVariants(getVariantsByProductId(product.getProductId()));
-                product.setImages(getImagesByProductId(product.getProductId()));
-                list.add(product);
-
-                System.out.println("filterProductsForShopWithSort - Product ID: " + product.getProductId() +
-                        ", Name: " + product.getName() +
-                        ", Price: " + product.getPrice() +
-                        ", Created At: " + product.getCreatedAt());
-            }
-        }
-        System.out.println("filterProductsForShopWithSort - Returned " + list.size() + " products for sort: " + sort);
-        return list;
-    } catch (SQLException e) {
-        System.err.println("filterProductsForShopWithSort - SQLException: " + e.getMessage());
-        e.printStackTrace();
-        return new ArrayList<>();
-    }
-    }
     public int countProductsForShop(List<String> colors, List<String> sizes, BigDecimal maxPrice, 
         List<Long> brandIds, Long parentCategoryId, Long categoryId) {
     StringBuilder sql = new StringBuilder(
-            "SELECT COUNT(DISTINCT p.product_id) AS total "
-            + "FROM products p "
-            + "JOIN categories c ON p.category_id = c.category_id "
-            + "LEFT JOIN brands b ON p.brand_id = b.brand_id "
-            + "WHERE p.status = 'Active' AND c.is_active = 1 "
+            "SELECT COUNT(DISTINCT p.product_id) AS total " +
+            "FROM products p " +
+            "JOIN categories c ON p.category_id = c.category_id " +
+            "LEFT JOIN brands b ON p.brand_id = b.brand_id " +
+            "LEFT JOIN product_variants pv ON p.product_id = pv.product_id " +
+            "WHERE p.status = 'Active' AND c.is_active = 1"
     );
 
     List<Object> params = new ArrayList<>();
@@ -1143,7 +1018,7 @@ public class ProductDAO extends DBContext {
 
     // Filter by colors
     if (colors != null && !colors.isEmpty()) {
-        sql.append(" AND EXISTS (SELECT 1 FROM product_variants pv WHERE pv.product_id = p.product_id AND LOWER(pv.color) IN (");
+        sql.append(" AND (pv.color IS NULL OR LOWER(pv.color) IN (");
         for (int i = 0; i < colors.size(); i++) {
             if (i > 0) sql.append(", ");
             sql.append("?");
@@ -1154,7 +1029,7 @@ public class ProductDAO extends DBContext {
 
     // Filter by sizes
     if (sizes != null && !sizes.isEmpty()) {
-        sql.append(" AND EXISTS (SELECT 1 FROM product_variants pv WHERE pv.product_id = p.product_id AND LOWER(pv.size) IN (");
+        sql.append(" AND (pv.size IS NULL OR LOWER(pv.size) IN (");
         for (int i = 0; i < sizes.size(); i++) {
             if (i > 0) sql.append(", ");
             sql.append("?");
@@ -1173,9 +1048,11 @@ public class ProductDAO extends DBContext {
     if (brandIds != null && !brandIds.isEmpty()) {
         sql.append(" AND p.brand_id IN (");
         for (int i = 0; i < brandIds.size(); i++) {
-            if (i > 0) sql.append(", ");
-            sql.append("?");
-            params.add(brandIds.get(i));
+            if (brandIds.get(i) != null) { // Kiểm tra null trong brandIds
+                if (i > 0) sql.append(", ");
+                sql.append("?");
+                params.add(brandIds.get(i));
+            }
         }
         sql.append(") AND p.brand_id IS NOT NULL");
     }
@@ -1189,16 +1066,159 @@ public class ProductDAO extends DBContext {
         }
         ResultSet rs = ps.executeQuery();
         if (rs.next()) {
-            return rs.getInt("total");
+            int total = rs.getInt("total");
+            System.out.println("countProductsForShop returned: " + total);
+            return total;
         }
     } catch (SQLException e) {
         System.out.println("SQLException in countProductsForShop: " + e.getMessage());
         e.printStackTrace();
     }
+    System.out.println("countProductsForShop returned 0 due to error or no results");
     return 0;
 }
-    
-    
+   public boolean isProductExists(String name, long brandId) {
+    // Query to check if product exists with given name and brandId
+    String sql = "SELECT COUNT(*) FROM Products WHERE TRIM(LOWER(name)) = TRIM(LOWER(?)) AND brand_id = ?";
+    try {
+        String normalizedName = name != null ? name.trim().toLowerCase().replaceAll("\\s+", " ") : "";
+        System.out.println("isProductExists: Input - Original Name=" + name + ", Normalized Name=" + normalizedName + ", BrandId=" + brandId);
+        PreparedStatement ps = conn.prepareStatement(sql);
+        ps.setString(1, normalizedName);
+        ps.setLong(2, brandId);
+        ResultSet rs = ps.executeQuery();
+        if (rs.next()) {
+            int count = rs.getInt(1);
+            System.out.println("isProductExists: Query Result - Name=" + normalizedName + ", BrandId=" + brandId + ", Exists=" + (count > 0));
+            return count > 0;
+        }
+        System.out.println("isProductExists: No result found for Name=" + normalizedName + ", BrandId=" + brandId);
+        return false;
+    } catch (SQLException e) {
+        System.out.println("Error in isProductExists: " + e.getMessage());
+        e.printStackTrace();
+        return false;
+    }
+}
+
+public boolean isSKUExists(String sku) {
+    // Query to check if SKU exists
+    String sql = "SELECT COUNT(*) FROM ProductVariants WHERE sku = ?";
+    try {
+        System.out.println("isSKUExists: Input - SKU=" + sku);
+        PreparedStatement ps = conn.prepareStatement(sql);
+        ps.setString(1, sku);
+        ResultSet rs = ps.executeQuery();
+        if (rs.next()) {
+            int count = rs.getInt(1);
+            System.out.println("isSKUExists: Query Result - SKU=" + sku + ", Exists=" + (count > 0));
+            return count > 0;
+        }
+        System.out.println("isSKUExists: No result found for SKU=" + sku);
+        return false;
+    } catch (SQLException e) {
+        System.out.println("Error in isSKUExists: " + e.getMessage());
+        e.printStackTrace();
+        return false;
+    }
+}
+
+public boolean isVariantExists(long productId, String size, String color) {
+    // Query to check if variant exists with given size and color for product_id
+    String sql = "SELECT COUNT(*) FROM ProductVariants WHERE product_id = ? AND TRIM(LOWER(size)) = TRIM(LOWER(?)) AND TRIM(LOWER(color)) = TRIM(LOWER(?))";
+    try {
+        String normalizedSize = size != null ? size.trim().toLowerCase() : "";
+        String normalizedColor = color != null ? color.trim().toLowerCase() : "";
+        System.out.println("isVariantExists: Input - ProductId=" + productId + ", Size=" + normalizedSize + ", Color=" + normalizedColor);
+        PreparedStatement ps = conn.prepareStatement(sql);
+        ps.setLong(1, productId);
+        ps.setString(2, normalizedSize);
+        ps.setString(3, normalizedColor);
+        ResultSet rs = ps.executeQuery();
+        if (rs.next()) {
+            int count = rs.getInt(1);
+            System.out.println("isVariantExists: Query Result - ProductId=" + productId + ", Size=" + normalizedSize + ", Color=" + normalizedColor + ", Exists=" + (count > 0));
+            return count > 0;
+        }
+        System.out.println("isVariantExists: No result found for ProductId=" + productId + ", Size=" + normalizedSize + ", Color=" + normalizedColor);
+        return false;
+    } catch (SQLException e) {
+        System.out.println("Error in isVariantExists: " + e.getMessage());
+        e.printStackTrace();
+        return false;
+    }
+}
+public boolean isProductExistsExcludingId(String name, long brandId, long excludeProductId) {
+    String sql = "SELECT COUNT(*) FROM Products WHERE TRIM(LOWER(name)) = TRIM(LOWER(?)) AND brand_id = ? AND product_id != ?";
+    try {
+        String normalizedName = name != null ? name.trim().toLowerCase().replaceAll("\\s+", " ") : "";
+        System.out.println("isProductExistsExcludingId: Input - Original Name=" + name + ", Normalized Name=" + normalizedName + ", BrandId=" + brandId + ", ExcludeProductId=" + excludeProductId);
+        PreparedStatement ps = conn.prepareStatement(sql);
+        ps.setString(1, normalizedName);
+        ps.setLong(2, brandId);
+        ps.setLong(3, excludeProductId);
+        ResultSet rs = ps.executeQuery();
+        if (rs.next()) {
+            int count = rs.getInt(1);
+            System.out.println("isProductExistsExcludingId: Query Result - Name=" + normalizedName + ", BrandId=" + brandId + ", ExcludeProductId=" + excludeProductId + ", Exists=" + (count > 0));
+            return count > 0;
+        }
+        System.out.println("isProductExistsExcludingId: No result found for Name=" + normalizedName + ", BrandId=" + brandId + ", ExcludeProductId=" + excludeProductId);
+        return false;
+    } catch (SQLException e) {
+        System.out.println("Error in isProductExistsExcludingId: " + e.getMessage());
+        e.printStackTrace();
+        return false;
+    }
+}
+public boolean isProductExistsForUpdate(String name, long brandId, long excludeProductId) {
+    // Query to check if product exists with given name and brandId, excluding the specified productId
+    String sql = "SELECT COUNT(*) FROM Products WHERE TRIM(LOWER(name)) = TRIM(LOWER(?)) AND brand_id = ? AND product_id != ?";
+    try {
+        String normalizedName = name != null ? name.trim().toLowerCase().replaceAll("\\s+", " ") : "";
+        System.out.println("isProductExistsForUpdate: Input - Original Name=" + name + ", Normalized Name=" + normalizedName + ", BrandId=" + brandId + ", ExcludeProductId=" + excludeProductId);
+        PreparedStatement ps = conn.prepareStatement(sql);
+        ps.setString(1, normalizedName);
+        ps.setLong(2, brandId);
+        ps.setLong(3, excludeProductId);
+        ResultSet rs = ps.executeQuery();
+        if (rs.next()) {
+            int count = rs.getInt(1);
+            System.out.println("isProductExistsForUpdate: Query Result - Name=" + normalizedName + ", BrandId=" + brandId + ", ExcludeProductId=" + excludeProductId + ", Exists=" + (count > 0));
+            return count > 0;
+        }
+        System.out.println("isProductExistsForUpdate: No result found for Name=" + normalizedName + ", BrandId=" + brandId + ", ExcludeProductId=" + excludeProductId);
+        return false;
+    } catch (SQLException e) {
+        System.out.println("Error in isProductExistsForUpdate: " + e.getMessage());
+        e.printStackTrace();
+        return false;
+    }
+}
+
+public boolean isSKUExistsForUpdate(String sku, long excludeVariantId) {
+    // Query to check if SKU exists, excluding the specified variantId
+    String sql = "SELECT COUNT(*) FROM ProductVariants WHERE sku = ? AND variant_id != ?";
+    try {
+        System.out.println("isSKUExistsForUpdate: Input - SKU=" + sku + ", ExcludeVariantId=" + excludeVariantId);
+        PreparedStatement ps = conn.prepareStatement(sql);
+        ps.setString(1, sku);
+        ps.setLong(2, excludeVariantId);
+        ResultSet rs = ps.executeQuery();
+        if (rs.next()) {
+            int count = rs.getInt(1);
+            System.out.println("isSKUExistsForUpdate: Query Result - SKU=" + sku + ", ExcludeVariantId=" + excludeVariantId + ", Exists=" + (count > 0));
+            return count > 0;
+        }
+        System.out.println("isSKUExistsForUpdate: No result found for SKU=" + sku + ", ExcludeVariantId=" + excludeVariantId);
+        return false;
+    } catch (SQLException e) {
+        System.out.println("Error in isSKUExistsForUpdate: " + e.getMessage());
+        e.printStackTrace();
+        return false;
+    }
+}
+
     public static void main(String[] args) {
         ProductDAO dao = new ProductDAO();
         List<Product> products = dao.getAll();
