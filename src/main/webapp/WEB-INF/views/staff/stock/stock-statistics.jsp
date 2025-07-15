@@ -45,6 +45,12 @@
                             </div>
                         </c:if>
 
+                        <%-- Đặt ở đầu phần .box-body trong file stock-statistics.jsp --%>
+                        <div class="d-flex justify-content-end mb-4">
+                            <a href="${pageContext.request.contextPath}/PurchaseOrder?action=startNewPO" class="btn btn-success">
+                                <i class="fa-solid fa-plus"></i> New Purchase Order
+                            </a>
+                        </div>
                         <form action="${pageContext.request.contextPath}/Stock" method="GET" class="row g-3 align-items-center mb-4">
                             <div class="col-md-5">
                                 <input type="text" class="form-control" name="searchTerm" placeholder="Search by product name, SKU..." value="<c:out value='${searchTerm}'/>">
@@ -91,9 +97,6 @@
                                                     <td><c:out value="${item.color}"/></td>
                                                     <td><c:out value="${item.quantity}"/></td>
                                                     <td>
-                                                        <a href="${pageContext.request.contextPath}/EditStock?variantId=${item.variantId}" class="btn btn-warning btn-xs">
-                                                            <i class="fa fa-pencil"></i> Edit
-                                                        </a>
                                                         <a href="${pageContext.request.contextPath}/StockDetail?variantId=${item.variantId}" class="btn btn-info btn-xs ms-1">
                                                             <i class="fa-solid fa-eye"></i> Details
                                                         </a>
@@ -135,8 +138,42 @@
             </main>
         </div>
 
-        <%-- Paste this code at the end of the box-body in stock-statistics.jsp --%>
-        <%-- 6. Link to common JS file --%>
+        <div class="modal fade" id="createPoModal" tabindex="-1" aria-labelledby="createPoModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <form action="${pageContext.request.contextPath}/PurchaseOrder" method="post">
+                        <input type="hidden" name="action" value="createDraft">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="createPoModalLabel">Tạo Phiếu Nhập Kho Mới</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p>Chọn một nhà cung cấp để bắt đầu tạo phiếu nhập kho nháp.</p>
+                            <div class="mb-3">
+                                <label for="supplierIdModal" class="form-label">Nhà Cung Cấp:</label>
+                                <select name="supplierId" id="supplierIdModal" class="form-select" required>
+                                    <option value="">-- Vui lòng chọn --</option>
+                                    <c:forEach var="supplier" items="${suppliersForModal}">
+                                        <option value="${supplier.getSupplierId()}">${supplier.getName()}</option>
+                                    </c:forEach>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="notes" class="form-label">Ghi Chú:</label>
+                                <textarea class="form-control" name="notes" id="notes" rows="3"></textarea>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy Bỏ</button>
+                            <button type="submit" class="btn btn-primary">Tạo và Tiếp Tục</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
         <script src="${pageContext.request.contextPath}/admin-dashboard/js/admin-js.js"></script>
 
         <%-- JS part to activate the menu, needs JSP variables so it will be here --%>

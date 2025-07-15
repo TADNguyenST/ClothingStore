@@ -1,15 +1,7 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package model;
 
 import java.time.LocalDateTime;
 
-/**
- *
- * @author DANGVUONGTHINH
- */
 public class Supplier {
 
     private Long supplierId;
@@ -17,10 +9,13 @@ public class Supplier {
     private String contactEmail;
     private String phoneNumber;
     private String address;
-    private Boolean isActive = true;
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private boolean isActive;
+    private LocalDateTime createdAt;
 
-    // Getters and Setters
+    // Constructors, Getters và Setters
+    public Supplier() {
+    }
+
     public Long getSupplierId() {
         return supplierId;
     }
@@ -61,11 +56,11 @@ public class Supplier {
         this.address = address;
     }
 
-    public Boolean getIsActive() {
+    public boolean getIsActive() {
         return isActive;
     }
 
-    public void setIsActive(Boolean isActive) {
+    public void setIsActive(boolean isActive) {
         this.isActive = isActive;
     }
 

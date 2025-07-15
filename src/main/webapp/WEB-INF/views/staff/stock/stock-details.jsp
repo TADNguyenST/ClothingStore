@@ -63,8 +63,6 @@
                                 <ul class="list-group list-group-flush">
                                     <li class="list-group-item"><strong>Inventory ID:</strong> <c:out value="${inventory.inventoryId}"/></li>
                                     <li class="list-group-item"><strong>Quantity in Stock:</strong> <c:out value="${inventory.quantity}"/>
-                                        <a href="${pageContext.request.contextPath}/EditStock?variantId=${variant.variantId}" class="btn btn-warning btn-xs"><i class="fa fa-pencil"></i> Edit
-                                        </a></li>
                                     <li class="list-group-item"><strong>Reserved Quantity:</strong> <c:out value="${inventory.reservedQuantity}"/></li>
                                     <li class="list-group-item"><strong>Last Updated:</strong> <c:out value="${inventory.lastUpdated}"/></li>
                                 </ul>
