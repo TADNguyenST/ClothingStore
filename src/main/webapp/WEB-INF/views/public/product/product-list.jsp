@@ -1,6 +1,7 @@
 <%@page import="java.util.ArrayList"%>
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="java.util.List" %>
+<%@ page import="java.util.Map" %>
 <%@ page import="model.Product" %>
 <%@ page import="java.text.NumberFormat" %>
 <%@ page import="java.util.Locale" %>
@@ -12,6 +13,7 @@
     }
     String error = (String) request.getAttribute("error");
     List<Product> products = (List<Product>) request.getAttribute("products");
+    Map<Long, Integer> availableMap = (Map<Long, Integer>) request.getAttribute("availableMap");
     NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(new Locale("vi", "VN"));
     Integer totalPages = (Integer) request.getAttribute("totalPages");
     if (totalPages == null || totalPages <= 0) {
@@ -206,6 +208,10 @@
                         String price = product.getPrice() != null ? currencyFormat.format(product.getPrice()) : "N/A";
                         Long variantId = product.getDefaultVariantId();
                         boolean hasVariant = variantId != null && variantId != 0;
+                        int available = availableMap.getOrDefault(product.getProductId(), 0);
+                        boolean hasStock = hasVariant && (available > 0);
+                        String buttonTextCart = hasStock ? "Add to Cart" : "Out Stock";
+                        String buttonTextBuy = hasStock ? "Buy Now" : "Out Stock";
                 %>
                 <div class="col-lg-4 col-md-6 col-sm-6 col-12">
                     <div class="product-card">
@@ -221,13 +227,13 @@
                                 <input type="hidden" name="action" value="add">
                                 <input type="hidden" name="variantId" value="<%= hasVariant ? variantId : 0 %>">
                                 <input type="hidden" name="quantity" value="1">
-                                <button type="submit" class="btn btn-dark btn-custom-sm" <%= hasVariant ? "" : "disabled" %>>Add to Cart</button>
+                                <button type="submit" class="btn btn-dark btn-custom-sm" <%= hasStock ? "" : "disabled" %>><%= buttonTextCart %></button>
                             </form>
                             <form action="<%= request.getContextPath() %>/customer/checkout" method="post">
                                 <input type="hidden" name="action" value="buy">
                                 <input type="hidden" name="variantId" value="<%= hasVariant ? variantId : 0 %>">
                                 <input type="hidden" name="quantity" value="1">
-                                <button type="submit" class="btn btn-primary btn-custom-sm" <%= hasVariant ? "" : "disabled" %>>Buy Now</button>
+                                <button type="submit" class="btn btn-primary btn-custom-sm" <%= hasStock ? "" : "disabled" %>><%= buttonTextBuy %></button>
                             </form>
                         </div>
                     </div>

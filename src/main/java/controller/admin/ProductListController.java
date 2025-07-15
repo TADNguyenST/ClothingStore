@@ -9,13 +9,14 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import model.Category;
 import model.Product;
-
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 @WebServlet(name = "ProductListController", urlPatterns = {"/ProductList/*"})
 public class ProductListController extends HttpServlet {
@@ -277,6 +278,14 @@ public class ProductListController extends HttpServlet {
                     sort
             );
 
+            // Tính availableQuantity cho từng sản phẩm và lưu vào Map
+            Map<Long, Integer> availableMap = new HashMap<>();
+            for (Product product : products) {
+                Long variantId = product.getDefaultVariantId();
+                int available = productDAO.getAvailableQuantityByVariantId(variantId);
+                availableMap.put(product.getProductId(), available);
+            }
+
             // Count total products for pagination
             int totalProducts = productDAO.countProductsForShop(
                     colorList.isEmpty() ? null : colorList,
@@ -315,6 +324,10 @@ public class ProductListController extends HttpServlet {
                         String price = product.getPrice() != null ? currencyFormat.format(product.getPrice()) : "N/A";
                         Long variantId = product.getDefaultVariantId();
                         boolean hasVariant = variantId != null && variantId != 0;
+                        int available = availableMap.getOrDefault(product.getProductId(), 0);
+                        boolean hasStock = hasVariant && (available > 0);
+                        String cartButtonText = hasStock ? "Add to Cart" : "Hết hàng";
+                        String buyButtonText = hasStock ? "Buy Now" : "Hết hàng";
                         html.append("<div class='col-lg-4 col-md-6 col-sm-6 col-12'>")
                                 .append("<div class='product-card'>")
                                 .append("<div class='product-image'>")
@@ -329,13 +342,13 @@ public class ProductListController extends HttpServlet {
                                 .append("<input type='hidden' name='action' value='add'>")
                                 .append("<input type='hidden' name='variantId' value='").append(hasVariant ? variantId : 0).append("'>")
                                 .append("<input type='hidden' name='quantity' value='1'>")
-                                .append("<button type='submit' class='btn btn-dark btn-custom-sm' ").append(hasVariant ? "" : "disabled").append(">Add to Cart</button>")
+                                .append("<button type='submit' class='btn btn-dark btn-custom-sm' ").append(hasStock ? "" : "disabled").append(">").append(cartButtonText).append("</button>")
                                 .append("</form>")
                                 .append("<form action='").append(request.getContextPath()).append("/customer/checkout' method='post'>")
                                 .append("<input type='hidden' name='action' value='buy'>")
                                 .append("<input type='hidden' name='variantId' value='").append(hasVariant ? variantId : 0).append("'>")
                                 .append("<input type='hidden' name='quantity' value='1'>")
-                                .append("<button type='submit' class='btn btn-primary btn-custom-sm' ").append(hasVariant ? "" : "disabled").append(">Buy Now</button>")
+                                .append("<button type='submit' class='btn btn-primary btn-custom-sm' ").append(hasStock ? "" : "disabled").append(">").append(buyButtonText).append("</button>")
                                 .append("</form>")
                                 .append("</div>")
                                 .append("</div>")
@@ -352,6 +365,7 @@ public class ProductListController extends HttpServlet {
             }
 
             request.setAttribute("products", products);
+            request.setAttribute("availableMap", availableMap);
             request.setAttribute("pageTitle", pageTitle);
             request.setAttribute("currentPage", currentPage);
             request.setAttribute("totalPages", totalPages);

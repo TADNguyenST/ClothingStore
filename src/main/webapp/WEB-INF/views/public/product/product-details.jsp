@@ -4,14 +4,16 @@
 <%@ page import="model.ProductImage" %>
 <%@ page import="java.text.NumberFormat" %>
 <%@ page import="java.util.Locale" %>
+<%@ page import="dao.ProductDAO" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 
 <%
     Product product = (Product) request.getAttribute("product");
     String error = (String) request.getAttribute("error");
     NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(new Locale("vi", "VN"));
+    ProductDAO productDAO = new ProductDAO();
 
-    // Tìm giá thấp nhất và biến thể mặc định
+    // Find the lowest price and default variant
     ProductVariant defaultVariant = null;
     double lowestPrice = Double.MAX_VALUE;
     if (product != null && product.getVariants() != null && !product.getVariants().isEmpty()) {
@@ -25,7 +27,7 @@
             }
         }
     }
-    // Nếu không có biến thể nào hợp lệ, đặt giá mặc định là giá của sản phẩm
+    // If no valid variant, set default price to product price
     if (lowestPrice == Double.MAX_VALUE) {
         lowestPrice = product != null && product.getPrice() != null ? product.getPrice().doubleValue() : 0;
     }
@@ -39,7 +41,6 @@
         margin: 0 auto;
         padding: 40px 20px;
     }
-
     .image-gallery-container {
         display: flex;
         gap: 12px;
@@ -106,7 +107,6 @@
     .nav-arrow.next {
         right: 10px;
     }
-
     .product-detail-container .product-title {
         font-size: 2rem;
         font-weight: 700;
@@ -181,6 +181,10 @@
         background: #ff5722;
         color: #fff;
     }
+    .product-detail-container .btn.disabled {
+        background: #ccc;
+        cursor: not-allowed;
+    }
     .product-detail-container .shipping-info {
         margin-top: 15px;
         font-size: 0.8rem;
@@ -249,7 +253,7 @@
         <div class="col-md-6">
             <h1 class="product-title"><%= product.getName() != null ? product.getName() : "Unknown Product"%></h1>
             <p class="product-current-price" id="productPrice"><%= currencyFormat.format(lowestPrice)%></p>
-            <p class="product-status">Tình trạng: <%= product.getStatus() != null ? product.getStatus() : "N/A"%> </p>
+            <p class="product-status">Status: <%= product.getStatus() != null ? product.getStatus() : "N/A"%> </p>
             <div class="product-info">
                 <p><strong>Description:</strong> <%= product.getDescription() != null ? product.getDescription() : "No description available"%></p>
                 <p><strong>Category:</strong> <%= product.getCategory() != null ? product.getCategory().getName() : "N/A"%></p>
@@ -271,18 +275,21 @@
                                 String variantLabel = size + " - " + color;
                                 double finalPrice = variant.getPriceModifier() != null ? 
                                     variant.getPriceModifier().doubleValue() : 0;
+                                int available = productDAO.getAvailableQuantityByVariantId(variant.getVariantId());
+                                System.out.println("product-details.jsp - Variant ID: " + variant.getVariantId() + ", Available: " + available); // Debug log
                     %>
                     <option value="<%= variant.getVariantId()%>" 
                             data-price="<%= finalPrice%>"
                             data-sku="<%= variant.getSku() != null ? variant.getSku() : "N/A"%>"
+                            data-available="<%= available%>"
                             <%= defaultVariant != null && defaultVariant.getVariantId().equals(variant.getVariantId()) ? "selected" : ""%>>
-                        <%= variantLabel%> - <%= currencyFormat.format(finalPrice)%>
+                        <%= variantLabel%> - <%= currencyFormat.format(finalPrice)%> <%= available > 0 ? "" : "(Out of Stock)"%>
                     </option>
                     <%
                         }
                     } else {
                     %>
-                    <option value="0" data-price="0">No variants available</option>
+                    <option value="0" data-price="0" data-available="0">No variants available</option>
                     <%
                         }
                     %>
@@ -294,16 +301,18 @@
                 <button onclick="increaseQuantity()">+</button>
             </div>
             <div class="btn-container">
-                <a href="#" class="btn btn-dark" onclick="addToCart()">Thêm Vào Giỏ</a>
-                <a href="#" class="btn btn-orange" onclick="buyNow()">Mua Ngay</a>
+                <a href="#" id="addToCartBtn" class="btn btn-dark <%= defaultVariant != null && productDAO.getAvailableQuantityByVariantId(defaultVariant.getVariantId()) > 0 ? "" : "disabled"%>" 
+                   onclick="addToCart()"><%= defaultVariant != null && productDAO.getAvailableQuantityByVariantId(defaultVariant.getVariantId()) > 0 ? "Add to Cart" : "Out of Stock"%></a>
+                <a href="#" id="buyNowBtn" class="btn btn-orange <%= defaultVariant != null && productDAO.getAvailableQuantityByVariantId(defaultVariant.getVariantId()) > 0 ? "" : "disabled"%>" 
+                   onclick="buyNow()"><%= defaultVariant != null && productDAO.getAvailableQuantityByVariantId(defaultVariant.getVariantId()) > 0 ? "Buy Now" : "Out of Stock"%></a>
             </div>
             <div class="shipping-info">
                 <ul>
-                    <li>⚡ Sản phẩm hiện có 4 người đang xem</li>
-                    <li>🚚 Giao hàng toàn quốc: Thanh toán (COD) khi nhận hàng</li>
-                    <li>🎁 Miễn phí giao hàng: Theo chính sách</li>
-                    <li>🔄 Đổi trả trong 7 ngày: Nếu không vừa hoặc lỗi</li>
-                    <li>📞 Hỗ trợ 24/7: Theo chính sách</li>
+                    <li>⚡ 4 people are viewing this product</li>
+                    <li>🚚 Nationwide shipping: Cash on Delivery (COD)</li>
+                    <li>🎁 Free shipping: Per policy</li>
+                    <li>🔄 7-day return: If unfit or defective</li>
+                    <li>📞 24/7 support: Per policy</li>
                 </ul>
             </div>
         </div>
@@ -357,35 +366,63 @@
             quantityInput.value = value + 1;
         };
 
-        // Hàm định dạng tiền tệ VNĐ
+        // Currency formatting function for VND
         function formatCurrency(amount) {
             return new Intl.NumberFormat('vi-VN', {style: 'currency', currency: 'VND'}).format(amount);
         };
 
-        // Cập nhật giá và SKU khi chọn variant
+        // Update price and button states when variant is selected
         window.updatePrice = function () {
             const select = document.getElementById("variantSelect");
             const priceElement = document.getElementById("productPrice");
+            const addToCartBtn = document.getElementById("addToCartBtn");
+            const buyNowBtn = document.getElementById("buyNowBtn");
             const selectedOption = select.options[select.selectedIndex];
             const finalPrice = parseFloat(selectedOption.getAttribute('data-price')) || 0;
-            console.log('Selected variant ID:', selectedOption.value, 'Final Price:', finalPrice); // Debug
+            const available = parseInt(selectedOption.getAttribute('data-available')) || 0;
+            console.log('Selected variant ID:', selectedOption.value, 'Final Price:', finalPrice, 'Available:', available); // Debug
             priceElement.innerText = formatCurrency(finalPrice);
+            if (available > 0) {
+                addToCartBtn.innerText = "Add to Cart";
+                buyNowBtn.innerText = "Buy Now";
+                addToCartBtn.classList.remove('disabled');
+                buyNowBtn.classList.remove('disabled');
+            } else {
+                addToCartBtn.innerText = "Out of Stock";
+                buyNowBtn.innerText = "Out of Stock";
+                addToCartBtn.classList.add('disabled');
+                buyNowBtn.classList.add('disabled');
+            }
         };
 
-        // Gọi updatePrice lần đầu để hiển thị giá mặc định
+        // Call updatePrice initially to display default price and button state
         updatePrice();
 
-        // Hàm thêm vào giỏ hàng
+        // Add to cart function
         window.addToCart = function () {
-            const variantId = document.getElementById("variantSelect").value;
+            const select = document.getElementById("variantSelect");
+            const selectedOption = select.options[select.selectedIndex];
+            const available = parseInt(selectedOption.getAttribute('data-available')) || 0;
+            if (available <= 0) {
+                alert("This product is out of stock.");
+                return;
+            }
+            const variantId = select.value;
             const quantity = document.getElementById("quantity").value;
             console.log('Add to cart: productId=${product.productId}, variantId=' + variantId, 'quantity=' + quantity); // Debug
             window.location.href = "${pageContext.request.contextPath}/AddToCart?productId=${product.productId}&variantId=" + variantId + "&quantity=" + quantity;
         };
 
-        // Hàm mua ngay
+        // Buy now function
         window.buyNow = function () {
-            const variantId = document.getElementById("variantSelect").value;
+            const select = document.getElementById("variantSelect");
+            const selectedOption = select.options[select.selectedIndex];
+            const available = parseInt(selectedOption.getAttribute('data-available')) || 0;
+            if (available <= 0) {
+                alert("This product is out of stock.");
+                return;
+            }
+            const variantId = select.value;
             const quantity = document.getElementById("quantity").value;
             console.log('Buy now: productId=${product.productId}, variantId=' + variantId, 'quantity=' + quantity); // Debug
             window.location.href = "${pageContext.request.contextPath}/BuyNow?productId=${product.productId}&variantId=" + variantId + "&quantity=" + quantity;
