@@ -1,6 +1,7 @@
 package controller.stock;
 
-import dao.StockManagermentDAO; // Đổi lại tên DAO của bạn nếu khác
+import dao.PurchaseOrderDAO; // <<< THÊM VÀO
+import dao.StockManagermentDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -14,20 +15,18 @@ import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-// Bạn có thể cần đổi lại tên DAO cho đúng với file của bạn
-// Ví dụ: import dao.StockManagermentDAO;
-
 @WebServlet(name = "StockController", urlPatterns = {"/Stock"})
 public class StockController extends HttpServlet {
+
     private static final Logger LOGGER = Logger.getLogger(StockController.class.getName());
-    
-    // Đảm bảo tên DAO này khớp với tên file DAO của bạn
-    private StockManagermentDAO stockDAO; 
+
+    private StockManagermentDAO stockDAO;
+    private PurchaseOrderDAO purchaseDAO; // <<< THÊM VÀO
 
     @Override
     public void init() throws ServletException {
-        // Khởi tạo đúng DAO
-        stockDAO = new StockManagermentDAO(); 
+        stockDAO = new StockManagermentDAO();
+        purchaseDAO = new PurchaseOrderDAO(); // <<< THÊM VÀO
     }
 
     @Override
@@ -36,6 +35,7 @@ public class StockController extends HttpServlet {
 
         try {
             // === STEP 1: GET ALL PARAMETERS FROM THE REQUEST ===
+            String viewMode = request.getParameter("viewMode"); // <<< THÊM VÀO
             String searchTerm = request.getParameter("searchTerm");
             String filterCategory = request.getParameter("filterCategory");
             final String sortBy = request.getParameter("sortBy");
@@ -43,57 +43,57 @@ public class StockController extends HttpServlet {
             String pageStr = request.getParameter("page");
 
             // === STEP 2: LOAD ALL DATA FROM THE DAO ===
-            // Đảm bảo bạn đang gọi đúng phương thức từ DAO của mình
             List<Inventory> allInventories = stockDAO.getAllInventories();
             List<Product> allProducts = stockDAO.getAllProducts();
             List<ProductVariant> allVariants = stockDAO.getAllProductVariants();
             List<Category> allCategories = stockDAO.getAllCategories();
             List<Brand> allBrands = stockDAO.getAllBrands();
 
-            // Create lookup Maps for quick access
+            // === STEP 2.1: CREATE LOOKUP MAPS ===
             Map<Long, Product> productMap = new HashMap<>();
-            for (Product p : allProducts) productMap.put(p.getProductId(), p);
+            for (Product p : allProducts) {
+                productMap.put(p.getProductId(), p);
+            }
 
             Map<Long, ProductVariant> variantMap = new HashMap<>();
-            for (ProductVariant pv : allVariants) variantMap.put(pv.getVariantId(), pv);
+            for (ProductVariant pv : allVariants) {
+                variantMap.put(pv.getVariantId(), pv);
+            }
+
+            Map<Long, Integer> inventoryQuantityMap = new HashMap<>();
+            for (Inventory i : allInventories) {
+                inventoryQuantityMap.put(i.getVariantId(), i.getQuantity());
+            }
 
             Map<Long, Category> categoryMap = new HashMap<>();
-            for (Category c : allCategories) categoryMap.put(c.getCategoryId(), c);
+            for (Category c : allCategories) {
+                categoryMap.put(c.getCategoryId(), c);
+            }
 
             Map<Long, Brand> brandMap = new HashMap<>();
-            for (Brand b : allBrands) brandMap.put(b.getBrandId(), b);
+            for (Brand b : allBrands) {
+                brandMap.put(b.getBrandId(), b);
+            }
 
-            // === STEP 3: FILTER DATA INTO A TEMPORARY LIST ===
+            // === STEP 3: BUILD, JOIN AND FILTER DATA IN MEMORY ===
             List<Map<String, Object>> fullFilteredList = new ArrayList<>();
-            for (Inventory inventory : allInventories) {
-                ProductVariant variant = variantMap.get(inventory.getVariantId());
-                if (variant == null) continue;
-
+            // <<< SỬA NHỎ: Lặp qua tất cả variant thay vì chỉ inventory >>>
+            for (ProductVariant variant : allVariants) {
                 Product product = productMap.get(variant.getProductId());
-                if (product == null) continue;
-
-                // === SỬA LỖI DO CẬP NHẬT MODEL TẠI ĐÂY ===
-                // Lấy Category object từ Product, sau đó dùng ID của nó để tra cứu trong Map.
-                // Thêm kiểm tra null để tránh lỗi khi sản phẩm không có category/brand.
-                Category category = null;
-                if (product.getCategory() != null) {
-                    category = categoryMap.get(product.getCategory().getCategoryId());
+                if (product == null) {
+                    continue;
                 }
 
-                Brand brand = null;
-                if (product.getBrand() != null) {
-                    brand = brandMap.get(product.getBrand().getBrandId());
-                }
-                // ===========================================
+                Category category = (product.getCategory() != null) ? categoryMap.get(product.getCategory().getCategoryId()) : null;
+                Brand brand = (product.getBrand() != null) ? brandMap.get(product.getBrand().getBrandId()) : null;
 
-                // Filter by Category logic
+                // --- LOGIC FILTER GỐC CỦA BẠN (GIỮ NGUYÊN) ---
                 if (filterCategory != null && !filterCategory.isEmpty() && !filterCategory.equals("all")) {
                     if (category == null || !filterCategory.equals(String.valueOf(category.getCategoryId()))) {
                         continue;
                     }
                 }
 
-                // Filter by search term logic
                 if (searchTerm != null && !searchTerm.trim().isEmpty()) {
                     String lowerSearchTerm = searchTerm.toLowerCase().trim();
                     boolean found = (product.getName() != null && product.getName().toLowerCase().contains(lowerSearchTerm))
@@ -105,6 +105,7 @@ public class StockController extends HttpServlet {
                         continue;
                     }
                 }
+                // --- KẾT THÚC LOGIC FILTER ---
 
                 Map<String, Object> itemData = new HashMap<>();
                 itemData.put("variantId", variant.getVariantId());
@@ -114,35 +115,40 @@ public class StockController extends HttpServlet {
                 itemData.put("color", variant.getColor());
                 itemData.put("categoryName", category != null ? category.getName() : "N/A");
                 itemData.put("brandName", brand != null ? brand.getName() : "N/A");
-                itemData.put("quantity", inventory.getQuantity());
-                itemData.put("reservedQuantity", inventory.getReservedQuantity());
-                itemData.put("availableQuantity", inventory.getQuantity() - inventory.getReservedQuantity());
-                itemData.put("lastUpdated", inventory.getLastUpdated());
+                itemData.put("quantity", inventoryQuantityMap.getOrDefault(variant.getVariantId(), 0));
+
                 fullFilteredList.add(itemData);
             }
 
-            // === SORTING LOGIC (Phần này đã ổn) ===
+            // === SORTING LOGIC (GIỮ NGUYÊN) ===
             if (sortBy != null && !sortBy.trim().isEmpty()) {
                 final String finalSortOrder = "desc".equalsIgnoreCase(sortOrder) ? "desc" : "asc";
 
                 Collections.sort(fullFilteredList, new Comparator<Map<String, Object>>() {
                     @Override
                     public int compare(Map<String, Object> o1, Map<String, Object> o2) {
+                        // Logic so sánh bên trong không thay đổi
                         Comparable val1 = (Comparable) o1.get(sortBy);
                         Comparable val2 = (Comparable) o2.get(sortBy);
 
                         int comparison;
-                        if (val1 == null && val2 == null) comparison = 0;
-                        else if (val1 == null) comparison = -1;
-                        else if (val2 == null) comparison = 1;
-                        else comparison = val1.compareTo(val2);
+                        if (val1 == null && val2 == null) {
+                            comparison = 0;
+                        } else if (val1 == null) {
+                            comparison = -1; // nulls first
+                        } else if (val2 == null) {
+                            comparison = 1;
+                        } else {
+                            comparison = val1.compareTo(val2);
+                        }
 
+                        // Đảo ngược kết quả nếu sắp xếp giảm dần
                         return "asc".equals(finalSortOrder) ? comparison : -comparison;
                     }
                 });
             }
 
-            // === STEP 4: PERFORM PAGINATION ON THE RESULT LIST ===
+            // === STEP 4: PERFORM PAGINATION (GIỮ NGUYÊN) ===
             int currentPage = (pageStr == null || pageStr.isEmpty()) ? 1 : Integer.parseInt(pageStr);
             int itemsPerPage = 10;
             int totalItems = fullFilteredList.size();
@@ -165,16 +171,20 @@ public class StockController extends HttpServlet {
             request.setAttribute("sortBy", sortBy);
             request.setAttribute("sortOrder", sortOrder);
 
-            // Sửa lại đường dẫn JSP của bạn nếu cần
-            request.getRequestDispatcher("/WEB-INF/views/staff/stock/stock-statistics.jsp").forward(request, response);
+            // <<< THÊM VÀO: Logic quyết định trang JSP sẽ hiển thị >>>
+            if ("selector".equals(viewMode)) {
+                long poId = Long.parseLong(request.getParameter("poId"));
+                request.setAttribute("poId", poId);
+                request.getRequestDispatcher("/WEB-INF/views/staff/stock/product-selector.jsp").forward(request, response);
+            } else {
+                List<Supplier> suppliers = purchaseDAO.getAllActiveSuppliers();
+                request.setAttribute("suppliersForModal", suppliers);
+                request.getRequestDispatcher("/WEB-INF/views/staff/stock/stock-statistics.jsp").forward(request, response);
+            }
 
-        } catch (ServletException | IOException | NumberFormatException e) {
+        } catch (ServletException | IOException | NumberFormatException | SQLException e) {
             LOGGER.log(Level.SEVERE, "Error in StockController", e);
-            request.setAttribute("errorMessage", "An error occurred: " + e.getMessage());
-            // Sửa lại đường dẫn JSP lỗi của bạn nếu cần
-            request.getRequestDispatcher("/WEB-INF/views/staff/stock/error.jsp").forward(request, response);
-        } catch (SQLException ex) {
-            Logger.getLogger(StockController.class.getName()).log(Level.SEVERE, null, ex);
+            throw new ServletException("An unexpected error occurred in StockController", e);
         }
     }
 }
