@@ -40,6 +40,8 @@
         .btn-detail:hover { background-color: #e0a800; }
         .btn-search { background-color: #17a2b8; }
         .btn-search:hover { background-color: #138496; }
+        .btn-clear { background-color: #6c757d; }
+        .btn-clear:hover { background-color: #5a6268; }
         .error, .success {
             text-align: center; margin: 10px 0; padding: 10px; border-radius: 4px;
         }
@@ -47,9 +49,9 @@
         .success { color: green; background-color: #e6ffe6; }
         .header-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .search-container { text-align: right; }
-        .add-container { text-align: left; margin-bottom: 10px; }
+        .search-container form { display: flex; gap: 10px; align-items: center; }
         .search-input {
-            padding: 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;
+            padding: 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; width: 200px;
         }
         .content-area { padding: 20px; }
         .status-indicator {
@@ -61,6 +63,15 @@
         }
         .status-active { background-color: #28a745; }
         .status-inactive { background-color: #6c757d; }
+        .visibility-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        .visibility-visible { background-color: #28a745; }
+        .visibility-hidden { background-color: #6c757d; }
         /* Modal styles */
         .modal {
             display: none;
@@ -136,7 +147,9 @@
                 <div class="search-container">
                     <form action="${pageContext.request.contextPath}/vouchers" method="get" style="display: inline;">
                         <input type="text" name="code" class="search-input" placeholder="Enter voucher code" value="${param.code}">
+                        <input type="text" name="name" class="search-input" placeholder="Enter voucher name" value="${param.name}">
                         <button type="submit" class="btn btn-search">Search</button>
+                        <a href="${pageContext.request.contextPath}/vouchers" class="btn btn-clear">Clear</a>
                     </form>
                 </div>
             </div>
@@ -157,6 +170,7 @@
                         <th>Discount Type</th>
                         <th>Discount Value</th>
                         <th>Status</th>
+                        <th>Visibility</th>
                         <th>Action</th>
                     </tr>
                 </thead>
@@ -174,13 +188,17 @@
                                                 <fmt:formatNumber value="${voucher.discountValue}" pattern="#" />%
                                             </c:when>
                                             <c:otherwise>
-                                                <fmt:formatNumber value="${voucher.discountValue}" pattern="#" />$
+                                                <fmt:formatNumber value="${voucher.discountValue}" pattern="#" /> VND
                                             </c:otherwise>
                                         </c:choose>
                                     </td>
                                     <td>
                                         <span class="status-indicator ${voucher.isActive ? 'status-active' : 'status-inactive'}"></span>
                                         ${voucher.isActive ? 'Active' : 'Inactive'}
+                                    </td>
+                                    <td>
+                                        <span class="visibility-indicator ${voucher.visibility ? 'visibility-visible' : 'visibility-hidden'}"></span>
+                                        ${voucher.visibility ? 'Visible' : 'Hidden'}
                                     </td>
                                     <td>
                                         <button class="btn btn-detail" 
@@ -196,6 +214,7 @@
                                                 data-used-count="${voucher.usedCount != null ? voucher.usedCount : ''}"
                                                 data-expiration-date="${voucher.expirationDate != null ? voucher.expirationDate : ''}"
                                                 data-is-active="${voucher.isActive}"
+                                                data-visibility="${voucher.visibility}"
                                                 data-created-at="${voucher.createdAt != null ? voucher.createdAt : ''}"
                                                 onclick="showVoucherDetails(this)">Detail</button>
                                         <a href="${pageContext.request.contextPath}/editVoucher?voucherId=${voucher.voucherId}" class="btn btn-edit">Edit</a>
@@ -206,7 +225,7 @@
                         </c:when>
                         <c:otherwise>
                             <tr>
-                                <td colspan="6" class="no-data">No vouchers available to display</td>
+                                <td colspan="7" class="no-data">No vouchers available to display</td>
                             </tr>
                         </c:otherwise>
                     </c:choose>
@@ -216,7 +235,7 @@
             <%-- Modal for voucher details --%>
             <div id="voucherModal" class="modal">
                 <div class="modal-content">
-                    <button class="modal-close" onclick="closeModal()">&times;</button>
+                    <button class="modal-close" onclick="closeModal()">×</button>
                     <h3>Voucher Details</h3>
                     <p><strong>Voucher ID:</strong> <span id="modal-voucher-id"></span></p>
                     <p><strong>Code:</strong> <span id="modal-code"></span></p>
@@ -230,6 +249,7 @@
                     <p><strong>Used Count:</strong> <span id="modal-used-count"></span></p>
                     <p><strong>Expiration Date:</strong> <span id="modal-expiration-date"></span></p>
                     <p><strong>Status:</strong> <span id="modal-is-active"></span></p>
+                    <p><strong>Visibility:</strong> <span id="modal-visibility"></span></p>
                     <p><strong>Created At:</strong> <span id="modal-created-at"></span></p>
                 </div>
             </div>
@@ -247,7 +267,7 @@
             const currentModule = "${requestScope.currentModule}";
 
             document.querySelectorAll('.sidebar-menu li.active').forEach(li => li.classList.remove('active'));
-            document.querySelectorAll('.sidebar-menu .treeview.menu-open').forEach(li => li.classList.remove('menu-open'));
+            document.querySelectorAll('.sidebar-menu .treeview.menu-open').forEach(treeview => treeview.classList.remove('menu-open'));
 
             if (currentAction && currentModule) {
                 const activeLink = document.querySelector(`.sidebar-menu a[href*="${currentAction}"][href*="${currentModule}"]`);
@@ -267,8 +287,9 @@
         // Modal handling functions
         function showVoucherDetails(button) {
             const modal = document.getElementById('voucherModal');
-            const discountValue = button.dataset.discountValue + (button.dataset.discountType === 'Percentage' ? '%' : '$');
+            const discountValue = button.dataset.discountValue + (button.dataset.discountType === 'Percentage' ? '%' : ' VND');
             const isActive = button.dataset.isActive === 'true' ? 'Active' : 'Inactive';
+            const visibility = button.dataset.visibility === 'true' ? 'Visible' : 'Hidden';
 
             document.getElementById('modal-voucher-id').textContent = button.dataset.voucherId;
             document.getElementById('modal-code').textContent = button.dataset.code;
@@ -276,12 +297,13 @@
             document.getElementById('modal-description').textContent = button.dataset.description || 'N/A';
             document.getElementById('modal-discount-type').textContent = button.dataset.discountType;
             document.getElementById('modal-discount-value').textContent = discountValue;
-            document.getElementById('modal-minimum-order-amount').textContent = button.dataset.minimumOrderAmount ? '$' + button.dataset.minimumOrderAmount : 'N/A';
-            document.getElementById('modal-maximum-discount-amount').textContent = button.dataset.maximumDiscountAmount ? '$' + button.dataset.maximumDiscountAmount : 'N/A';
+            document.getElementById('modal-minimum-order-amount').textContent = button.dataset.minimumOrderAmount ? button.dataset.minimumOrderAmount + ' VND' : 'N/A';
+            document.getElementById('modal-maximum-discount-amount').textContent = button.dataset.maximumDiscountAmount ? button.dataset.maximumDiscountAmount + ' VND' : 'N/A';
             document.getElementById('modal-usage-limit').textContent = button.dataset.usageLimit || 'N/A';
             document.getElementById('modal-used-count').textContent = button.dataset.usedCount || 'N/A';
             document.getElementById('modal-expiration-date').textContent = button.dataset.expirationDate || 'N/A';
             document.getElementById('modal-is-active').textContent = isActive;
+            document.getElementById('modal-visibility').textContent = visibility;
             document.getElementById('modal-created-at').textContent = button.dataset.createdAt || 'N/A';
 
             modal.style.display = 'flex';
