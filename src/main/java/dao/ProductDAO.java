@@ -236,35 +236,46 @@ public class ProductDAO extends DBContext {
     }
 
     public List<Product> getNewArrivals(int limit) {
-        List<Product> list = new ArrayList<>();
-        String sql = "SELECT TOP (?) p.product_id, p.name, p.price, p.created_at, " +
-                     "(SELECT TOP 1 image_url FROM product_images WHERE product_id = p.product_id AND is_main = 1) AS main_image_url, " +
-                     "(SELECT TOP 1 variant_id FROM product_variants WHERE product_id = p.product_id) AS default_variant_id " +
-                     "FROM products p " +
-                     "WHERE p.status = 'Active' " +
-                     "ORDER BY p.created_at DESC";
+    List<Product> list = new ArrayList<>();
+    String sql = "SELECT TOP (?) p.product_id, p.name, p.price, p.created_at, " +
+                 "(SELECT TOP 1 image_url FROM product_images WHERE product_id = p.product_id AND is_main = 1) AS main_image_url, " +
+                 "(SELECT TOP 1 pv.variant_id FROM product_variants pv " +
+                 " WHERE pv.product_id = p.product_id " +
+                 " AND (SELECT SUM(CASE WHEN movement_type = 'In' THEN quantity_changed " +
+                 "                     WHEN movement_type = 'Out' THEN -quantity_changed " +
+                 "                     WHEN movement_type = 'Adjustment' THEN quantity_changed " +
+                 "                     WHEN movement_type = 'Reserved' THEN -quantity_changed " +
+                 "                     WHEN movement_type = 'Released' THEN quantity_changed " +
+                 "                     ELSE 0 END) " +
+                 "      FROM stock_movements WHERE variant_id = pv.variant_id) > 0 " +
+                 " ORDER BY pv.variant_id) AS default_variant_id " +
+                 "FROM products p " +
+                 "WHERE p.status = 'Active' " +
+                 "ORDER BY p.created_at DESC";
 
-        try {
-            PreparedStatement ps = conn.prepareStatement(sql);
-            ps.setInt(1, limit);
-            ResultSet rs = ps.executeQuery();
+    try {
+        PreparedStatement ps = conn.prepareStatement(sql);
+        ps.setInt(1, limit);
+        ResultSet rs = ps.executeQuery();
 
-            while (rs.next()) {
-                Product product = new Product();
-                product.setProductId(rs.getLong("product_id"));
-                product.setName(rs.getString("name"));
-                product.setPrice(rs.getBigDecimal("price"));
-                product.setCreatedAt(rs.getTimestamp("created_at"));
-                product.setImageUrl(rs.getString("main_image_url"));
-                product.setDefaultVariantId(rs.getLong("default_variant_id"));
-                list.add(product);
-            }
-        } catch (SQLException e) {
-            System.out.println("Error in getNewArrivals: " + e.getMessage());
-            e.printStackTrace();
+        while (rs.next()) {
+            Product product = new Product();
+            product.setProductId(rs.getLong("product_id"));
+            product.setName(rs.getString("name"));
+            product.setPrice(rs.getBigDecimal("price"));
+            product.setCreatedAt(rs.getTimestamp("created_at"));
+            product.setImageUrl(rs.getString("main_image_url"));
+            Long variantId = rs.getLong("default_variant_id");
+            product.setDefaultVariantId(rs.wasNull() ? null : variantId);
+            System.out.println("getNewArrivals - Product ID: " + product.getProductId() + ", variantId: " + variantId); // Log debug
+            list.add(product);
         }
-        return list;
+    } catch (SQLException e) {
+        System.out.println("Error in getNewArrivals: " + e.getMessage());
+        e.printStackTrace();
     }
+    return list;
+}
 
     public List<Product> searchProducts(String keyword) {
         List<Product> list = new ArrayList<>();
@@ -925,71 +936,74 @@ public class ProductDAO extends DBContext {
     }
 
     public List<Product> getBestSellers(int limit) {
-        List<Product> products = new ArrayList<>();
-        String sql = "WITH StockLevels AS (" +
-                     "    SELECT variant_id, SUM(CASE " +
-                     "        WHEN movement_type = 'In' THEN quantity_changed " +
-                     "        WHEN movement_type = 'Out' THEN -quantity_changed " +
-                     "        WHEN movement_type = 'Adjustment' THEN quantity_changed " +
-                     "        WHEN movement_type = 'Reserved' THEN -quantity_changed " +
-                     "        WHEN movement_type = 'Released' THEN quantity_changed " +
-                     "        ELSE 0 END) AS current_stock " +
-                     "    FROM stock_movements " +
-                     "    GROUP BY variant_id " +
-                     "), ProductStock AS (" +
-                     "    SELECT pv.product_id, SUM(sl.current_stock) AS total_stock " +
-                     "    FROM product_variants pv " +
-                     "    LEFT JOIN StockLevels sl ON pv.variant_id = sl.variant_id " +
-                     "    GROUP BY pv.product_id " +
-                     "), DefaultVariants AS (" +
-                     "    SELECT product_id, variant_id, ROW_NUMBER() OVER(PARTITION BY product_id ORDER BY variant_id) AS rn_variant " +
-                     "    FROM product_variants " +
-                     ") " +
-                     "SELECT TOP (?) p.product_id, p.name, p.price, p.created_at, " +
-                     "(SELECT TOP 1 image_url FROM product_images WHERE product_id = p.product_id AND is_main = 1) AS main_image_url, " +
-                     "dv.variant_id AS default_variant_id, ps.total_stock " +
-                     "FROM products p " +
-                     "LEFT JOIN ProductStock ps ON p.product_id = ps.product_id " +
-                     "LEFT JOIN DefaultVariants dv ON p.product_id = dv.product_id AND dv.rn_variant = 1 " +
-                     "WHERE p.status = 'active' " +
-                     "ORDER BY ISNULL(ps.total_stock, 0) ASC, p.product_id DESC";
+    List<Product> products = new ArrayList<>();
+    String sql = "WITH StockLevels AS (" +
+                 "    SELECT variant_id, SUM(CASE " +
+                 "        WHEN movement_type = 'In' THEN quantity_changed " +
+                 "        WHEN movement_type = 'Out' THEN -quantity_changed " +
+                 "        WHEN movement_type = 'Adjustment' THEN quantity_changed " +
+                 "        WHEN movement_type = 'Reserved' THEN -quantity_changed " +
+                 "        WHEN movement_type = 'Released' THEN quantity_changed " +
+                 "        ELSE 0 END) AS current_stock " +
+                 "    FROM stock_movements " +
+                 "    GROUP BY variant_id " +
+                 "), ProductStock AS (" +
+                 "    SELECT pv.product_id, SUM(COALESCE(sl.current_stock, 0)) AS total_stock " +
+                 "    FROM product_variants pv " +
+                 "    LEFT JOIN StockLevels sl ON pv.variant_id = sl.variant_id " +
+                 "    GROUP BY pv.product_id " +
+                 "    HAVING SUM(COALESCE(sl.current_stock, 0)) > 0 " +
+                 "), DefaultVariants AS (" +
+                 "    SELECT pv.product_id, MIN(pv.variant_id) AS variant_id " +
+                 "    FROM product_variants pv " +
+                 "    JOIN StockLevels sl ON pv.variant_id = sl.variant_id " +
+                 "    WHERE sl.current_stock > 0 " +
+                 "    GROUP BY pv.product_id " +
+                 ") " +
+                 "SELECT TOP (?) p.product_id, p.name, p.price, p.created_at, " +
+                 "(SELECT TOP 1 image_url FROM product_images WHERE product_id = p.product_id AND is_main = 1) AS main_image_url, " +
+                 "dv.variant_id AS default_variant_id, ps.total_stock " +
+                 "FROM products p " +
+                 "INNER JOIN ProductStock ps ON p.product_id = ps.product_id " +
+                 "LEFT JOIN DefaultVariants dv ON p.product_id = dv.product_id " +
+                 "WHERE p.status = 'active' " +
+                 "ORDER BY ps.total_stock ASC, p.product_id DESC";
 
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            System.out.println("Executing getBestSellers with limit: " + limit);
-            System.out.println("Connection: " + (conn != null ? "Valid" : "Null"));
-            ps.setInt(1, limit);
-            try (ResultSet rs = ps.executeQuery()) {
-                int rowCount = 0;
-                while (rs.next()) {
-                    Product product = new Product();
-                    product.setProductId(rs.getLong("product_id"));
-                    product.setName(rs.getString("name"));
-                    product.setPrice(rs.getBigDecimal("price"));
-                    product.setCreatedAt(rs.getTimestamp("created_at"));
-                    String imageUrl = rs.getString("main_image_url");
-                    product.setImageUrl(imageUrl);
-                    Long variantId = rs.getLong("default_variant_id");
-                    product.setDefaultVariantId(rs.wasNull() ? null : variantId);
-                    products.add(product);
-                    System.out.println("Fetched best seller: ID=" + product.getProductId() + ", Name=" + product.getName() +
-                            ", TotalStock=" + rs.getLong("total_stock") + ", ImageUrl=" + (imageUrl != null ? imageUrl : "null"));
-                    rowCount++;
-                }
-                System.out.println("getBestSellers returned " + rowCount + " products");
+    try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        System.out.println("Executing getBestSellers with limit: " + limit);
+        System.out.println("Connection: " + (conn != null ? "Valid" : "Null"));
+        ps.setInt(1, limit);
+        try (ResultSet rs = ps.executeQuery()) {
+            int rowCount = 0;
+            while (rs.next()) {
+                Product product = new Product();
+                product.setProductId(rs.getLong("product_id"));
+                product.setName(rs.getString("name"));
+                product.setPrice(rs.getBigDecimal("price"));
+                product.setCreatedAt(rs.getTimestamp("created_at"));
+                String imageUrl = rs.getString("main_image_url");
+                product.setImageUrl(imageUrl);
+                Long variantId = rs.getLong("default_variant_id");
+                product.setDefaultVariantId(rs.wasNull() ? null : variantId);
+                System.out.println("getBestSellers - Product ID: " + product.getProductId() + ", default_variant_id: " + variantId + ", total_stock: " + rs.getLong("total_stock"));  // Log debug
+                products.add(product);
+                rowCount++;
             }
-        } catch (SQLException e) {
-            System.err.println("SQLException in getBestSellers: " + e.getMessage());
-            System.err.println("SQL State: " + e.getSQLState());
-            System.err.println("Error Code: " + e.getErrorCode());
-            System.err.println("Query: " + sql);
-            System.err.println("Limit: " + limit);
-            e.printStackTrace();
-        } catch (Exception e) {
-            System.err.println("Unexpected error in getBestSellers: " + e.getMessage());
-            e.printStackTrace();
+            System.out.println("getBestSellers returned " + rowCount + " products");
         }
-        return products;
+    } catch (SQLException e) {
+        System.err.println("SQLException in getBestSellers: " + e.getMessage());
+        System.err.println("SQL State: " + e.getSQLState());
+        System.err.println("Error Code: " + e.getErrorCode());
+        System.err.println("Query: " + sql);
+        System.err.println("Limit: " + limit);
+        e.printStackTrace();
+    } catch (Exception e) {
+        System.err.println("Unexpected error in getBestSellers: " + e.getMessage());
+        e.printStackTrace();
     }
+    return products;
+}
     public int countProductsForShop(List<String> colors, List<String> sizes, BigDecimal maxPrice, 
         List<Long> brandIds, Long parentCategoryId, Long categoryId) {
     StringBuilder sql = new StringBuilder(
@@ -1217,6 +1231,33 @@ public boolean isSKUExistsForUpdate(String sku, long excludeVariantId) {
         e.printStackTrace();
         return false;
     }
+}
+public int getAvailableQuantityByVariantId(Long variantId) {
+    if (variantId == null || variantId == 0) {
+        return 0;
+    }
+    String sql = "SELECT SUM(CASE " +
+                 "    WHEN movement_type = 'In' THEN quantity_changed " +
+                 "    WHEN movement_type = 'Out' THEN -quantity_changed " +
+                 "    WHEN movement_type = 'Adjustment' THEN quantity_changed " +
+                 "    WHEN movement_type = 'Reserved' THEN -quantity_changed " +
+                 "    WHEN movement_type = 'Released' THEN quantity_changed " +
+                 "    ELSE 0 END) AS available " +
+                 "FROM stock_movements WHERE variant_id = ? " +
+                 "GROUP BY variant_id";
+    try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        ps.setLong(1, variantId);
+        ResultSet rs = ps.executeQuery();
+        if (rs.next()) {
+            int available = rs.getInt("available");
+            System.out.println("getAvailableQuantityByVariantId - Variant ID: " + variantId + ", Available: " + available); // Debug log
+            return (available > 0) ? available : 0;
+        }
+    } catch (SQLException e) {
+        System.out.println("Error in getAvailableQuantityByVariantId: " + e.getMessage());
+        e.printStackTrace();
+    }
+    return 0;
 }
 
     public static void main(String[] args) {
