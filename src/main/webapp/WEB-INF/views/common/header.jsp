@@ -142,9 +142,7 @@
                                         String selected = selectedParentCategoryId != null && selectedParentCategoryId.equals(String.valueOf(parentCategory.getCategoryId())) ? "active" : "";
                             %>
                             <li class="nav-item dropdown <%= selected%>">
-                                <a class="nav-link dropdown-toggle" href="#" id="<%= parentCategory.getName().toLowerCase().replaceAll(" ", "")%>Dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    <%= parentCategory.getName()%>
-                                </a>
+                                <a class="nav-link dropdown-toggle" href="#" id="userAccountDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="fas fa-user"></i></a>
                                 <ul class="dropdown-menu" aria-labelledby="<%= parentCategory.getName().toLowerCase().replaceAll(" ", "")%>Dropdown">
                                     <%
                                         List<Category> subCategories = new ArrayList<>();
@@ -189,15 +187,17 @@
                                             <li><a class="dropdown-item" href="#">My Orders</a></li>
                                             <li><hr class="dropdown-divider"></li>
                                             <li><a class="dropdown-item" href="${pageContext.request.contextPath}/Logout">Logout</a></li>
-                                        </c:when>
-                                        <c:otherwise>
+                                            </c:when>
+                                            <c:otherwise>
                                             <li><a class="dropdown-item" href="${pageContext.request.contextPath}/Login">Login</a></li>
                                             <li><a class="dropdown-item" href="${pageContext.request.contextPath}/Register">Register</a></li>
-                                        </c:otherwise>
-                                    </c:choose>
+                                            </c:otherwise>
+                                        </c:choose>
                                 </ul>
                             </div>
-                            <a href="#" class="nav-link d-none d-lg-inline-block"><i class="fas fa-heart"></i></a>
+                            <a href="${pageContext.request.contextPath}/wishlist?action=view" class="nav-link d-none d-lg-inline-block">
+                                <i class="fas fa-heart"></i>
+                            </a>
                             <a href="${pageContext.request.contextPath}/customer/cart" class="nav-link position-relative">
                                 <i class="fas fa-shopping-bag"></i>
                                 <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-dark" style="font-size: 0.6em;">
@@ -210,32 +210,32 @@
             </nav>
             <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
             <script>
-            $(document).ready(function() {
-                $("#searchInput").on("input", function() {
-                    var keyword = $(this).val().trim();
-                    if (keyword.length >= 1) {
-                        $.ajax({
-                            url: "${pageContext.request.contextPath}/ProductList",
-                            type: "GET",
-                            data: { action: "autocomplete", keyword: keyword },
-                            success: function(data) {
-                                $("#suggestions").show().html(data);
-                            },
-                            error: function() {
-                                $("#suggestions").hide();
-                            }
-                        });
-                    } else {
-                        $("#suggestions").hide();
-                    }
-                });
+                $(document).ready(function () {
+                    $("#searchInput").on("input", function () {
+                        var keyword = $(this).val().trim();
+                        if (keyword.length >= 1) {
+                            $.ajax({
+                                url: "${pageContext.request.contextPath}/ProductList",
+                                type: "GET",
+                                data: {action: "autocomplete", keyword: keyword},
+                                success: function (data) {
+                                    $("#suggestions").show().html(data);
+                                },
+                                error: function () {
+                                    $("#suggestions").hide();
+                                }
+                            });
+                        } else {
+                            $("#suggestions").hide();
+                        }
+                    });
 
-                $(document).click(function(e) {
-                    if (!$(e.target).closest('#searchInput, #suggestions').length) {
-                        $("#suggestions").hide();
-                    }
+                    $(document).click(function (e) {
+                        if (!$(e.target).closest('#searchInput, #suggestions').length) {
+                            $("#suggestions").hide();
+                        }
+                    });
                 });
-            });
             </script>
         </header>
 
@@ -249,7 +249,7 @@
                 %>
                     {
                         id: <%= cat.getCategoryId()%>,
-                        name: "<%= cat.getName()%>",
+                                name: "<%= cat.getName()%>",
                         parentId: <%= cat.getParentCategoryId()%>
                     },
                 <%

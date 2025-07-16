@@ -1,18 +1,12 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
+// ==== MODEL: BlogPost.java ====
 package model;
 
-import java.util.Date;
+import java.sql.Timestamp;
 
-/**
- *
- * @author Lenovo
- */
 public class Blog {
-    private int blogId;
-    private int staffId;
+
+    private long blogId;
+    private long staffId;
     private String title;
     private String slug;
     private String content;
@@ -21,44 +15,24 @@ public class Blog {
     private String category;
     private String tags;
     private int viewCount;
-    private Date createdAt;
-    private Date updatedAt;
-    private Date publishedAt;
+    private Timestamp createdAt;
+    private Timestamp updatedAt;
+    private Timestamp publishedAt;
     private String status;
 
-    public Blog() {
-    }
-
-    public Blog(int blogId, int staffId, String title, String slug, String content, String excerpt, String thumbnailUrl, String category, String tags, int viewCount, Date createdAt, Date updatedAt, Date publishedAt, String status) {
-        this.blogId = blogId;
-        this.staffId = staffId;
-        this.title = title;
-        this.slug = slug;
-        this.content = content;
-        this.excerpt = excerpt;
-        this.thumbnailUrl = thumbnailUrl;
-        this.category = category;
-        this.tags = tags;
-        this.viewCount = viewCount;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.publishedAt = publishedAt;
-        this.status = status;
-    }
-
-    public int getBlogId() {
+    public long getBlogId() {
         return blogId;
     }
 
-    public void setBlogId(int blogId) {
+    public void setBlogId(long blogId) {
         this.blogId = blogId;
     }
 
-    public int getStaffId() {
+    public long getStaffId() {
         return staffId;
     }
 
-    public void setStaffId(int staffId) {
+    public void setStaffId(long staffId) {
         this.staffId = staffId;
     }
 
@@ -126,27 +100,27 @@ public class Blog {
         this.viewCount = viewCount;
     }
 
-    public Date getCreatedAt() {
+    public Timestamp getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(Date createdAt) {
+    public void setCreatedAt(Timestamp createdAt) {
         this.createdAt = createdAt;
     }
 
-    public Date getUpdatedAt() {
+    public Timestamp getUpdatedAt() {
         return updatedAt;
     }
 
-    public void setUpdatedAt(Date updatedAt) {
+    public void setUpdatedAt(Timestamp updatedAt) {
         this.updatedAt = updatedAt;
     }
 
-    public Date getPublishedAt() {
+    public Timestamp getPublishedAt() {
         return publishedAt;
     }
 
-    public void setPublishedAt(Date publishedAt) {
+    public void setPublishedAt(Timestamp publishedAt) {
         this.publishedAt = publishedAt;
     }
 
@@ -157,5 +131,5 @@ public class Blog {
     public void setStatus(String status) {
         this.status = status;
     }
-    
+
 }

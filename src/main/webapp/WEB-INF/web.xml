@@ -1,24 +1,49 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_4_0.xsd"
-         version="4.0">
-
+<web-app version="4.0" xmlns="http://xmlns.jcp.org/xml/ns/javaee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_4_0.xsd">
     <display-name>ClothingStore</display-name>
-
     <servlet>
         <servlet-name>HomepageController</servlet-name>
         <servlet-class>controller.auth.HomepageController</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>FeedbackReplyController</servlet-name>
+        <servlet-class>controller.staff.FeedbackReplyController</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>BlogController</servlet-name>
+        <servlet-class>controller.customer.BlogController</servlet-class>
     </servlet>
     <servlet-mapping>
         <servlet-name>HomepageController</servlet-name>
         <url-pattern>/home</url-pattern>
     </servlet-mapping>
-   
     <welcome-file-list>
         <welcome-file>home</welcome-file>
     </welcome-file-list>
-    
+    <servlet>
+        <servlet-name>FeedbackController</servlet-name>
+        <servlet-class>controller.customer.FeedbackController</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>FeedbackController</servlet-name>
+        <url-pattern>/feedback</url-pattern>
+    </servlet-mapping>
+    <servlet>
+        <servlet-name>WishlistController</servlet-name>
+        <servlet-class>controller.customer.WishlistController</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>WishlistController</servlet-name>
+        <url-pattern>/wishlist</url-pattern>
+    </servlet-mapping>
+    <servlet>
+        <servlet-name>StaffBlogListController</servlet-name>
+        <servlet-class>controller.staff.StaffBlogListController</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>StaffBlogListController</servlet-name>
+        <url-pattern>/StaffBlogListController</url-pattern>
+    </servlet-mapping>
     <servlet>
         <servlet-name>StaffBlogController</servlet-name>
         <servlet-class>controller.staff.StaffBlogController</servlet-class>
@@ -75,8 +100,15 @@
         <servlet-name>StockMovementController</servlet-name>
         <url-pattern>/StockMovement</url-pattern>
     </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>FeedbackReplyController</servlet-name>
+        <url-pattern>/FeedbackReplyController</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>BlogController</servlet-name>
+        <url-pattern>/blog</url-pattern>
+    </servlet-mapping>
     <session-config>
         <session-timeout>30</session-timeout>
     </session-config>
-
 </web-app>
