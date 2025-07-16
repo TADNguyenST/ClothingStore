@@ -1,13 +1,16 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.ArrayList" %>
-<%@ page import="java.util.Map" %>
 <%@ page import="model.Product" %>
 <%@ page import="java.text.NumberFormat" %>
 <%@ page import="java.util.Locale" %>
 <%@ page import="dao.CategoryDAO" %>
 <%@ page import="model.Category" %>
 <%@ page import="java.sql.SQLException" %>
+<%@ page import="java.util.Set" %>
+<%
+    Set<Integer> wishlistProductIds = (Set<Integer>) request.getAttribute("wishlistProductIds");
+%>
 
 <%
     String pageTitle = (String) request.getAttribute("pageTitle");
@@ -16,7 +19,6 @@
     }
     List<Product> newProducts = (List<Product>) request.getAttribute("newProducts");
     List<Product> bestSellers = (List<Product>) request.getAttribute("bestSellers");
-    Map<Long, Integer> availableMap = (Map<Long, Integer>) request.getAttribute("availableMap");
     NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(new Locale("vi", "VN"));
     request.setAttribute("pageTitle", pageTitle);
 
@@ -242,6 +244,43 @@
             max-width: 100%;
         }
     }
+    .product-card {
+        position: relative; /* Cần để định vị nút trái tim */
+    }
+
+    .wishlist-icon {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        z-index: 10;
+    }
+
+    .wishlist-icon-circle {
+        background-color: white;
+        border: 1px solid #ddd;
+        border-radius: 50%;
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #666;
+        font-size: 16px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .wishlist-icon-circle:hover {
+        border-color: #ff4d4f;
+        color: #ff4d4f;
+    }
+
+    .wishlist-icon-circle.active {
+        border-color: #ff4d4f;
+        color: #ff4d4f;
+    }
+
 </style>
 
 <div class="hero-banner" style="background-image: url('https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?q=80&w=2070&auto=format&fit=crop');">
@@ -295,14 +334,18 @@
                     String price = product.getPrice() != null ? currencyFormat.format(product.getPrice()) : "N/A";
                     Long variantId = product.getDefaultVariantId();
                     boolean hasVariant = variantId != null && variantId != 0;
-                    int available = (availableMap != null) ? availableMap.getOrDefault(product.getProductId(), 0) : 0;
-                    System.out.println("home.jsp - New Arrival Product ID: " + product.getProductId() + ", variantId: " + variantId + ", available: " + available);  // Log debug
-                    boolean hasStock = hasVariant && (available > 0);
-                    String buttonTextCart = hasStock ? "Add to Cart" : "Out Stock";
-                    String buttonTextBuy = hasStock ? "Buy Now" : "Out Stock";
         %>
         <div class="col-lg-3 col-md-6 col-sm-6 col-12">
             <div class="product-card">
+                <div class="wishlist-icon">
+                    <form action="<%= request.getContextPath()%>/wishlist" method="post">
+                        <input type="hidden" name="action" value="add">
+                        <input type="hidden" name="productId" value="<%= product.getProductId()%>">
+                        <button type="submit" class="wishlist-icon-circle <%= (wishlistProductIds != null && wishlistProductIds.contains(product.getProductId())) ? "active" : ""%>">
+                            <i class="fas fa-heart"></i>
+                        </button>
+                    </form>
+                </div>
                 <div class="product-image">
                     <a href="<%= request.getContextPath()%>/ProductList/detail?productId=<%= product.getProductId()%>">
                         <img src="<%= imageUrl%>" alt="<%= name%>">
@@ -315,13 +358,13 @@
                         <input type="hidden" name="action" value="add">
                         <input type="hidden" name="variantId" value="<%= hasVariant ? variantId : 0%>">
                         <input type="hidden" name="quantity" value="1">
-                        <button type="submit" class="btn btn-dark btn-custom-sm" <%= hasStock ? "" : "disabled"%>><%= buttonTextCart %></button>
+                        <button type="submit" class="btn btn-dark btn-custom-sm" <%= hasVariant ? "" : "disabled"%>>Add to Cart</button>
                     </form>
                     <form action="<%= request.getContextPath()%>/customer/checkout" method="post">
                         <input type="hidden" name="action" value="buy">
                         <input type="hidden" name="variantId" value="<%= hasVariant ? variantId : 0%>">
                         <input type="hidden" name="quantity" value="1">
-                        <button type="submit" class="btn btn-primary btn-custom-sm" <%= hasStock ? "" : "disabled"%>><%= buttonTextBuy %></button>
+                        <button type="submit" class="btn btn-primary btn-custom-sm" <%= hasVariant ? "" : "disabled"%>>Buy Now</button>
                     </form>
                 </div>
             </div>
@@ -360,14 +403,19 @@
                     String price = product.getPrice() != null ? currencyFormat.format(product.getPrice()) : "N/A";
                     Long variantId = product.getDefaultVariantId();
                     boolean hasVariant = variantId != null && variantId != 0;
-                    int available = (availableMap != null) ? availableMap.getOrDefault(product.getProductId(), 0) : 0;
-                    System.out.println("home.jsp - Best Seller Product ID: " + product.getProductId() + ", variantId: " + variantId + ", available: " + available);  // Log debug
-                    boolean hasStock = hasVariant && (available > 0);
-                    String buttonTextCart = hasStock ? "Add to Cart" : "Out Stock";
-                    String buttonTextBuy = hasStock ? "Buy Now" : "Out Stock";
         %>
         <div class="col-lg-3 col-md-6 col-sm-6 col-12">
             <div class="product-card">
+                <!-- Nút yêu thích -->
+                <div class="wishlist-icon">
+                    <form action="<%= request.getContextPath()%>/wishlist" method="post">
+                        <input type="hidden" name="action" value="add">
+                        <input type="hidden" name="productId" value="<%= product.getProductId()%>">
+                        <button type="submit" class="wishlist-icon-circle <%= (wishlistProductIds != null && wishlistProductIds.contains(product.getProductId())) ? "active" : ""%>">
+                            <i class="fas fa-heart"></i>
+                        </button>
+                    </form>
+                </div>
                 <div class="product-image">
                     <a href="<%= request.getContextPath()%>/ProductList/detail?productId=<%= product.getProductId()%>">
                         <img src="<%= imageUrl%>" alt="<%= name%>">
@@ -380,13 +428,13 @@
                         <input type="hidden" name="action" value="add">
                         <input type="hidden" name="variantId" value="<%= hasVariant ? variantId : 0%>">
                         <input type="hidden" name="quantity" value="1">
-                        <button type="submit" class="btn btn-dark btn-custom-sm" <%= hasStock ? "" : "disabled"%>><%= buttonTextCart %></button>
+                        <button type="submit" class="btn btn-dark btn-custom-sm" <%= hasVariant ? "" : "disabled"%>>Add to Cart</button>
                     </form>
                     <form action="<%= request.getContextPath()%>/customer/checkout" method="post">
                         <input type="hidden" name="action" value="buy">
                         <input type="hidden" name="variantId" value="<%= hasVariant ? variantId : 0%>">
                         <input type="hidden" name="quantity" value="1">
-                        <button type="submit" class="btn btn-primary btn-custom-sm" <%= hasStock ? "" : "disabled"%>><%= buttonTextBuy %></button>
+                        <button type="submit" class="btn btn-primary btn-custom-sm" <%= hasVariant ? "" : "disabled"%>>Buy Now</button>
                     </form>
                 </div>
             </div>

@@ -1,0 +1,230 @@
+/*
+ * Blog List Specific Stylesheet
+ * This file contains styles for the blog post list page.
+ */
+
+/* --- Main Container Layout (EVEN BIGGER Size & Presence) --- */
+.container-blog {
+    padding: 45px; /* Significantly increased internal spacing for a grand, expansive feel */
+    max-width: 1500px; /* Max-width pushed even further for ultra-wide screens */
+    margin: 50px auto; /* Even more outer margin for maximum vertical separation and prominence */
+    background-color: #fff; /* White background for the content area */
+    border-radius: 15px; /* Even more rounded corners for a very soft, modern appearance */
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2); /* A much deeper, softer, and more pronounced shadow */
+    transition: all 0.4s ease-in-out; /* Slower, smoother transition for any future dynamic changes */
+}
+
+/* --- Header Action Section (Title and Add Button - MAXIMIZED) --- */
+.header-action {
+    display: flex; /* Enables flexbox for horizontal alignment */
+    justify-content: space-between; /* Puts space between the title and the button */
+    align-items: center; /* Vertically aligns items in the middle */
+    margin-bottom: 40px; /* Increased space below the header section */
+    padding-bottom: 30px; /* Increased padding above the bottom border */
+    border-bottom: 2px solid #e0e0e0; /* Thicker, more prominent separator border */
+}
+
+.header-action h1 {
+    font-size: 2.8rem; /* Dramatically larger font size for a commanding main heading */
+    font-weight: 800; /* Extra bold font weight for maximum impact */
+    color: #1a202c; /* Even darker text color for strong emphasis */
+    margin: 0; /* Removes default browser margin for H1 */
+}
+
+.add-new-button {
+    background-color: #007bff; /* Primary blue background */
+    color: white; /* White text color */
+    padding: 16px 35px; /* Generous internal spacing for a very large button */
+    border-radius: 10px; /* More rounded corners for the button */
+    text-decoration: none; /* Removes underline from the link */
+    font-weight: 700; /* Bolder font weight for the button text */
+    transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease; /* Enhanced transitions for hover */
+    display: inline-flex; /* Allows icon and text alignment */
+    align-items: center; /* Vertically aligns icon and text */
+    gap: 12px; /* More space between the icon and text */
+    font-size: 1.1rem; /* Larger, clearer font size for the button */
+    box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3); /* More prominent shadow for the button itself */
+}
+
+.add-new-button:hover {
+    background-color: #0056b3; /* Darker blue on hover */
+    color: white; /* Ensures text remains white on hover */
+    text-decoration: none; /* Ensures no underline appears on hover */
+    transform: translateY(-4px); /* Even more pronounced lift on hover */
+    box-shadow: 0 6px 20px rgba(0, 123, 255, 0.4); /* Much stronger shadow on hover */
+}
+
+/* --- Table Styling (MAXIMIZED for visual impact) --- */
+.table-responsive {
+    overflow-x: auto; /* Allows the table to scroll horizontally on small screens */
+}
+
+.table {
+    width: 100%; /* Table takes full width of its container */
+    margin-bottom: 2.5rem; /* Increased space below the table for overall spaciousness */
+    color: #333; /* Default text color for table content */
+    border-collapse: collapse; /* Ensures borders merge for a clean grid look */
+}
+
+.table thead th {
+    vertical-align: bottom; /* Aligns content to the bottom of the cell */
+    border-bottom: 4px solid #a3c2e6; /* Much thicker, prominent border for the header bottom */
+    padding: 20px 25px; /* Greatly increased internal spacing for header cells */
+    background-color: #e0e9f2; /* More distinct light background for table headers */
+    color: #2a3340; /* Very dark, defined text color for headers */
+    font-weight: 700; /* Bolder header text */
+    text-align: left; /* Aligns header text to the left */
+    font-size: 1.15rem; /* Larger font size for headers */
+}
+
+.table tbody tr {
+    transition: background-color 0.2s ease; /* Smooth transition for row hover */
+}
+
+.table tbody tr:hover {
+    background-color: #c9d7e5; /* More distinct light background on row hover */
+}
+
+.table tbody td {
+    padding: 20px 25px; /* Greatly increased internal spacing for table data cells */
+    vertical-align: middle; /* Vertically aligns content in the middle */
+    border-top: 1px solid #d8dee3; /* Slightly more visible border between rows */
+    font-size: 1.05rem; /* Larger font size for table content */
+}
+
+/* --- Action Icons (Edit/Delete - MAXIMIZED for presence) --- */
+.action-icons a {
+    color: #007bff; /* Primary blue for action icons */
+    margin-right: 30px; /* Increased space between icons for a less crowded feel */
+    font-size: 1.5rem; /* Significantly larger icon size for maximum visibility */
+    transition: color 0.2s ease, transform 0.2s ease; /* Smooth transitions for hover effects */
+}
+
+.action-icons a:last-child {
+    margin-right: 0; /* Removes extra margin from the last icon */
+}
+
+.action-icons a:hover {
+    color: #0056b3; /* Darker blue on hover */
+    transform: translateY(-4px); /* Even more pronounced upward lift on hover */
+}
+
+/* Specific icon colors for better clarity and common UI patterns */
+.action-icons .fa-pencil {
+    color: #28a745; /* Green for edit action */
+}
+
+.action-icons .fa-pencil:hover {
+    color: #218838; /* Darker green on hover */
+}
+
+.action-icons .fa-trash {
+    color: #dc3545; /* Red for delete action */
+}
+
+.action-icons .fa-trash:hover {
+    color: #c82333; /* Darker red on hover */
+}
+
+/* --- Responsive Adjustments (Scaled proportionally) --- */
+
+/* For screens up to 1200px wide (new breakpoint for larger laptops/desktops) */
+@media (max-width: 1200px) {
+    .container-blog {
+        padding: 40px;
+        max-width: 95%; /* Adjust max-width to be relative on smaller large screens */
+        margin: 40px auto;
+    }
+    .header-action h1 {
+        font-size: 2.4rem;
+    }
+    .add-new-button {
+        padding: 14px 30px;
+        font-size: 1.05rem;
+    }
+    .table thead th,
+    .table tbody td {
+        padding: 18px 22px;
+        font-size: 1rem;
+    }
+    .action-icons a {
+        font-size: 1.4rem;
+        margin-right: 25px;
+    }
+}
+
+/* For screens up to 992px wide (e.g., tablets and smaller laptops) */
+@media (max-width: 992px) {
+    .container-blog {
+        padding: 30px;
+        max-width: 90%;
+        margin: 30px auto;
+    }
+    .header-action h1 {
+        font-size: 2rem;
+    }
+    .add-new-button {
+        padding: 12px 25px;
+        font-size: 0.95rem;
+    }
+    .table thead th,
+    .table tbody td {
+        padding: 15px 18px;
+        font-size: 0.95rem;
+    }
+    .action-icons a {
+        font-size: 1.2rem;
+        margin-right: 20px;
+    }
+}
+
+/* For screens up to 768px wide (e.g., tablets) */
+@media (max-width: 768px) {
+    .container-blog {
+        padding: 25px;
+        margin: 25px auto;
+    }
+    .header-action {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+        margin-bottom: 25px;
+        padding-bottom: 15px;
+    }
+    .header-action h1 {
+        font-size: 1.6rem;
+    }
+    .add-new-button {
+        width: 100%;
+        text-align: center;
+        justify-content: center;
+        padding: 10px 20px;
+    }
+    .table thead th,
+    .table tbody td {
+        padding: 12px;
+        font-size: 0.9rem;
+    }
+    .action-icons a {
+        font-size: 1.1rem;
+        margin-right: 15px;
+    }
+}
+
+/* For screens up to 576px wide (e.g., mobile phones) */
+@media (max-width: 576px) {
+    .container-blog {
+        border-radius: 0;
+        margin: 0;
+        padding: 15px;
+    }
+    .table thead th,
+    .table tbody td {
+        padding: 8px;
+        font-size: 0.8rem;
+    }
+    .action-icons a {
+        font-size: 1rem;
+        margin-right: 10px;
+    }
+}
