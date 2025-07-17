@@ -326,8 +326,8 @@ public class ProductListController extends HttpServlet {
                         boolean hasVariant = variantId != null && variantId != 0;
                         int available = availableMap.getOrDefault(product.getProductId(), 0);
                         boolean hasStock = hasVariant && (available > 0);
-                        String cartButtonText = hasStock ? "Add to Cart" : "Hết hàng";
-                        String buyButtonText = hasStock ? "Buy Now" : "Hết hàng";
+                        String cartButtonText = hasStock ? "Add to Cart" : "Out Stock";
+                        String buyButtonText = hasStock ? "Buy Now" : "Out Stock";
                         html.append("<div class='col-lg-4 col-md-6 col-sm-6 col-12'>")
                                 .append("<div class='product-card'>")
                                 .append("<div class='product-image'>")

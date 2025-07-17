@@ -52,29 +52,6 @@
                                 <a class="btn btn-success" href="${pageContext.request.contextPath}/BrandManager?action=create"><i class="bi bi-plus-circle"></i> Create</a>
                             </div>
 
-                            <%-- Search Form --%>
-                            <form action="${pageContext.request.contextPath}/BrandManager" method="get" class="mb-3">
-                                <input type="hidden" name="action" value="search">
-                                <div class="input-group">
-                                    <input type="text" name="search" class="form-control" placeholder="Search by name" value="<%= request.getParameter("search") != null ? request.getParameter("search") : "" %>">
-                                    <button type="submit" class="btn btn-primary"><i class="bi bi-search"></i> Search</button>
-                                </div>
-                            </form>
-
-                            <%-- Filter Form --%>
-                            <form action="${pageContext.request.contextPath}/BrandManager" method="get" class="mb-3">
-                                <input type="hidden" name="action" value="filter">
-                                <div class="input-group">
-                                    <select name="status" class="form-select">
-                                        <option value="">All</option>
-                                        <option value="active" <%= "active".equals(request.getParameter("status")) ? "selected" : "" %>>Active</option>
-                                        <option value="inactive" <%= "inactive".equals(request.getParameter("status")) ? "selected" : "" %>>Inactive</option>
-                                    </select>
-                                    <button type="submit" class="btn btn-primary"><i class="bi bi-funnel"></i> Filter</button>
-                                    <a href="${pageContext.request.contextPath}/BrandManager?action=list" class="btn btn-secondary ms-2"><i class="bi bi-arrow-repeat"></i> Clear Filters</a>
-                                </div>
-                            </form>
-
                             <%-- Messages --%>
                             <c:if test="${not empty msg}">
                                 <p class="text-success">${msg}</p>
@@ -89,7 +66,6 @@
                                     <table class="table table-striped table-hover">
                                         <thead>
                                             <tr>
-                                                <th>ID</th>
                                                 <th>Name</th>
                                                 <th>Description</th>
                                                 <th>Logo</th>
@@ -100,7 +76,6 @@
                                         <tbody>
                                             <c:forEach var="brand" items="${brands}">
                                                 <tr>
-                                                    <td>${brand.brandId}</td>
                                                     <td>
                                                         <a href="${pageContext.request.contextPath}/BrandManager?action=detail&id=${brand.brandId}">
                                                             ${brand.name}

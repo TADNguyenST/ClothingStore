@@ -115,7 +115,7 @@ public class CategoryDAO extends DBContext {
     public List<Category> getAllCategories() {
         List<Category> list = new ArrayList<>();
         String sql = "SELECT category_id, name, description, parent_category_id, is_active, created_at "
-                + "FROM categories WHERE is_active = 1";
+                + "FROM categories";
         try {
             if (conn == null) {
                 throw new SQLException("Database connection is null");
@@ -146,7 +146,7 @@ public class CategoryDAO extends DBContext {
     public List<Category> getParentCategories() {
         List<Category> list = new ArrayList<>();
         String sql = "SELECT category_id, name, description, parent_category_id, is_active, created_at "
-                    + "FROM categories WHERE parent_category_id IS NULL AND is_active = 1";
+                    + "FROM categories WHERE parent_category_id IS NULL";
         try {
             if (conn == null) {
                 throw new SQLException("Database connection is null");
@@ -173,57 +173,6 @@ public class CategoryDAO extends DBContext {
             throw new RuntimeException("Error fetching parent categories: " + e.getMessage(), e);
         }
     }
-
-    public List<Category> searchCategories(String name, Long parentCategoryId, Boolean isActive) {
-        List<Category> list = new ArrayList<>();
-        StringBuilder sql = new StringBuilder("SELECT category_id, name, description, parent_category_id, is_active, created_at FROM categories WHERE 1=1");
-        List<Object> params = new ArrayList<>();
-
-        if (name != null && !name.trim().isEmpty()) {
-            sql.append(" AND name LIKE ?");
-            params.add("%" + name.trim() + "%");
-        }
-        if (parentCategoryId != null) {
-            sql.append(" AND parent_category_id = ?");
-            params.add(parentCategoryId);
-        } else if (parentCategoryId == null && name != null && name.trim().isEmpty() && isActive == null) {
-            sql.append(" AND parent_category_id IS NULL");
-        }
-        if (isActive != null) {
-            sql.append(" AND is_active = ?");
-            params.add(isActive);
-        }
-
-        try {
-            if (conn == null) {
-                throw new SQLException("Database connection is null");
-            }
-            PreparedStatement ps = conn.prepareStatement(sql.toString());
-            for (int i = 0; i < params.size(); i++) {
-                ps.setObject(i + 1, params.get(i));
-            }
-            ResultSet rs = ps.executeQuery();
-            while (rs.next()) {
-                Long parentId = rs.getLong("parent_category_id");
-                if (rs.wasNull()) {
-                    parentId = null;
-                }
-                Category category = new Category(
-                        rs.getLong("category_id"),
-                        rs.getString("name"),
-                        rs.getString("description"),
-                        parentId,
-                        rs.getBoolean("is_active"),
-                        rs.getTimestamp("created_at")
-                );
-                list.add(category);
-            }
-            return list;
-        } catch (SQLException e) {
-            throw new RuntimeException("Error searching categories: " + e.getMessage(), e);
-        }
-    }
-    
 
     public static void main(String[] args) {
         CategoryDAO dao = new CategoryDAO();
