@@ -13,7 +13,7 @@ public class ProductFavoriteDAO {
         List<ProductFavorite> list = new ArrayList<>();
         String sql = "SELECT * FROM product_favorites WHERE customer_id = ?";
 
-        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+        try ( Connection conn = new DBContext().getConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setLong(1, customerId);
             try ( ResultSet rs = ps.executeQuery()) {
@@ -38,7 +38,7 @@ public class ProductFavoriteDAO {
     // Kiểm tra sản phẩm đã có trong wishlist chưa
     public boolean isProductInWishlist(long customerId, int productId) {
         String sql = "SELECT 1 FROM product_favorites WHERE customer_id = ? AND product_id = ?";
-        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+        try ( Connection conn = new DBContext().getConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setLong(1, customerId);
             ps.setInt(2, productId);
@@ -66,7 +66,7 @@ public class ProductFavoriteDAO {
         }
 
         String sql = "INSERT INTO product_favorites (customer_id, product_id, date_added, is_active) VALUES (?, ?, GETDATE(), 1)";
-        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+        try ( Connection conn = new DBContext().getConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setLong(1, pf.getCustomerId());
             ps.setInt(2, pf.getProductId());
@@ -80,7 +80,7 @@ public class ProductFavoriteDAO {
     // Xoá sản phẩm khỏi wishlist
     public void deleteFromWishlist(long customerId, int productId) {
         String sql = "DELETE FROM product_favorites WHERE customer_id = ? AND product_id = ?";
-        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+        try ( Connection conn = new DBContext().getConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setLong(1, customerId);
             ps.setInt(2, productId);
@@ -96,7 +96,7 @@ public class ProductFavoriteDAO {
         Set<Integer> ids = new HashSet<>();
         String sql = "SELECT product_id FROM product_favorites WHERE customer_id = ?";
 
-        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+        try ( Connection conn = new DBContext().getConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setLong(1, customerId);
             try ( ResultSet rs = ps.executeQuery()) {

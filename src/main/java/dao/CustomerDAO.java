@@ -94,6 +94,28 @@ public class CustomerDAO {
         }
         return false;
     }
+
+    public java.util.List<Users> getAllCustomersWithUserDetails() {
+        java.util.List<Users> customers = new java.util.ArrayList<>();
+        String sql = "SELECT u.user_id, u.email, u.full_name, u.phone_number, c.customer_id " +
+                     "FROM users u JOIN customers c ON u.user_id = c.user_id";
+        try (Connection conn = new DBContext().getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                Users user = new Users();
+                user.setUserId(rs.getLong("user_id"));
+                user.setEmail(rs.getString("email"));
+                user.setFullName(rs.getString("full_name"));
+                user.setPhoneNumber(rs.getString("phone_number"));
+                // You might want to set customer_id in the Users object if needed, or create a custom DTO
+                customers.add(user);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return customers;
+    }
 //Login with Google
 }
 
