@@ -67,45 +67,6 @@ public class BrandManagerController extends HttpServlet {
                 request.getRequestDispatcher("/WEB-INF/views/admin/brand/brands.jsp").forward(request, response);
                 break;
 
-            case "search":
-                request.setAttribute("currentAction", "brandList");
-                String search = request.getParameter("search");
-                try {
-                    brands = brandDAO.searchBrandsByName(search != null ? search.trim() : "");
-                    request.setAttribute("brands", brands);
-                    request.setAttribute("search", search);
-                    if (brands.isEmpty()) {
-                        request.setAttribute("err", "<p class='text-danger'>No brands found matching the search criteria</p>");
-                    }
-                } catch (Exception e) {
-                    request.setAttribute("err", "<p class='text-danger'>Error searching brands: " + e.getMessage() + "</p>");
-                    System.out.println("Error in search action: " + e.getMessage());
-                }
-                request.getRequestDispatcher("/WEB-INF/views/admin/brand/brands.jsp").forward(request, response);
-                break;
-
-            case "filter":
-                request.setAttribute("currentAction", "brandList");
-                String status = request.getParameter("status");
-                try {
-                    if (status != null && !status.isEmpty()) {
-                        boolean isActive = status.equals("active");
-                        brands = brandDAO.getBrandsByStatus(isActive);
-                    } else {
-                        brands = brandDAO.getAll();
-                    }
-                    request.setAttribute("brands", brands);
-                    request.setAttribute("status", status);
-                    if (brands.isEmpty()) {
-                        request.setAttribute("err", "<p class='text-danger'>No brands found matching the filter criteria</p>");
-                    }
-                } catch (Exception e) {
-                    request.setAttribute("err", "<p class='text-danger'>Error filtering brands: " + e.getMessage() + "</p>");
-                    System.out.println("Error in filter action: " + e.getMessage());
-                }
-                request.getRequestDispatcher("/WEB-INF/views/admin/brand/brands.jsp").forward(request, response);
-                break;
-
             case "create":
                 request.setAttribute("currentAction", "brandForm");
                 request.getRequestDispatcher("/WEB-INF/views/admin/brand/create-brand.jsp").forward(request, response);
@@ -138,13 +99,13 @@ public class BrandManagerController extends HttpServlet {
                     boolean result = brandDAO.deleteBrand(id);
                     if (result) {
                         request.setAttribute("msg", "<p class='text-success'>Brand deleted successfully</p>");
-                    } else {
-                        request.setAttribute("err", "<p class='text-danger'>Failed to delete brand</p>");
-                    }
+                    } 
                 } catch (NumberFormatException e) {
                     request.setAttribute("err", "<p class='text-danger'>Invalid brand ID</p>");
-                } catch (RuntimeException e) {
+                } catch (IllegalStateException e) {
                     request.setAttribute("err", "<p class='text-danger'>" + e.getMessage() + "</p>");
+                } catch (RuntimeException e) {
+                    request.setAttribute("err", "<p class='text-danger'>Failed to delete brand</p>");
                 }
                 request.setAttribute("brands", brandDAO.getAll());
                 request.getRequestDispatcher("/WEB-INF/views/admin/brand/brands.jsp").forward(request, response);
@@ -261,7 +222,7 @@ public class BrandManagerController extends HttpServlet {
                     request.getRequestDispatcher("/WEB-INF/views/admin/brand/create-brand.jsp").forward(request, response);
                 } catch (Exception e) {
                     System.err.println("Error creating brand: " + e.getMessage());
-                    request.setAttribute("err", "<p class='text-danger'>Error creating brand: " + e.getMessage() + "</p>");
+                    request.setAttribute("err", "<p class='text-danger'>Lỗi tạo thương hiệu: " + e.getMessage() + "</p>");
                     request.getRequestDispatcher("/WEB-INF/views/admin/brand/create-brand.jsp").forward(request, response);
                 }
                 break;
@@ -332,7 +293,7 @@ public class BrandManagerController extends HttpServlet {
                     brand.setDescription(description);
                     brand.setLogoUrl(logoUrl);
                     brand.setActive(isActive);
-                    brand.setCreatedAt(new Date()); // Consider fetching from DB if you want to preserve the original created_at
+                    brand.setCreatedAt(new Date()); // Consider fetching from DB to preserve original created_at
 
                     boolean result = brandDAO.updateBrand(brand);
                     if (result) {
@@ -353,7 +314,7 @@ public class BrandManagerController extends HttpServlet {
                     request.getRequestDispatcher("/WEB-INF/views/admin/brand/edit-brand.jsp").forward(request, response);
                 } catch (Exception e) {
                     System.err.println("Error updating brand: " + e.getMessage());
-                    request.setAttribute("err", "<p class='text-danger'>Error updating brand: " + e.getMessage() + "</p>");
+                    request.setAttribute("err", "<p class='text-danger'>Lỗi cập nhật thương hiệu: " + e.getMessage() + "</p>");
                     try {
                         long id = Long.parseLong(request.getParameter("id"));
                         request.setAttribute("brand", brandDAO.getBrandById(id));

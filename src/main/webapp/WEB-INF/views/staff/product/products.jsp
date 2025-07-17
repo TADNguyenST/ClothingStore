@@ -2,9 +2,6 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@page import="java.math.BigDecimal"%>
 <%@page import="model.Product"%>
-<%@page import="dao.ProductDAO"%>
-<%@page import="dao.CategoryDAO"%>
-<%@page import="model.Users"%>
 <%@page import="model.Category"%>
 <%@page import="model.Brand"%>
 <%@page import="java.util.List"%>
@@ -13,11 +10,9 @@
 <%@page import="java.text.DecimalFormatSymbols"%>
 <%
     List<Product> list = (List<Product>) request.getAttribute("list");
-    String msg = (String) request.getAttribute("msg");
+    String msg = (String) session.getAttribute("msg"); // Retrieve success message from session
     String err = (String) request.getAttribute("err");
-    CategoryDAO cateDAO = new CategoryDAO();
-    // Get all categories
-    List<Category> allCategories = cateDAO.getAllCategories();
+    List<Category> allCategories = (List<Category>) request.getAttribute("categories");
     List<Category> parentCategories = new ArrayList<>();
     if (allCategories != null) {
         for (Category cat : allCategories) {
@@ -26,13 +21,15 @@
             }
         }
     }
-    // Get selected filter values from request parameters
     String selectedParentCategoryId = request.getParameter("parentCategoryId");
     String selectedCategoryId = request.getParameter("categoryId");
-    String selectedStatus = request.getParameter("status"); // Thêm tham số trạng thái
+    String selectedStatus = request.getParameter("status");
+    // Remove msg from session after retrieval
+    if (msg != null && !msg.isEmpty()) {
+        session.removeAttribute("msg");
+    }
 %>
 <%!
-    // Method to format price with thousand separators and two decimal places in Vietnamese format
     private String formatPrice(BigDecimal price) {
         if (price == null) {
             return "N/A";
@@ -51,29 +48,22 @@
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>Products List</title>
-
-        <%-- Link to external libraries --%>
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-
-        <%-- Link to common CSS --%>
         <link rel="stylesheet" href="${pageContext.request.contextPath}/admin-dashboard/css/admin-css.css">
+        <!-- Disable browser caching -->
+        <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+        <meta http-equiv="Pragma" content="no-cache">
+        <meta http-equiv="Expires" content="0">
     </head>
     <body>
-        <%-- Set necessary requestScope variables for sidebar/header --%>
         <c:set var="currentAction" value="products" scope="request"/>
         <c:set var="currentModule" value="admin" scope="request"/>
         <c:set var="pageTitle" value="Products List" scope="request"/>
-
-        <%-- Include Sidebar --%>
         <jsp:include page="/WEB-INF/includes/admin-sidebar.jsp" />
-
         <div class="main-content-wrapper">
-            <%-- Include Header --%>
             <jsp:include page="/WEB-INF/includes/admin-header.jsp" />
-
-            <%-- Main content area --%>
             <div class="content-area">
                 <div class="row">
                     <div class="col-xs-12">
@@ -82,7 +72,18 @@
                                 <h3 class="box-title">Products List</h3>
                             </div>
                             <div class="box-body">
-                                <%-- Filter Form --%>
+                                <% if (msg != null && !msg.isEmpty()) { %>
+                                <div class="alert alert-success alert-dismissible fade show" role="alert" id="successMessage">
+                                    <%= msg %>
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                                <% } %>
+                                <% if (err != null && !err.isEmpty()) { %>
+                                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                    <%= err %>
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                                <% } %>
                                 <form action="${pageContext.request.contextPath}/ProductManager" method="get" class="mb-3">
                                     <input type="hidden" name="action" value="filter">
                                     <div class="row g-3">
@@ -103,8 +104,7 @@
                                         </div>
                                         <div class="col-md-2">
                                             <select name="categoryId" id="categoryId" class="form-select">
-                                                <option value="">All Child Categories</option>
-                                                <%-- Child categories will be populated dynamically by JavaScript --%>
+                                                <option value="">All Subcategories</option>
                                             </select>
                                         </div>
                                         <div class="col-md-2">
@@ -125,14 +125,14 @@
                                             </select>
                                         </div>
                                         <div class="col-md-2">
-                                            <input type="text" name="minPrice" class="form-control" placeholder="Min Price" value="<%= request.getParameter("minPrice") != null ? request.getParameter("minPrice") : ""%>">
+                                            <input type="text" name="minPrice" class="form-control" placeholder="Minimum Price" value="<%= request.getParameter("minPrice") != null ? request.getParameter("minPrice") : ""%>">
                                         </div>
                                         <div class="col-md-2">
-                                            <input type="text" name="maxPrice" class="form-control" placeholder="Max Price" value="<%= request.getParameter("maxPrice") != null ? request.getParameter("maxPrice") : ""%>">
+                                            <input type="text" name="maxPrice" class="form-control" placeholder="Maximum Price" value="<%= request.getParameter("maxPrice") != null ? request.getParameter("maxPrice") : ""%>">
                                         </div>
                                         <div class="col-md-2">
                                             <select name="status" class="form-select">
-                                                <option value="">All Status</option>
+                                                <option value="">All Statuses</option>
                                                 <option value="Active" <%= "Active".equals(selectedStatus) ? "selected" : ""%>>Active</option>
                                                 <option value="Discontinued" <%= "Discontinued".equals(selectedStatus) ? "selected" : ""%>>Discontinued</option>
                                             </select>
@@ -145,21 +145,9 @@
                                         </div>
                                     </div>
                                 </form>
-
-                                <%-- Create Button --%>
                                 <div class="mb-2 text-end">
-                                    <a class="btn btn-success" href="${pageContext.request.contextPath}/ProductManager?action=create"><i class="bi bi-file-earmark-plus"></i> Create</a>
+                                    <a class="btn btn-success" href="${pageContext.request.contextPath}/ProductManager?action=create"><i class="bi bi-file-earmark-plus"></i> Create New</a>
                                 </div>
-
-                                <%-- Messages --%>
-                                <% if (msg != null && !msg.isEmpty()) {%>
-                                <p class="text-success"><%= msg%></p>
-                                <% } %>
-                                <% if (err != null && !err.isEmpty()) {%>
-                                <p class="text-danger"><%= err%></p>
-                                <% } %>
-
-                                <%-- Product Table --%>
                                 <% if (list != null && !list.isEmpty()) { %>
                                 <table class="table table-striped table-hover">
                                     <thead>
@@ -172,16 +160,20 @@
                                             <th>Brand</th>
                                             <th>Material</th>
                                             <th>Status</th>
-                                            <th>Action</th>
+                                            <th>Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <% for (Product product : list) {
                                                 Category parentCategory = null;
                                                 if (product.getCategory() != null && product.getCategory().getParentCategoryId() != null) {
-                                                    parentCategory = cateDAO.getCategoryById(product.getCategory().getParentCategoryId());
+                                                    for (Category cat : allCategories) {
+                                                        if (cat.getCategoryId() == product.getCategory().getParentCategoryId()) {
+                                                            parentCategory = cat;
+                                                            break;
+                                                        }
+                                                    }
                                                 }
-                                                // Determine status class
                                                 String statusClass = product.getStatus() != null && product.getStatus().equalsIgnoreCase("Active") ? "bg-success" : "bg-danger";
                                         %>
                                         <tr>
@@ -195,15 +187,14 @@
                                             <td><span class="badge <%= statusClass%> text-white"><%= product.getStatus()%></span></td>
                                             <td>
                                                 <a href="${pageContext.request.contextPath}/ProductManager?action=update&id=<%= product.getProductId()%>" class="btn btn-primary btn-sm"><i class="bi bi-tools"></i> Edit</a>
-                                                <a href="${pageContext.request.contextPath}/ProductManager?action=delete&id=<%= product.getProductId()%>" class="btn btn-danger btn-sm"
-                                                   onclick="return confirm('Are you sure you want to delete <%= product.getName()%>?')"><i class="bi bi-trash"></i> Delete</a>
+                                                <a href="${pageContext.request.contextPath}/ProductManager?action=delete&id=<%= product.getProductId()%>" class="btn btn-danger btn-sm" onclick="return confirmDelete(<%= product.getProductId()%>, '<%= product.getName().replace("'", "\\'")%>')"><i class="bi bi-trash"></i> Delete</a>
                                             </td>
                                         </tr>
                                         <% } %>
                                     </tbody>
                                 </table>
                                 <% } else { %>
-                                <p>No Data!</p>
+                                <p>No Data Available!</p>
                                 <% }%>
                             </div>
                         </div>
@@ -211,23 +202,18 @@
                 </div>
             </div>
         </div>
-
-        <%-- Link to common JS --%>
         <script src="${pageContext.request.contextPath}/admin-dashboard/js/admin-js.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
-
-        <%-- JavaScript for filtering child categories --%>
         <script>
-            // Store all categories in a JavaScript array
             const allCategories = [
                 <%
                     if (allCategories != null) {
                         for (Category cat : allCategories) {
-                            if (cat.getParentCategoryId() != null) { // Only include child categories
+                            if (cat.getParentCategoryId() != null) {
                 %>
                 {
                     id: <%= cat.getCategoryId()%>,
-                    name: "<%= cat.getName()%>",
+                    name: "<%= cat.getName().replace("\"", "\\\"")%>",
                     parentId: <%= cat.getParentCategoryId()%>
                 },
                 <%
@@ -237,16 +223,10 @@
                 %>
             ];
 
-            // Function to populate child category dropdown
             function populateChildCategories(parentId, selectedCategoryId) {
                 const categorySelect = document.getElementById('categoryId');
-                // Clear existing options
-                categorySelect.innerHTML = '<option value="">All Child Categories</option>';
-
-                // Filter child categories based on parentId
+                categorySelect.innerHTML = '<option value="">All Subcategories</option>';
                 const childCategories = allCategories.filter(cat => cat.parentId == parentId);
-
-                // Add new options
                 childCategories.forEach(cat => {
                     const option = document.createElement('option');
                     option.value = cat.id;
@@ -258,20 +238,26 @@
                 });
             }
 
-            // Event listener for parent category change
             document.getElementById('parentCategoryId').addEventListener('change', function () {
                 const parentId = this.value;
                 const selectedCategoryId = "<%= selectedCategoryId != null ? selectedCategoryId : ""%>";
                 populateChildCategories(parentId, selectedCategoryId);
             });
 
-            // Initialize child categories on page load
             document.addEventListener('DOMContentLoaded', function () {
                 const parentId = "<%= selectedParentCategoryId != null ? selectedParentCategoryId : ""%>";
                 const selectedCategoryId = "<%= selectedCategoryId != null ? selectedCategoryId : ""%>";
                 populateChildCategories(parentId, selectedCategoryId);
-
-                // Active menu logic
+                const successMessage = document.getElementById('successMessage');
+                if (successMessage) {
+                    setTimeout(() => {
+                        successMessage.classList.remove('show');
+                        successMessage.classList.add('fade');
+                        setTimeout(() => {
+                            successMessage.remove();
+                        }, 150);
+                    }, 3000);
+                }
                 const currentAction = "${requestScope.currentAction}";
                 const currentModule = "${requestScope.currentModule}";
                 document.querySelectorAll('.sidebar-menu li.active').forEach(li => li.classList.remove('active'));
@@ -288,6 +274,14 @@
                     }
                 }
             });
+
+            function confirmDelete(productId, productName) {
+                if (isNaN(productId) || productId <= 0) {
+                    alert('Invalid product ID!');
+                    return false;
+                }
+                return confirm('Are you sure you want to delete the product ' + productName + '?');
+            }
         </script>
     </body>
 </html>

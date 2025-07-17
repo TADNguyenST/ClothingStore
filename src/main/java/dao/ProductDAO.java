@@ -306,96 +306,119 @@ public class ProductDAO extends DBContext {
 
     // Other methods (unchanged)
     public long insert(String name, String description, BigDecimal price, long categoryId, long brandId,
-            String material, String status, List<ProductVariant> variants, List<ProductImage> images) {
-        String sql = "INSERT INTO products (name, description, price, category_id, brand_id, material, status, created_at) " +
-                     "OUTPUT INSERTED.product_id VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        String material, String status, List<ProductVariant> variants, List<ProductImage> images) {
+    String sql = "INSERT INTO products (name, description, price, category_id, brand_id, material, status, created_at) " +
+                 "OUTPUT INSERTED.product_id VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 
-        try {
-            conn.setAutoCommit(false);
-            PreparedStatement ps = conn.prepareStatement(sql);
-            ps.setString(1, name);
-            ps.setString(2, description);
-            ps.setBigDecimal(3, price);
-            ps.setLong(4, categoryId);
-            ps.setLong(5, brandId);
-            ps.setString(6, material);
-            ps.setString(7, status);
-            ps.setTimestamp(8, new java.sql.Timestamp(new Date().getTime()));
+    try {
+        conn.setAutoCommit(false);
+        PreparedStatement ps = conn.prepareStatement(sql);
+        ps.setString(1, name);
+        ps.setString(2, description);
+        ps.setBigDecimal(3, price);
+        ps.setLong(4, categoryId);
+        ps.setLong(5, brandId);
+        ps.setString(6, material);
+        ps.setString(7, status);
+        ps.setTimestamp(8, new java.sql.Timestamp(new Date().getTime()));
 
-            ResultSet rs = ps.executeQuery();
-            long productId = 0;
-            if (rs.next()) {
-                productId = rs.getLong("product_id");
+        ResultSet rs = ps.executeQuery();
+        long productId = 0;
+        if (rs.next()) {
+            productId = rs.getLong("product_id");
+        } else {
+            conn.rollback();
+            System.out.println("Failed to retrieve product_id after insert");
+            return 0;
+        }
+
+        String checkSkuSql = "SELECT sku FROM product_variants WHERE sku = ?";
+        String variantSql = "INSERT INTO product_variants (product_id, size, color, price_modifier, sku) " +
+                           "OUTPUT INSERTED.variant_id VALUES (?, ?, ?, ?, ?)";
+        PreparedStatement psCheckSku = conn.prepareStatement(checkSkuSql);
+        PreparedStatement psVariant = conn.prepareStatement(variantSql);
+
+        for (int i = 0; i < variants.size(); i++) {
+            ProductVariant variant = variants.get(i);
+            String sku = variant.getSku();
+            if (sku == null || sku.length() > 100) {
+                conn.rollback();
+                System.out.println("Invalid SKU: " + (sku == null ? "null" : "exceeds 100 characters"));
+                throw new IllegalArgumentException("Invalid SKU for variant " + (i + 1));
+            }
+
+            // Check duplicate variant
+            if (isVariantExists(productId, variant.getSize(), variant.getColor())) {
+                conn.rollback();
+                System.out.println("Duplicate variant: Size=" + variant.getSize() + ", Color=" + variant.getColor());
+                throw new IllegalArgumentException("Duplicate variant with size '" + variant.getSize() + "' and color '" + variant.getColor() + "' for variant " + (i + 1));
+            }
+
+            // Check Price Modifier
+            BigDecimal priceModifier = variant.getPriceModifier();
+            if (priceModifier.compareTo(price) < 0) {
+                conn.rollback();
+                System.out.println("Price modifier less than base price: Price=" + price + ", Modifier=" + priceModifier);
+                throw new IllegalArgumentException("Price modifier (" + priceModifier + ") for variant " + (i + 1) + " must be greater than or equal to base price (" + price + ")");
+            }
+
+            psCheckSku.setString(1, sku);
+            ResultSet rsSku = psCheckSku.executeQuery();
+            if (rsSku.next()) {
+                conn.rollback();
+                System.out.println("Duplicate SKU: " + sku);
+                throw new IllegalArgumentException("SKU '" + sku + "' already exists for variant " + (i + 1));
+            }
+
+            psVariant.setLong(1, productId);
+            psVariant.setString(2, variant.getSize());
+            psVariant.setString(3, variant.getColor());
+            psVariant.setBigDecimal(4, priceModifier);
+            psVariant.setString(5, sku);
+            ResultSet rsVariant = psVariant.executeQuery();
+            if (rsVariant.next()) {
+                long variantId = rsVariant.getLong("variant_id");
+                String inventorySql = "INSERT INTO inventory (variant_id, quantity, reserved_quantity) VALUES (?, 0, 0)";
+                PreparedStatement psInventory = conn.prepareStatement(inventorySql);
+                psInventory.setLong(1, variantId);
+                psInventory.executeUpdate();
             } else {
                 conn.rollback();
-                System.out.println("Failed to retrieve product_id after insert");
+                System.out.println("Failed to retrieve variant_id for SKU: " + sku);
                 return 0;
             }
+        }
 
-            String checkSkuSql = "SELECT sku FROM product_variants WHERE sku = ?";
-            String variantSql = "INSERT INTO product_variants (product_id, size, color, price_modifier, sku) " +
-                               "OUTPUT INSERTED.variant_id VALUES (?, ?, ?, ?, ?)";
-            PreparedStatement psCheckSku = conn.prepareStatement(checkSkuSql);
-            PreparedStatement psVariant = conn.prepareStatement(variantSql);
+        for (ProductImage image : images) {
+            insertProductImage(productId, image);
+        }
 
-            for (ProductVariant variant : variants) {
-                String sku = variant.getSku();
-                if (sku == null || sku.length() > 100) {
-                    conn.rollback();
-                    System.out.println("Invalid SKU: " + (sku == null ? "null" : "exceeds 100 characters"));
-                    return 0;
-                }
-
-                psCheckSku.setString(1, sku);
-                ResultSet rsSku = psCheckSku.executeQuery();
-                if (rsSku.next()) {
-                    conn.rollback();
-                    System.out.println("Duplicate SKU: " + sku);
-                    return 0;
-                }
-
-                psVariant.setLong(1, productId);
-                psVariant.setString(2, variant.getSize());
-                psVariant.setString(3, variant.getColor());
-                psVariant.setBigDecimal(4, variant.getPriceModifier());
-                psVariant.setString(5, sku);
-                ResultSet rsVariant = psVariant.executeQuery();
-                if (rsVariant.next()) {
-                    long variantId = rsVariant.getLong("variant_id");
-                    String inventorySql = "INSERT INTO inventory (variant_id, quantity, reserved_quantity) VALUES (?, 0, 0)";
-                    PreparedStatement psInventory = conn.prepareStatement(inventorySql);
-                    psInventory.setLong(1, variantId);
-                    psInventory.executeUpdate();
-                } else {
-                    conn.rollback();
-                    System.out.println("Failed to retrieve variant_id for SKU: " + sku);
-                    return 0;
-                }
-            }
-
-            for (ProductImage image : images) {
-                insertProductImage(productId, image);
-            }
-
-            conn.commit();
-            return productId;
+        conn.commit();
+        return productId;
+    } catch (SQLException e) {
+        try {
+            conn.rollback();
+        } catch (SQLException ex) {
+            System.out.println("Rollback error: " + ex.getMessage());
+        }
+        System.out.println("Database error: " + e.getMessage());
+        throw new RuntimeException("Database error: " + e.getMessage());
+    } catch (IllegalArgumentException e) {
+        try {
+            conn.rollback();
+        } catch (SQLException ex) {
+            System.out.println("Rollback error: " + ex.getMessage());
+        }
+        System.out.println("Validation error: " + e.getMessage());
+        throw e;
+    } finally {
+        try {
+            conn.setAutoCommit(true);
         } catch (SQLException e) {
-            try {
-                conn.rollback();
-            } catch (SQLException ex) {
-                System.out.println("Rollback error: " + ex.getMessage());
-            }
-            System.out.println("Database error: " + e.getMessage());
-            e.printStackTrace();
-            return 0;
-        } finally {
-            try {
-                conn.setAutoCommit(true);
-            } catch (SQLException e) {
-                System.out.println("AutoCommit reset error: " + e.getMessage());
-            }
+            System.out.println("AutoCommit reset error: " + e.getMessage());
         }
     }
+}
 
     private void insertProductImage(long productId, ProductImage image) throws SQLException {
         String sql = "INSERT INTO product_images (product_id, variant_id, image_url, display_order, is_main, created_at) " +
@@ -576,22 +599,97 @@ public class ProductDAO extends DBContext {
         }
     }
 
-    public int delete(long productId) {
-        String sql = "DELETE FROM products WHERE product_id = ?";
+   public int delete(long productId) {
+        String sqlFavorites = "DELETE FROM product_favorites WHERE product_id = ?";
+        String sqlViewHistory = "DELETE FROM product_view_history WHERE product_id = ?";
+        String sqlFeedbacks = "DELETE FROM feedbacks WHERE product_id = ?";
+        String sqlCartItems = "DELETE FROM cart_items WHERE variant_id IN (SELECT variant_id FROM product_variants WHERE product_id = ?)";
+        String sqlPurchaseOrderDetails = "DELETE FROM purchase_order_details WHERE variant_id IN (SELECT variant_id FROM product_variants WHERE product_id = ?)";
+        String sqlProductVariants = "DELETE FROM product_variants WHERE product_id = ?";
+        String sqlProduct = "DELETE FROM products WHERE product_id = ?";
+
         try {
-            PreparedStatement ps = conn.prepareStatement(sql);
-            ps.setLong(1, productId);
-            int num = ps.executeUpdate();
-            if (num > 0) {
-                return 1;
-            } else {
-                return 0;
+            if (conn == null || conn.isClosed()) {
+                throw new SQLException("Kết nối cơ sở dữ liệu không hợp lệ hoặc đã đóng");
+            }
+            conn.setAutoCommit(false);
+            System.out.println("Bắt đầu xóa sản phẩm ID: " + productId);
+
+            // Xóa từ product_favorites
+            try (PreparedStatement ps = conn.prepareStatement(sqlFavorites)) {
+                ps.setLong(1, productId);
+                int rowsAffected = ps.executeUpdate();
+                System.out.println("Đã xóa " + rowsAffected + " bản ghi từ product_favorites");
+            }
+
+            // Xóa từ product_view_history
+            try (PreparedStatement ps = conn.prepareStatement(sqlViewHistory)) {
+                ps.setLong(1, productId);
+                int rowsAffected = ps.executeUpdate();
+                System.out.println("Đã xóa " + rowsAffected + " bản ghi từ product_view_history");
+            }
+
+            // Xóa từ feedbacks
+            try (PreparedStatement ps = conn.prepareStatement(sqlFeedbacks)) {
+                ps.setLong(1, productId);
+                int rowsAffected = ps.executeUpdate();
+                System.out.println("Đã xóa " + rowsAffected + " bản ghi từ feedbacks");
+            }
+
+            // Xóa từ cart_items
+            try (PreparedStatement ps = conn.prepareStatement(sqlCartItems)) {
+                ps.setLong(1, productId);
+                int rowsAffected = ps.executeUpdate();
+                System.out.println("Đã xóa " + rowsAffected + " bản ghi từ cart_items");
+            }
+
+            // Xóa từ purchase_order_details
+            try (PreparedStatement ps = conn.prepareStatement(sqlPurchaseOrderDetails)) {
+                ps.setLong(1, productId);
+                int rowsAffected = ps.executeUpdate();
+                System.out.println("Đã xóa " + rowsAffected + " bản ghi từ purchase_order_details");
+            }
+
+            // Xóa từ product_variants
+            try (PreparedStatement ps = conn.prepareStatement(sqlProductVariants)) {
+                ps.setLong(1, productId);
+                int rowsAffected = ps.executeUpdate();
+                System.out.println("Đã xóa " + rowsAffected + " bản ghi từ product_variants");
+            }
+
+            // Xóa từ products
+            try (PreparedStatement ps = conn.prepareStatement(sqlProduct)) {
+                ps.setLong(1, productId);
+                int num = ps.executeUpdate();
+                System.out.println("Đã xóa " + num + " bản ghi từ products");
+                if (num > 0) {
+                    conn.commit();
+                    System.out.println("Xóa sản phẩm ID " + productId + " thành công");
+                    return 1;
+                } else {
+                    conn.rollback();
+                    System.out.println("Không tìm thấy sản phẩm ID " + productId);
+                    return 0;
+                }
             }
         } catch (SQLException e) {
-            System.out.println("Error in delete: " + e.getMessage());
-            e.printStackTrace();
+            try {
+                conn.rollback();
+                System.err.println("Đã hoàn tác giao dịch do lỗi: " + e.getMessage());
+            } catch (SQLException re) {
+                System.err.println("Lỗi khi hoàn tác giao dịch: " + re.getMessage());
+            }
+            System.err.println("Lỗi khi xóa sản phẩm ID " + productId + ": " + e.getMessage());
+            throw new RuntimeException("Lỗi cơ sở dữ liệu: " + e.getMessage());
+        } finally {
+            try {
+                conn.setAutoCommit(true);
+                conn.close(); // Đóng kết nối nếu không dùng connection pool
+                System.out.println("Đã đóng kết nối cơ sở dữ liệu");
+            } catch (SQLException e) {
+                System.err.println("Lỗi khi đóng kết nối: " + e.getMessage());
+            }
         }
-        return 0;
     }
 
     public List<Product> filterProducts(Long parentCategoryId, Long categoryId, Long brandId, String size, String color,
