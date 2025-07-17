@@ -8,63 +8,71 @@ import java.util.logging.Logger;
 
 public class DBContext {
 
-    // --- THÔNG TIN KẾT NỐI CLOUD DATABASE ---
-    private final String serverName = "clothingstore-server-2025.database.windows.net"; 
-    private final String dbName = "ClothingStore"; 
-    private final String portNumber = "1433";
-    private final String userID = "CloudSA62f9ded5"; 
-    private final String password = "Dat13102004"; 
+    // --- THÔNG TIN KẾT NỐI (PRIVATE ST ATIC FINAL) ---
+    private static final String SERVER_NAME = "clothingstore-server-2025.database.windows.net";
+    private static final String DB_NAME = "ClothingStore";
+    private static final String PORT_NUMBER = "1433";
+    private static final String USER_ID = "CloudSA62f9ded5";
+    private static final String PASSWORD = "Dat13102004";
+    private static final String URL = "jdbc:sqlserver://" + SERVER_NAME + ":" + PORT_NUMBER
+            + ";databaseName=" + DB_NAME
+            + ";encrypt=true;trustServerCertificate=true;hostNameInCertificate=*.database.windows.net;loginTimeout=30;";
 
-    // === PHẦN SỬA LẠI ĐỂ TƯƠNG THÍCH VỚI CÁC DAO CŨ ===
-    
-    // 1. Tạo lại biến 'conn' mà các file DAO cũ đang cần
+    // --- PHẦN HỖ TRỢ CODE CŨ (ĐỂ KHÔNG GÂY LỖI) ---
+    /**
+     * @deprecated Biến này được giữ lại để tương thích với các DAO cũ.
+     */
+    @Deprecated
     protected Connection conn = null;
 
-    // 2. Thêm constructor để tự động kết nối khi một DAO được tạo ra
     public DBContext() {
         try {
-            // Lấy kết nối từ phương thức getConnection() và gán vào biến conn
-            this.conn = getConnection();
-            System.out.println("Connection to Azure SQL established for DAO instance.");
-        } catch (Exception e) {
-            Logger.getLogger(DBContext.class.getName()).log(Level.SEVERE, "Failed to establish initial connection in DBContext constructor", e);
+            // Constructor này vẫn khởi tạo 'conn' để các DAO cũ không bị lỗi
+            Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
+            this.conn = DriverManager.getConnection(URL, USER_ID, PASSWORD);
+        } catch (ClassNotFoundException | SQLException ex) {
+            Logger.getLogger(DBContext.class.getName()).log(Level.SEVERE, "Failed to establish initial connection in DBContext constructor", ex);
         }
     }
-    
-    // === PHẦN KẾT NỐI AZURE (CẢI THIỆN) ===
 
     /**
-     * This method establishes a connection to the Azure Cloud Database, checking and reopening if necessary.
-     * @return a Connection object on success, or null on failure.
-     * @throws SQLException if connection cannot be established.
+     * @deprecated Phương thức này được giữ lại để tương thích với các DAO cũ.
      */
-    public Connection getConnection() throws SQLException {
-        if (conn == null || conn.isClosed()) {
-            System.out.println("Connection is closed or does not exist. Attempting to reconnect...");
-            String url = "jdbc:sqlserver://" + serverName + ":" + portNumber +
-                         ";databaseName=" + dbName +
-                         ";encrypt=true;trustServerCertificate=false;hostNameInCertificate=*.database.windows.net;loginTimeout=30;";
-            try {
-                Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
-                conn = DriverManager.getConnection(url, userID, password);
-                System.out.println("Reconnected to Azure SQL successfully.");
-            } catch (ClassNotFoundException | SQLException ex) {
-                Logger.getLogger(DBContext.class.getName()).log(Level.SEVERE, "CLOUD DATABASE CONNECTION ERROR", ex);
-                throw new SQLException("Unable to establish database connection", ex);
-            }
-        }
-        return conn;
+    @Deprecated
+    public Connection getConnection() {
+        return this.conn;
     }
 
-    // === PHƯƠNG THỨC ĐÓNG KẾT NỐI ===
+    /**
+     * @deprecated Phương thức này được thêm lại để các servlet cũ không bị lỗi
+     * khi gọi destroy().
+     */
+    @Deprecated
     public void closeConnection() {
         try {
-            if (conn != null && !conn.isClosed()) {
-                conn.close();
-                System.out.println("Connection has been closed.");
+            if (this.conn != null && !this.conn.isClosed()) {
+                this.conn.close();
             }
         } catch (SQLException ex) {
-            Logger.getLogger(DBContext.class.getName()).log(Level.SEVERE, "Error closing connection", ex);
+            Logger.getLogger(DBContext.class.getName()).log(Level.SEVERE, "Error closing legacy connection", ex);
+        }
+    }
+
+    // --- PHẦN DÀNH CHO CODE MỚI (AN TOÀN VÀ ĐÚNG CHUẨN) ---
+    /**
+     * Lấy một kết nối MỚI đến database. Luôn dùng phương thức này cho code mới
+     * bên trong khối try-with-resources.
+     *
+     * @return Một đối tượng Connection mới.
+     * @throws SQLException nếu không thể kết nối.
+     */
+    public static Connection getNewConnection() throws SQLException {
+        try {
+            Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
+            return DriverManager.getConnection(URL, USER_ID, PASSWORD);
+        } catch (ClassNotFoundException ex) {
+            Logger.getLogger(DBContext.class.getName()).log(Level.SEVERE, "SQL Server driver not found.", ex);
+            throw new SQLException("Database Driver not found.", ex);
         }
     }
 }

@@ -27,13 +27,9 @@ public class StaffBlogController extends HttpServlet {
 
     @Override
     public void init() throws ServletException {
-        try {
-            dbContext = new DBContext();
-            Connection conn = dbContext.getConnection();
-            blogDAO = new BlogDAO(conn);
-        } catch (SQLException e) {
-            throw new ServletException("Failed to initialize BlogDAO: " + e.getMessage(), e);
-        }
+        dbContext = new DBContext();
+        Connection conn = dbContext.getConnection();
+        blogDAO = new BlogDAO(conn);
     }
 
     @Override
