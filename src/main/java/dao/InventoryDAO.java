@@ -1,103 +1,106 @@
-/*
- * Click nbproject://SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbproject://SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package dao;
 
+import util.DBContext;
+import model.Inventory;
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import model.Inventory;
-import model.Product;
-import util.DBContext;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
-/**
- *
- * @author DANGVUONGTHINH
- */
-public class InventoryDAO extends DBContext {
-    
+public class InventoryDAO {
+
+    private static final Logger LOGGER = Logger.getLogger(InventoryDAO.class.getName());
+
     public List<Inventory> getAll() {
         List<Inventory> list = new ArrayList<>();
-        String sql = "SELECT i.inventory_id, i.product_id, i.variant_id, i.quantity, i.reserved_quantity, i.last_updated, "
-                + "p.product_id, p.name AS product_name "
+        String sql = "SELECT i.inventory_id, i.variant_id, i.quantity, i.reserved_quantity, i.last_updated, "
+                + "p.name AS product_name "
                 + "FROM inventory i "
-                + "JOIN products p ON i.product_id = p.product_id";
+                + "JOIN product_variants pv ON i.variant_id = pv.variant_id "
+                + "JOIN products p ON pv.product_id = p.product_id";
 
-        try {
-            PreparedStatement ps = conn.prepareStatement(sql);
-            ResultSet rs = ps.executeQuery();
+        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql);  ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
-                long inventoryId = rs.getLong("inventory_id");
-                long productId = rs.getLong("product_id");
-                Long variantId = rs.getLong("variant_id");
-                int quantity = rs.getInt("quantity");
-                int reservedQuantity = rs.getInt("reserved_quantity");
-                java.sql.Timestamp lastUpdated = rs.getTimestamp("last_updated");
-                java.time.LocalDateTime lastUpdatedLocal = lastUpdated != null ? lastUpdated.toLocalDateTime() : null;
-
-                String productName = rs.getString("product_name");
-                Product product = new Product();
-                product.setProductId(productId);
-                product.setName(productName);
-
                 Inventory inventory = new Inventory();
-                inventory.setInventoryId(inventoryId);
-                inventory.setProductId(productId);
-                inventory.setProduct(product);
-                inventory.setVariantId(variantId);
-                inventory.setQuantity(quantity);
-                inventory.setReservedQuantity(reservedQuantity);
-                inventory.setLastUpdated(lastUpdatedLocal);
-
+                inventory.setInventoryId(rs.getLong("inventory_id"));
+                inventory.setVariantId(rs.getLong("variant_id"));
+                inventory.setQuantity(rs.getInt("quantity"));
+                inventory.setReservedQuantity(rs.getInt("reserved_quantity"));
+                inventory.setLastUpdated(rs.getTimestamp("last_updated") != null
+                        ? rs.getTimestamp("last_updated").toLocalDateTime() : null);
+                inventory.setProductName(rs.getString("product_name"));
                 list.add(inventory);
             }
-            return list;
-        } catch (Exception e) {
-            System.out.println("Error in getAll: " + e.getMessage());
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error in getAll", e);
         }
         return list;
     }
 
     public Inventory getInventoryById(long inventoryId) {
-        String sql = "SELECT i.inventory_id, i.product_id, i.variant_id, i.quantity, i.reserved_quantity, i.last_updated, "
-                + "p.product_id, p.name AS product_name "
+        String sql = "SELECT i.inventory_id, i.variant_id, i.quantity, i.reserved_quantity, i.last_updated, "
+                + "p.name AS product_name "
                 + "FROM inventory i "
-                + "JOIN products p ON i.product_id = p.product_id "
+                + "JOIN product_variants pv ON i.variant_id = pv.variant_id "
+                + "JOIN products p ON pv.product_id = p.product_id "
                 + "WHERE i.inventory_id = ?";
 
-        try {
-            PreparedStatement ps = conn.prepareStatement(sql);
+        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setLong(1, inventoryId);
-            ResultSet rs = ps.executeQuery();
-            if (rs.next()) {
-                long id = rs.getLong("inventory_id");
-                long productId = rs.getLong("product_id");
-                Long variantId = rs.getLong("variant_id");
-                int quantity = rs.getInt("quantity");
-                int reservedQuantity = rs.getInt("reserved_quantity");
-                java.sql.Timestamp lastUpdated = rs.getTimestamp("last_updated");
-                java.time.LocalDateTime lastUpdatedLocal = lastUpdated != null ? lastUpdated.toLocalDateTime() : null;
-
-                String productName = rs.getString("product_name");
-                Product product = new Product();
-                product.setProductId(productId);
-                product.setName(productName);
-
-                Inventory inventory = new Inventory();
-                inventory.setInventoryId(id);
-                inventory.setProductId(productId);
-                inventory.setProduct(product);
-                inventory.setVariantId(variantId);
-                inventory.setQuantity(quantity);
-                inventory.setReservedQuantity(reservedQuantity);
-                inventory.setLastUpdated(lastUpdatedLocal);
-                return inventory;
+            try ( ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    Inventory inventory = new Inventory();
+                    inventory.setInventoryId(rs.getLong("inventory_id"));
+                    inventory.setVariantId(rs.getLong("variant_id"));
+                    inventory.setQuantity(rs.getInt("quantity"));
+                    inventory.setReservedQuantity(rs.getInt("reserved_quantity"));
+                    inventory.setLastUpdated(rs.getTimestamp("last_updated") != null
+                            ? rs.getTimestamp("last_updated").toLocalDateTime() : null);
+                    inventory.setProductName(rs.getString("product_name"));
+                    return inventory;
+                }
             }
-        } catch (Exception e) {
-            System.out.println("Error in getInventoryById: " + e.getMessage());
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error in getInventoryById", e);
         }
         return null;
     }
+
+    public int getAvailableQuantity(long variantId) {
+        String sql = "SELECT quantity - COALESCE(reserved_quantity, 0) AS available_quantity "
+                + "FROM inventory WHERE variant_id = ?";
+        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, variantId);
+            try ( ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("available_quantity");
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error getting available quantity for variantId: " + variantId, e);
+        }
+        return 0;
+    }
+
+    public boolean updateInventory(Inventory inventory) {
+        String sql = "UPDATE inventory SET quantity = ?, reserved_quantity = ?, last_updated = ? WHERE inventory_id = ?";
+        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, inventory.getQuantity());
+            ps.setInt(2, inventory.getReservedQuantity());
+            ps.setTimestamp(3, Timestamp.valueOf(LocalDateTime.now()));
+            ps.setLong(4, inventory.getInventoryId());
+            int rowsAffected = ps.executeUpdate();
+            return rowsAffected > 0;
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error updating inventory for inventoryId: " + inventory.getInventoryId(), e);
+            return false;
+        }
+    }
 }
+

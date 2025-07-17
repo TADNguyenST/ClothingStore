@@ -266,18 +266,18 @@
                     <%
                         if (product.getVariants() != null && !product.getVariants().isEmpty()) {
                             for (ProductVariant variant : product.getVariants()) {
-                                String size = variant.getSize() != null ? 
-                                    variant.getSize().substring(0, 1).toUpperCase() + 
-                                    variant.getSize().substring(1).toLowerCase() : "N/A";
-                                String color = variant.getColor() != null ? 
-                                    variant.getColor().substring(0, 1).toUpperCase() + 
-                                    variant.getColor().substring(1).toLowerCase() : "N/A";
+                                String size = variant.getSize() != null
+                                        ? variant.getSize().substring(0, 1).toUpperCase()
+                                        + variant.getSize().substring(1).toLowerCase() : "N/A";
+                                String color = variant.getColor() != null
+                                        ? variant.getColor().substring(0, 1).toUpperCase()
+                                        + variant.getColor().substring(1).toLowerCase() : "N/A";
                                 String variantLabel = size + " - " + color;
-                                double finalPrice = variant.getPriceModifier() != null ? 
-                                    variant.getPriceModifier().doubleValue() : 0;
+                                double finalPrice = variant.getPriceModifier() != null
+                                        ? variant.getPriceModifier().doubleValue() : 0;
                                 int available = productDAO.getAvailableQuantityByVariantId(variant.getVariantId());
                                 System.out.println("product-details.jsp - Variant ID: " + variant.getVariantId() + ", Available: " + available); // Debug log
-                    %>
+%>
                     <option value="<%= variant.getVariantId()%>" 
                             data-price="<%= finalPrice%>"
                             data-sku="<%= variant.getSku() != null ? variant.getSku() : "N/A"%>"
@@ -322,112 +322,149 @@
     <% }%>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const mainImage = document.querySelector('.product-image-main');
-        const thumbnails = document.querySelectorAll('.thumbnail-column img');
-        let currentIndex = 0;
+                       document.addEventListener('DOMContentLoaded', function () {
+                           const mainImage = document.querySelector('.product-image-main');
+                           const thumbnails = document.querySelectorAll('.thumbnail-column img');
+                           let currentIndex = 0;
 
-        thumbnails.forEach((thumb, index) => {
-            if (thumb.classList.contains('active')) {
-                currentIndex = index;
-            }
-        });
+                           thumbnails.forEach((thumb, index) => {
+                               if (thumb.classList.contains('active')) {
+                                   currentIndex = index;
+                               }
+                           });
 
-        window.updateMainImage = function (selectedThumb) {
-            mainImage.src = selectedThumb.src;
-            thumbnails.forEach(t => t.classList.remove('active'));
-            selectedThumb.classList.add('active');
-            thumbnails.forEach((thumb, index) => {
-                if (thumb.classList.contains('active')) {
-                    currentIndex = index;
-                }
-            });
-        };
+                           window.updateMainImage = function (selectedThumb) {
+                               mainImage.src = selectedThumb.src;
+                               thumbnails.forEach(t => t.classList.remove('active'));
+                               selectedThumb.classList.add('active');
+                               thumbnails.forEach((thumb, index) => {
+                                   if (thumb.classList.contains('active')) {
+                                       currentIndex = index;
+                                   }
+                               });
+                           };
 
-        window.navigateImage = function (direction) {
-            let newIndex = currentIndex + direction;
-            if (newIndex >= thumbnails.length) {
-                newIndex = 0;
-            } else if (newIndex < 0) {
-                newIndex = thumbnails.length - 1;
-            }
-            updateMainImage(thumbnails[newIndex]);
-        };
+                           window.navigateImage = function (direction) {
+                               let newIndex = currentIndex + direction;
+                               if (newIndex >= thumbnails.length) {
+                                   newIndex = 0;
+                               } else if (newIndex < 0) {
+                                   newIndex = thumbnails.length - 1;
+                               }
+                               updateMainImage(thumbnails[newIndex]);
+                           };
 
-        const quantityInput = document.getElementById('quantity');
-        window.decreaseQuantity = function () {
-            let value = parseInt(quantityInput.value);
-            if (value > 1)
-                quantityInput.value = value - 1;
-        };
-        window.increaseQuantity = function () {
-            let value = parseInt(quantityInput.value);
-            quantityInput.value = value + 1;
-        };
+                           const quantityInput = document.getElementById('quantity');
+                           window.decreaseQuantity = function () {
+                               let value = parseInt(quantityInput.value);
+                               if (value > 1)
+                                   quantityInput.value = value - 1;
+                           };
+                           window.increaseQuantity = function () {
+                               let value = parseInt(quantityInput.value);
+                               quantityInput.value = value + 1;
+                           };
 
-        // Currency formatting function for VND
-        function formatCurrency(amount) {
-            return new Intl.NumberFormat('vi-VN', {style: 'currency', currency: 'VND'}).format(amount);
-        };
+                           function formatCurrency(amount) {
+                               return new Intl.NumberFormat('vi-VN', {style: 'currency', currency: 'VND'}).format(amount);
+                           }
+                           ;
 
-        // Update price and button states when variant is selected
-        window.updatePrice = function () {
-            const select = document.getElementById("variantSelect");
-            const priceElement = document.getElementById("productPrice");
-            const addToCartBtn = document.getElementById("addToCartBtn");
-            const buyNowBtn = document.getElementById("buyNowBtn");
-            const selectedOption = select.options[select.selectedIndex];
-            const finalPrice = parseFloat(selectedOption.getAttribute('data-price')) || 0;
-            const available = parseInt(selectedOption.getAttribute('data-available')) || 0;
-            console.log('Selected variant ID:', selectedOption.value, 'Final Price:', finalPrice, 'Available:', available); // Debug
-            priceElement.innerText = formatCurrency(finalPrice);
-            if (available > 0) {
-                addToCartBtn.innerText = "Add to Cart";
-                buyNowBtn.innerText = "Buy Now";
-                addToCartBtn.classList.remove('disabled');
-                buyNowBtn.classList.remove('disabled');
-            } else {
-                addToCartBtn.innerText = "Out of Stock";
-                buyNowBtn.innerText = "Out of Stock";
-                addToCartBtn.classList.add('disabled');
-                buyNowBtn.classList.add('disabled');
-            }
-        };
+                           window.updatePrice = function () {
+                               const select = document.getElementById("variantSelect");
+                               const priceElement = document.getElementById("productPrice");
+                               const addToCartBtn = document.getElementById("addToCartBtn");
+                               const buyNowBtn = document.getElementById("buyNowBtn");
+                               const selectedOption = select.options[select.selectedIndex];
+                               const finalPrice = parseFloat(selectedOption.getAttribute('data-price')) || 0;
+                               const available = parseInt(selectedOption.getAttribute('data-available')) || 0;
+                               console.log('Selected variant ID:', selectedOption.value, 'Final Price:', finalPrice, 'Available:', available);
+                               priceElement.innerText = formatCurrency(finalPrice);
+                               if (available > 0) {
+                                   addToCartBtn.innerText = "Add to Cart";
+                                   buyNowBtn.innerText = "Buy Now";
+                                   addToCartBtn.classList.remove('disabled');
+                                   buyNowBtn.classList.remove('disabled');
+                               } else {
+                                   addToCartBtn.innerText = "Out of Stock";
+                                   buyNowBtn.innerText = "Out of Stock";
+                                   addToCartBtn.classList.add('disabled');
+                                   buyNowBtn.classList.add('disabled');
+                               }
+                           };
 
-        // Call updatePrice initially to display default price and button state
-        updatePrice();
+                           window.addToCart = function () {
+                               const select = document.getElementById("variantSelect");
+                               if (!select) {
+                                   alert('Variant selector not found.');
+                                   return;
+                               }
+                               const selectedOption = select.options[select.selectedIndex];
+                               const available = parseInt(selectedOption.getAttribute('data-available')) || 0;
+                               if (available <= 0) {
+                                   alert("This product is out of stock.");
+                                   return;
+                               }
+                               const variantId = select.value;
+                               const quantityInput = document.getElementById("quantity");
+                               if (!quantityInput) {
+                                   alert('Quantity input not found.');
+                                   return;
+                               }
+                               const quantity = parseInt(quantityInput.value);
 
-        // Add to cart function
-        window.addToCart = function () {
-            const select = document.getElementById("variantSelect");
-            const selectedOption = select.options[select.selectedIndex];
-            const available = parseInt(selectedOption.getAttribute('data-available')) || 0;
-            if (available <= 0) {
-                alert("This product is out of stock.");
-                return;
-            }
-            const variantId = select.value;
-            const quantity = document.getElementById("quantity").value;
-            console.log('Add to cart: productId=${product.productId}, variantId=' + variantId, 'quantity=' + quantity); // Debug
-            window.location.href = "${pageContext.request.contextPath}/AddToCart?productId=${product.productId}&variantId=" + variantId + "&quantity=" + quantity;
-        };
+                               fetch('${pageContext.request.contextPath}/customer/cart', {
+                                   method: 'POST',
+                                   body: new URLSearchParams({
+                                       action: 'add',
+                                       variantId: variantId,
+                                       quantity: quantity
+                                   }),
+                                   headers: {
+                                       'Content-Type': 'application/x-www-form-urlencoded',
+                                       'Accept': 'application/json'
+                                   }
+                               })
+                                       .then(response => {
+                                           if (!response.ok)
+                                               throw new Error('Network response was not ok: ' + response.statusText);
+                                           return response.json();
+                                       })
+                                       .then(result => {
+                                           console.log('Add to Cart response:', result); // Debug
+                                           if (result.success) {
+                                               alert(result.message); // Sử dụng alert tạm thời để kiểm tra
+                                               setTimeout(() => {
+                                                   window.location.href = '${pageContext.request.contextPath}/customer/cart';
+                                               }, 1000); // Chuyển hướng sau 1 giây
+                                           } else {
+                                               alert(result.message || 'Failed to add to cart.');
+                                           }
+                                       })
+                                       .catch(error => {
+                                           console.error('Error adding to cart:', error);
+                                           alert('An error occurred while adding to cart: ' + error.message);
+                                       });
+                           };
 
-        // Buy now function
-        window.buyNow = function () {
-            const select = document.getElementById("variantSelect");
-            const selectedOption = select.options[select.selectedIndex];
-            const available = parseInt(selectedOption.getAttribute('data-available')) || 0;
-            if (available <= 0) {
-                alert("This product is out of stock.");
-                return;
-            }
-            const variantId = select.value;
-            const quantity = document.getElementById("quantity").value;
-            console.log('Buy now: productId=${product.productId}, variantId=' + variantId, 'quantity=' + quantity); // Debug
-            window.location.href = "${pageContext.request.contextPath}/BuyNow?productId=${product.productId}&variantId=" + variantId + "&quantity=" + quantity;
-        };
-    });
+                           window.buyNow = function () {
+                               const select = document.getElementById("variantSelect");
+                               const selectedOption = select.options[select.selectedIndex];
+                               const available = parseInt(selectedOption.getAttribute('data-available')) || 0;
+                               if (available <= 0) {
+                                   alert("This product is out of stock.");
+                                   return;
+                               }
+                               const variantId = select.value;
+                               const quantity = document.getElementById("quantity").value;
+                               console.log('Buy now: productId=${product.productId}, variantId=' + variantId, 'quantity=' + quantity);
+                               window.location.href = "${pageContext.request.contextPath}/customer/checkout?productId=${product.productId}&variantId=" + variantId + "&quantity=" + quantity;
+                           };
+
+                           updatePrice();
+                       });
 </script>
 
 <jsp:include page="/WEB-INF/views/common/footer.jsp" />

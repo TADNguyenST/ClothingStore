@@ -62,7 +62,7 @@
             </a>
             <ul class="treeview-menu">
                 <li class="${requestScope.currentAction eq 'voucherList' ? 'active' : ''}">
-                    <a href="${pageContext.request.contextPath}/admindashboard?action=voucherList&module=voucher"><i class="fa fa-circle-o"></i> Voucher List</a>
+                    <a href="${pageContext.request.contextPath}/Admindashboard?action=voucherList&module=voucher"><i class="fa fa-circle-o"></i> Voucher List</a>
                 </li>
                 <li class="${requestScope.currentAction eq 'voucherForm' ? 'active' : ''}">
                     <a href="${pageContext.request.contextPath}/admindashboard?action=voucherForm&module=voucher"><i class="fa fa-circle-o"></i> Create New Voucher</a>
@@ -98,7 +98,7 @@
         <%-- ?i?u ch?nh `currentModule` trong Controller ?? kh?p v?i t n th? m?c `staff` khi c?n --%>
 
         <li class="${requestScope.currentModule eq 'product' ? 'active' : ''}">
-            <a href="${pageContext.request.contextPath}/admindashboard?action=productList&module=product">
+            <a href="${pageContext.request.contextPath}/Admindashboard?action=productList&module=product">
                 <i class="fa fa-cubes"></i> <span>Product Management</span>
             </a>
         </li>

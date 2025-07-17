@@ -1,33 +1,23 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package model;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 
-/**
- *
- * @author Lenovo
- */
 public class CartItem {
 
-    // --- Fields from 'cart_items' table ---
     private long cartItemId;
     private long customerId;
     private long variantId;
     private int quantity;
     private Timestamp dateAdded;
 
-    // --- Additional fields for display (from JOINs) ---
     private String productName;
     private String productImageUrl;
     private String size;
     private String color;
     private String sku;
-    private BigDecimal unitPrice; // Giá của 1 sản phẩm tại thời điểm xem giỏ hàng
-    private BigDecimal totalPrice; // Bằng unitPrice * quantity
+    private BigDecimal unitPrice;
+    private BigDecimal totalPrice;
 
     public CartItem() {
     }
@@ -113,17 +103,16 @@ public class CartItem {
     }
 
     public BigDecimal getUnitPrice() {
-        return unitPrice;
+        return unitPrice != null ? unitPrice : BigDecimal.ZERO;
     }
 
     public void setUnitPrice(BigDecimal unitPrice) {
-        this.unitPrice = unitPrice;
+        this.unitPrice = unitPrice != null ? unitPrice : BigDecimal.ZERO;
     }
 
-    // Calculated field
     public BigDecimal getTotalPrice() {
-        if (unitPrice != null && quantity > 0) {
-            return unitPrice.multiply(new BigDecimal(quantity));
+        if (getUnitPrice() != null && getQuantity() > 0) {
+            return getUnitPrice().multiply(BigDecimal.valueOf(getQuantity()));
         }
         return BigDecimal.ZERO;
     }

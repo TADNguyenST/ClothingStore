@@ -142,7 +142,9 @@
                                         String selected = selectedParentCategoryId != null && selectedParentCategoryId.equals(String.valueOf(parentCategory.getCategoryId())) ? "active" : "";
                             %>
                             <li class="nav-item dropdown <%= selected%>">
-                                <a class="nav-link dropdown-toggle" href="#" id="userAccountDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="fas fa-user"></i></a>
+                                <a class="nav-link dropdown-toggle" href="#" id="<%= parentCategory.getName().toLowerCase().replaceAll(" ", "")%>Dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <%= parentCategory.getName()%>
+                                </a>
                                 <ul class="dropdown-menu" aria-labelledby="<%= parentCategory.getName().toLowerCase().replaceAll(" ", "")%>Dropdown">
                                     <%
                                         List<Category> subCategories = new ArrayList<>();
@@ -174,7 +176,7 @@
                         </ul>
                         <div class="d-flex align-items-center header-actions">
                             <div class="search-bar position-relative">
-                                <input type="text" id="searchInput" class="form-control" placeholder="Tìm kiếm sản phẩm..." style="width: 200px;">
+                                <input type="text" id="searchInput" class="form-control" placeholder="Search products..." style="width: 200px;">
                                 <div id="suggestions" class="position-absolute w-100" style="border: 1px solid #eee; background: white; display: none; z-index: 1000; max-height: 300px; overflow-y: auto;"></div>
                             </div>
                             <div class="nav-item dropdown user-dropdown">
@@ -229,7 +231,6 @@
                             $("#suggestions").hide();
                         }
                     });
-
                     $(document).click(function (e) {
                         if (!$(e.target).closest('#searchInput, #suggestions').length) {
                             $("#suggestions").hide();
@@ -258,24 +259,22 @@
                     }
                 %>
                 ];
-
                 function populateChildCategories(parentId, selectedCategoryId) {
                     const categorySelect = document.getElementById('categoryId');
-                    categorySelect.innerHTML = '<option value="">All Child Categories</option>';
-
-                    const childCategories = allCategories.filter(cat => cat.parentId == parentId);
-
-                    childCategories.forEach(cat => {
-                        const option = document.createElement('option');
-                        option.value = cat.id;
-                        option.textContent = cat.name;
-                        if (cat.id == selectedCategoryId) {
-                            option.selected = true;
-                        }
-                        categorySelect.appendChild(option);
-                    });
+                    if (categorySelect) {
+                        categorySelect.innerHTML = '<option value="">All Child Categories</option>';
+                        const childCategories = allCategories.filter(cat => cat.parentId == parentId);
+                        childCategories.forEach(cat => {
+                            const option = document.createElement('option');
+                            option.value = cat.id;
+                            option.textContent = cat.name;
+                            if (cat.id == selectedCategoryId) {
+                                option.selected = true;
+                            }
+                            categorySelect.appendChild(option);
+                        });
+                    }
                 }
-
                 document.addEventListener('DOMContentLoaded', function () {
                     const parentCategoryId = document.getElementById('parentCategoryId')?.value;
                     if (parentCategoryId) {
@@ -283,3 +282,6 @@
                     }
                 });
             </script>
+        </main>
+    </body>
+</html>

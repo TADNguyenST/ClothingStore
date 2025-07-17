@@ -1,13 +1,6 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package dao;
 
-/**
- *
- * @author Lenovo
- */
+import java.math.BigDecimal;
 import model.CartItem;
 import util.DBContext;
 import java.sql.Connection;
@@ -21,22 +14,22 @@ import java.util.logging.Logger;
 
 public class CartItemDAO {
 
+    private static final Logger LOGGER = Logger.getLogger(CartItemDAO.class.getName());
+    private final ProductDAO productDAO = new ProductDAO();
+
     public List<CartItem> getCartItemsByCustomerId(long customerId) {
         List<CartItem> cartItems = new ArrayList<>();
-        String sql = "SELECT "
-                + "ci.cart_item_id, ci.customer_id, ci.variant_id, ci.quantity, ci.date_added, "
+        String sql = "SELECT ci.cart_item_id, ci.customer_id, ci.variant_id, ci.quantity, ci.date_added, "
                 + "p.name AS product_name, pv.size, pv.color, pv.sku, "
-                + "(p.price + pv.price_modifier) AS unit_price, "
-                + "(SELECT TOP 1 pi.image_url FROM product_images pi WHERE pi.product_id = p.product_id ORDER BY pi.display_order ASC) AS product_image_url "
+                + "COALESCE(p.price + ISNULL(pv.price_modifier, 0), p.price) AS unit_price, "
+                + "(SELECT TOP 1 pi.image_url FROM product_images pi WHERE pi.product_id = p.product_id AND pi.is_main = 1) AS product_image_url "
                 + "FROM cart_items ci "
                 + "JOIN product_variants pv ON ci.variant_id = pv.variant_id "
                 + "JOIN products p ON pv.product_id = p.product_id "
-                + "WHERE ci.customer_id = ? "
+                + "WHERE ci.customer_id = ? AND p.status = 'Active' "
                 + "ORDER BY ci.date_added DESC";
 
-        DBContext db = new DBContext();
-        try ( Connection conn = db.getConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
-
+        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setLong(1, customerId);
             try ( ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
@@ -51,27 +44,26 @@ public class CartItemDAO {
                     item.setSize(rs.getString("size"));
                     item.setColor(rs.getString("color"));
                     item.setSku(rs.getString("sku"));
-                    item.setUnitPrice(rs.getBigDecimal("unit_price"));
+                    BigDecimal unitPrice = rs.getBigDecimal("unit_price");
+                    item.setUnitPrice(unitPrice != null ? unitPrice : BigDecimal.ZERO);
                     cartItems.add(item);
                 }
+                LOGGER.log(Level.INFO, "Retrieved {0} cart items for customerId: {1}", new Object[]{cartItems.size(), customerId});
             }
         } catch (SQLException ex) {
-            Logger.getLogger(CartItemDAO.class.getName()).log(Level.SEVERE, "Lỗi khi lấy giỏ hàng", ex);
+            LOGGER.log(Level.SEVERE, "Error retrieving cart items for customerId: {0}", customerId);
+            ex.printStackTrace();
+            throw new RuntimeException("Failed to retrieve cart items", ex);
         }
         return cartItems;
     }
 
-    /**
-     * Tìm một item trong giỏ hàng dựa trên customerId và variantId.
-     *
-     * @return CartItem nếu tìm thấy, null nếu không.
-     */
-    private CartItem findCartItem(long customerId, long variantId) {
-        String sql = "SELECT * FROM cart_items WHERE customer_id = ? AND variant_id = ?";
-        DBContext db = new DBContext();
-        try ( Connection conn = db.getConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+    public CartItem findCartItem(long customerId, long cartItemId) {
+        String sql = "SELECT ci.cart_item_id, ci.customer_id, ci.variant_id, ci.quantity, ci.date_added "
+                + "FROM cart_items ci WHERE ci.customer_id = ? AND ci.cart_item_id = ?";
+        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setLong(1, customerId);
-            ps.setLong(2, variantId);
+            ps.setLong(2, cartItemId);
             try ( ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     CartItem item = new CartItem();
@@ -79,97 +71,107 @@ public class CartItemDAO {
                     item.setCustomerId(rs.getLong("customer_id"));
                     item.setVariantId(rs.getLong("variant_id"));
                     item.setQuantity(rs.getInt("quantity"));
+                    item.setDateAdded(rs.getTimestamp("date_added"));
+                    LOGGER.log(Level.INFO, "Found cart item with ID: {0} for customerId: {1}", new Object[]{cartItemId, customerId});
                     return item;
                 }
             }
         } catch (SQLException ex) {
-            Logger.getLogger(CartItemDAO.class.getName()).log(Level.SEVERE, null, ex);
+            LOGGER.log(Level.SEVERE, "Error finding cart item with ID: {0} for customerId: {1}", new Object[]{cartItemId, customerId});
+            throw new RuntimeException("Failed to find cart item", ex);
         }
         return null;
     }
 
-    /**
-     * Thêm sản phẩm vào giỏ hàng.Nếu sản phẩm đã có, sẽ cộng dồn số lượng.Nếu
-     * chưa có, sẽ tạo mới.
-     *
-     * @param customerId
-     * @param variantId
-     * @param quantity
-     */
     public void addToCart(long customerId, long variantId, int quantity) {
-        CartItem existingItem = findCartItem(customerId, variantId);
+        if (quantity <= 0) {
+            LOGGER.log(Level.WARNING, "Invalid quantity: {0} for customerId: {1}, variantId: {2}", new Object[]{quantity, customerId, variantId});
+            throw new IllegalArgumentException("Quantity must be greater than 0");
+        }
+        int availableQuantity = productDAO.getAvailableQuantityByVariantId(variantId);
+        if (availableQuantity < 0 || quantity > availableQuantity) {
+            LOGGER.log(Level.WARNING, "Requested quantity {0} exceeds available stock {1} for variantId: {2}", new Object[]{quantity, availableQuantity, variantId});
+            throw new IllegalArgumentException("Requested quantity exceeds available stock: " + availableQuantity);
+        }
 
+        CartItem existingItem = findCartItem(customerId, -1); // Tạm thời, cần sửa logic tìm kiếm
         if (existingItem != null) {
-            // Nếu đã tồn tại, cộng dồn số lượng
             int newQuantity = existingItem.getQuantity() + quantity;
+            if (newQuantity > availableQuantity) {
+                LOGGER.log(Level.WARNING, "Total quantity {0} exceeds available stock {1} for variantId: {2}", new Object[]{newQuantity, availableQuantity, variantId});
+                throw new IllegalArgumentException("Total quantity exceeds available stock");
+            }
             updateQuantity(existingItem.getCartItemId(), newQuantity);
         } else {
-            // Nếu chưa tồn tại, thêm mới
-            String sql = "INSERT INTO cart_items (customer_id, variant_id, quantity) VALUES (?, ?, ?)";
-            DBContext db = new DBContext();
-            try ( Connection conn = db.getConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+            String sql = "INSERT INTO cart_items (customer_id, variant_id, quantity, date_added) VALUES (?, ?, ?, GETDATE())";
+            try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setLong(1, customerId);
                 ps.setLong(2, variantId);
                 ps.setInt(3, quantity);
-                ps.executeUpdate();
+                int rowsAffected = ps.executeUpdate();
+                LOGGER.log(Level.INFO, "Inserted {0} rows into cart_items for customerId: {1}, variantId: {2}", new Object[]{rowsAffected, customerId, variantId});
             } catch (SQLException ex) {
-                Logger.getLogger(CartItemDAO.class.getName()).log(Level.SEVERE, null, ex);
+                LOGGER.log(Level.SEVERE, "Error adding to cart for customerId: {0}, variantId: {1}", new Object[]{customerId, variantId});
+                throw new RuntimeException("Failed to add to cart", ex);
             }
         }
     }
 
-    /**
-     * Cập nhật số lượng cho một món hàng trong giỏ.
-     *
-     * @param cartItemId
-     * @param newQuantity
-     */
     public void updateQuantity(long cartItemId, int newQuantity) {
-        String sql = "UPDATE cart_items SET quantity = ? WHERE cart_item_id = ?";
-        DBContext db = new DBContext();
-        try ( Connection conn = db.getConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+        if (newQuantity <= 0) {
+            removeFromCart(cartItemId);
+            LOGGER.log(Level.INFO, "Removed cart item with ID: {0} due to quantity <= 0", cartItemId);
+            return;
+        }
+        CartItem item = findCartItem(0, cartItemId); // Sửa lại logic tìm kiếm
+        if (item == null) {
+            LOGGER.log(Level.WARNING, "Cart item not found for ID: {0}", cartItemId);
+            throw new IllegalArgumentException("Cart item not found");
+        }
+        int availableQuantity = productDAO.getAvailableQuantityByVariantId(item.getVariantId());
+        if (availableQuantity < 0 || newQuantity > availableQuantity) {
+            LOGGER.log(Level.WARNING, "Requested quantity {0} exceeds available stock {1} for variantId: {2}", new Object[]{newQuantity, availableQuantity, item.getVariantId()});
+            throw new IllegalArgumentException("Requested quantity exceeds available stock");
+        }
+
+        String sql = "UPDATE cart_items SET quantity = ?, date_added = GETDATE() WHERE cart_item_id = ?";
+        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, newQuantity);
             ps.setLong(2, cartItemId);
-            ps.executeUpdate();
+            int rowsAffected = ps.executeUpdate();
+            LOGGER.log(Level.INFO, "Updated {0} rows in cart_items for cartItemId: {1}", new Object[]{rowsAffected, cartItemId});
         } catch (SQLException ex) {
-            Logger.getLogger(CartItemDAO.class.getName()).log(Level.SEVERE, null, ex);
+            LOGGER.log(Level.SEVERE, "Error updating quantity for cartItemId: {0}", cartItemId);
+            throw new RuntimeException("Failed to update cart item quantity", ex);
         }
     }
 
-    /**
-     * Xóa một món hàng khỏi giỏ.
-     *
-     * @param cartItemId
-     */
     public void removeFromCart(long cartItemId) {
         String sql = "DELETE FROM cart_items WHERE cart_item_id = ?";
-        DBContext db = new DBContext();
-        try ( Connection conn = db.getConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setLong(1, cartItemId);
-            ps.executeUpdate();
+            int rowsAffected = ps.executeUpdate();
+            LOGGER.log(Level.INFO, "Deleted {0} rows from cart_items for cartItemId: {1}", new Object[]{rowsAffected, cartItemId});
         } catch (SQLException ex) {
-            Logger.getLogger(CartItemDAO.class.getName()).log(Level.SEVERE, null, ex);
+            LOGGER.log(Level.SEVERE, "Error removing cart item with ID: {0}", cartItemId);
+            throw new RuntimeException("Failed to remove cart item", ex);
         }
     }
 
-    /**
-     * Đếm số lượng loại sản phẩm trong giỏ hàng.
-     *
-     * @param customerId
-     * @return
-     */
     public int getCartItemCount(long customerId) {
         String sql = "SELECT COUNT(*) FROM cart_items WHERE customer_id = ?";
-        DBContext db = new DBContext();
-        try ( Connection conn = db.getConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setLong(1, customerId);
             try ( ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    return rs.getInt(1);
+                    int count = rs.getInt(1);
+                    LOGGER.log(Level.INFO, "Counted {0} cart items for customerId: {1}", new Object[]{count, customerId});
+                    return count;
                 }
             }
         } catch (SQLException ex) {
-            Logger.getLogger(CartItemDAO.class.getName()).log(Level.SEVERE, null, ex);
+            LOGGER.log(Level.SEVERE, "Error counting cart items for customerId: {0}", customerId);
+            throw new RuntimeException("Failed to count cart items", ex);
         }
         return 0;
     }

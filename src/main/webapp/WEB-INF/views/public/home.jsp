@@ -1,17 +1,11 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
-<%@ page import="java.util.List" %>
-<%@ page import="java.util.ArrayList" %>
+<%@ page import="java.util.*" %>
 <%@ page import="model.Product" %>
 <%@ page import="java.text.NumberFormat" %>
 <%@ page import="java.util.Locale" %>
 <%@ page import="dao.CategoryDAO" %>
 <%@ page import="model.Category" %>
 <%@ page import="java.sql.SQLException" %>
-<%@ page import="java.util.Set" %>
-<%
-    Set<Integer> wishlistProductIds = (Set<Integer>) request.getAttribute("wishlistProductIds");
-%>
-
 <%
     String pageTitle = (String) request.getAttribute("pageTitle");
     if (pageTitle == null) {
@@ -19,6 +13,8 @@
     }
     List<Product> newProducts = (List<Product>) request.getAttribute("newProducts");
     List<Product> bestSellers = (List<Product>) request.getAttribute("bestSellers");
+    Map<Long, Integer> availableMap = (Map<Long, Integer>) request.getAttribute("availableMap");
+    Set<Integer> wishlistProductIds = (Set<Integer>) request.getAttribute("wishlistProductIds");
     NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(new Locale("vi", "VN"));
     request.setAttribute("pageTitle", pageTitle);
 
@@ -154,6 +150,7 @@
         background: #fff;
         transition: transform 0.2s ease, box-shadow 0.2s ease;
         padding: 10px;
+        position: relative;
     }
     .product-card:hover {
         transform: translateY(-5px);
@@ -166,9 +163,9 @@
     .product-card img {
         width: 100%;
         transition: transform 0.4s ease;
-        aspect-ratio: 1 / 2.2; /* Taller aspect ratio for even more vertical height */
+        aspect-ratio: 1 / 2.2;
         object-fit: cover;
-        max-height: 320px; /* Increased height for taller image */
+        max-height: 320px;
     }
     .product-card:hover img {
         transform: scale(1.05);
@@ -220,6 +217,35 @@
         font-weight: 500;
         margin-top: 20px;
     }
+    .wishlist-icon {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        z-index: 10;
+    }
+    .wishlist-icon-circle {
+        background-color: white;
+        border: 1px solid #ddd;
+        border-radius: 50%;
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #666;
+        font-size: 16px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .wishlist-icon-circle:hover {
+        border-color: #ff4d4f;
+        color: #ff4d4f;
+    }
+    .wishlist-icon-circle.active {
+        border-color: #ff4d4f;
+        color: #ff4d4f;
+    }
     @media (max-width: 1200px) {
         .col-lg-3 {
             flex: 0 0 33.333333%;
@@ -244,43 +270,6 @@
             max-width: 100%;
         }
     }
-    .product-card {
-        position: relative; /* Cần để định vị nút trái tim */
-    }
-
-    .wishlist-icon {
-        position: absolute;
-        top: 12px;
-        right: 12px;
-        z-index: 10;
-    }
-
-    .wishlist-icon-circle {
-        background-color: white;
-        border: 1px solid #ddd;
-        border-radius: 50%;
-        width: 36px;
-        height: 36px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #666;
-        font-size: 16px;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
-
-    .wishlist-icon-circle:hover {
-        border-color: #ff4d4f;
-        color: #ff4d4f;
-    }
-
-    .wishlist-icon-circle.active {
-        border-color: #ff4d4f;
-        color: #ff4d4f;
-    }
-
 </style>
 
 <div class="hero-banner" style="background-image: url('https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?q=80&w=2070&auto=format&fit=crop');">
@@ -334,6 +323,11 @@
                     String price = product.getPrice() != null ? currencyFormat.format(product.getPrice()) : "N/A";
                     Long variantId = product.getDefaultVariantId();
                     boolean hasVariant = variantId != null && variantId != 0;
+                    int available = (availableMap != null) ? availableMap.getOrDefault(product.getProductId(), 0) : 0;
+                    System.out.println("home.jsp - New Arrival Product ID: " + product.getProductId() + ", variantId: " + variantId + ", available: " + available);
+                    boolean hasStock = hasVariant && (available > 0);
+                    String buttonTextCart = hasStock ? "Add to Cart" : "Out Stock";
+                    String buttonTextBuy = hasStock ? "Buy Now" : "Out Stock";
         %>
         <div class="col-lg-3 col-md-6 col-sm-6 col-12">
             <div class="product-card">
@@ -353,18 +347,18 @@
                 </div>
                 <a href="<%= request.getContextPath()%>/ProductList/detail?productId=<%= product.getProductId()%>" class="product-title"><%= name%></a>
                 <p class="product-price"><%= price%></p>
-                <div class="btn-container">
-                    <form action="<%= request.getContextPath()%>/customer/cart" method="post">
+                <div class="btn-container" id="cartButtons-<%= product.getProductId()%>">
+                    <form id="addToCartForm-<%= product.getProductId()%>" data-product-id="<%= product.getProductId()%>" data-variant-id="<%= hasVariant ? variantId : 0%>" data-has-stock="<%= hasStock%>">
                         <input type="hidden" name="action" value="add">
                         <input type="hidden" name="variantId" value="<%= hasVariant ? variantId : 0%>">
                         <input type="hidden" name="quantity" value="1">
-                        <button type="submit" class="btn btn-dark btn-custom-sm" <%= hasVariant ? "" : "disabled"%>>Add to Cart</button>
+                        <button type="button" class="btn btn-dark btn-custom-sm add-to-cart-btn" <%= !hasStock ? "disabled" : ""%>><%= buttonTextCart%></button>
                     </form>
                     <form action="<%= request.getContextPath()%>/customer/checkout" method="post">
                         <input type="hidden" name="action" value="buy">
                         <input type="hidden" name="variantId" value="<%= hasVariant ? variantId : 0%>">
                         <input type="hidden" name="quantity" value="1">
-                        <button type="submit" class="btn btn-primary btn-custom-sm" <%= hasVariant ? "" : "disabled"%>>Buy Now</button>
+                        <button type="submit" class="btn btn-primary btn-custom-sm" <%= !hasStock ? "disabled" : ""%>><%= buttonTextBuy%></button>
                     </form>
                 </div>
             </div>
@@ -403,10 +397,14 @@
                     String price = product.getPrice() != null ? currencyFormat.format(product.getPrice()) : "N/A";
                     Long variantId = product.getDefaultVariantId();
                     boolean hasVariant = variantId != null && variantId != 0;
+                    int available = (availableMap != null) ? availableMap.getOrDefault(product.getProductId(), 0) : 0;
+                    System.out.println("home.jsp - Best Seller Product ID: " + product.getProductId() + ", variantId: " + variantId + ", available: " + available);
+                    boolean hasStock = hasVariant && (available > 0);
+                    String buttonTextCart = hasStock ? "Add to Cart" : "Out Stock";
+                    String buttonTextBuy = hasStock ? "Buy Now" : "Out Stock";
         %>
         <div class="col-lg-3 col-md-6 col-sm-6 col-12">
             <div class="product-card">
-                <!-- Nút yêu thích -->
                 <div class="wishlist-icon">
                     <form action="<%= request.getContextPath()%>/wishlist" method="post">
                         <input type="hidden" name="action" value="add">
@@ -423,18 +421,18 @@
                 </div>
                 <a href="<%= request.getContextPath()%>/ProductList/detail?productId=<%= product.getProductId()%>" class="product-title"><%= name%></a>
                 <p class="product-price"><%= price%></p>
-                <div class="btn-container">
-                    <form action="<%= request.getContextPath()%>/customer/cart" method="post">
+                <div class="btn-container" id="cartButtons-<%= product.getProductId()%>">
+                    <form id="addToCartForm-<%= product.getProductId()%>" data-product-id="<%= product.getProductId()%>" data-variant-id="<%= hasVariant ? variantId : 0%>" data-has-stock="<%= hasStock%>">
                         <input type="hidden" name="action" value="add">
                         <input type="hidden" name="variantId" value="<%= hasVariant ? variantId : 0%>">
                         <input type="hidden" name="quantity" value="1">
-                        <button type="submit" class="btn btn-dark btn-custom-sm" <%= hasVariant ? "" : "disabled"%>>Add to Cart</button>
+                        <button type="button" class="btn btn-dark btn-custom-sm add-to-cart-btn" <%= !hasStock ? "disabled" : ""%>><%= buttonTextCart%></button>
                     </form>
                     <form action="<%= request.getContextPath()%>/customer/checkout" method="post">
                         <input type="hidden" name="action" value="buy">
                         <input type="hidden" name="variantId" value="<%= hasVariant ? variantId : 0%>">
                         <input type="hidden" name="quantity" value="1">
-                        <button type="submit" class="btn btn-primary btn-custom-sm" <%= hasVariant ? "" : "disabled"%>>Buy Now</button>
+                        <button type="submit" class="btn btn-primary btn-custom-sm" <%= !hasStock ? "disabled" : ""%>><%= buttonTextBuy%></button>
                     </form>
                 </div>
             </div>
@@ -453,3 +451,98 @@
 </div>
 
 <jsp:include page="/WEB-INF/views/common/footer.jsp" />
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const showToast = function (message, isSuccess) {
+            const toast = document.createElement('div');
+            toast.className = `toast align-items-center text-white ${isSuccess ? 'bg-success' : 'bg-danger'} border-0`;
+            toast.setAttribute('role', 'alert');
+            toast.setAttribute('aria-live', 'assertive');
+            toast.setAttribute('aria-atomic', 'true');
+            toast.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">${message}</div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            `;
+            document.querySelector('.toast-container').appendChild(toast);
+            new bootstrap.Toast(toast, {delay: 3000}).show();
+        };
+
+        // Đảm bảo không xung đột với dropdown
+        document.querySelectorAll('.add-to-cart-btn').forEach(button => {
+            button.addEventListener('click', function (e) {
+                e.preventDefault(); // Ngăn chặn hành vi mặc định nếu có
+                const form = this.closest('form');
+                const productId = form.getAttribute('data-product-id');
+                const variantId = form.getAttribute('data-variant-id');
+                const hasStock = form.getAttribute('data-has-stock') === 'true';
+                if (!hasStock) {
+                    showToast('This product is out of stock.', false);
+                    return;
+                }
+
+                fetch('${pageContext.request.contextPath}/customer/cart', {
+                    method: 'POST',
+                    body: new URLSearchParams({
+                        action: 'add',
+                        variantId: variantId,
+                        quantity: form.querySelector('input[name="quantity"]').value
+                    }),
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'Accept': 'application/json'
+                    }
+                })
+                        .then(response => {
+                            if (!response.ok)
+                                throw new Error('Network response was not ok: ' + response.statusText);
+                            return response.json();
+                        })
+                        .then(result => {
+                            console.log('Add to Cart response:', result); // Debug
+                            if (result.success) {
+                                showToast(result.message, true);
+                                setTimeout(() => {
+                                    window.location.href = '${pageContext.request.contextPath}/customer/cart';
+                                }, 1000); // Chuyển hướng sau 1 giây
+                            } else {
+                                showToast(result.message || 'Failed to add to cart.', false);
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error adding to cart:', error);
+                            showToast('An error occurred while adding to cart: ' + error.message, false);
+                        });
+            });
+        });
+
+        // Khôi phục hành vi dropdown (nếu bị ảnh hưởng)
+        const dropdownToggles = document.querySelectorAll('[data-bs-toggle="dropdown"]');
+        dropdownToggles.forEach(toggle => {
+            toggle.addEventListener('click', function (e) {
+                const dropdown = document.getElementById(this.getAttribute('aria-controls'));
+                if (dropdown) {
+                    const isOpen = dropdown.classList.contains('show');
+                    dropdownToggles.forEach(t => {
+                        document.getElementById(t.getAttribute('aria-controls')).classList.remove('show');
+                    });
+                    if (!isOpen) {
+                        dropdown.classList.add('show');
+                    }
+                }
+            });
+        });
+
+        // Ngăn chặn sự kiện click từ các phần tử khác ảnh hưởng đến dropdown
+        document.addEventListener('click', function (e) {
+            const dropdowns = document.querySelectorAll('.dropdown-menu.show');
+            dropdowns.forEach(dropdown => {
+                if (!dropdown.closest('.dropdown').contains(e.target)) {
+                    dropdown.classList.remove('show');
+                }
+            });
+        });
+    });
+</script>
