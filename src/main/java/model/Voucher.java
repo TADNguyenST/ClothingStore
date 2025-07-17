@@ -16,35 +16,9 @@ public class Voucher {
     private Integer usedCount;
     private Date expirationDate;
     private boolean isActive;
+    private boolean visibility;
     private Date createdAt;
 
-    // Default constructor
-    public Voucher() {
-    }
-
-    // Full constructor for creating new Voucher objects
-    public Voucher(long voucherId, String code, String name, String description, String discountType,
-                   BigDecimal discountValue, BigDecimal minimumOrderAmount, BigDecimal maximumDiscountAmount,
-                   Integer usageLimit, Integer usedCount, Date expirationDate, boolean isActive, Date createdAt) {
-        this.voucherId = voucherId;
-        this.code = code;
-        this.name = name;
-        this.description = description;
-        this.discountType = discountType;
-        this.discountValue = discountValue;
-        this.minimumOrderAmount = minimumOrderAmount;
-        this.maximumDiscountAmount = maximumDiscountAmount;
-        this.usageLimit = usageLimit;
-        this.usedCount = usedCount;
-        this.expirationDate = expirationDate;
-        this.isActive = isActive;
-        this.createdAt = createdAt;
-    }
-
-    // Deprecated constructor (remove if not used elsewhere)
- 
-
-    // Getters and setters
     public long getVoucherId() {
         return voucherId;
     }
@@ -133,20 +107,20 @@ public class Voucher {
         this.expirationDate = expirationDate;
     }
 
-    public boolean isActive() {
-        return isActive;
-    }
-
-    public void setActive(boolean isActive) {
-        this.isActive = isActive;
-    }
-
     public boolean isIsActive() {
         return isActive;
     }
 
     public void setIsActive(boolean isActive) {
         this.isActive = isActive;
+    }
+
+    public boolean isVisibility() {
+        return visibility;
+    }
+
+    public void setVisibility(boolean visibility) {
+        this.visibility = visibility;
     }
 
     public Date getCreatedAt() {
@@ -156,4 +130,27 @@ public class Voucher {
     public void setCreatedAt(Date createdAt) {
         this.createdAt = createdAt;
     }
+
+    public Voucher(long voucherId, String code, String name, String description, String discountType, BigDecimal discountValue, BigDecimal minimumOrderAmount, BigDecimal maximumDiscountAmount, Integer usageLimit, Integer usedCount, Date expirationDate, boolean isActive, boolean visibility, Date createdAt) {
+        this.voucherId = voucherId;
+        this.code = code;
+        this.name = name;
+        this.description = description;
+        this.discountType = discountType;
+        this.discountValue = discountValue;
+        this.minimumOrderAmount = minimumOrderAmount;
+        this.maximumDiscountAmount = maximumDiscountAmount;
+        this.usageLimit = usageLimit;
+        this.usedCount = usedCount;
+        this.expirationDate = expirationDate;
+        this.isActive = isActive;
+        this.visibility = visibility;
+        this.createdAt = createdAt;
+    }
+
+    // Default constructor
+    public Voucher() {
+    }
+
+    
 }

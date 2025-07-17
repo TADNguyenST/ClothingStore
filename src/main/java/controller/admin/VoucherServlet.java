@@ -28,25 +28,33 @@ public class VoucherServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         try {
-            // Get search parameter
+            // Get search parameters
             String code = request.getParameter("code");
+            String name = request.getParameter("name");
             List<Voucher> voucherList;
-            
-            // Apply filter if code is provided
-            if (code != null && !code.trim().isEmpty()) {
-                voucherList = voucherDAO.getVouchersByFilter(code, null, false);
+
+            // Log parameters for debugging
+            LOGGER.log(Level.INFO, "Received search parameters - code: {0}, name: {1}", 
+                       new Object[]{code, name});
+
+            // Apply filter if code or name is provided
+            if ((code != null && !code.trim().isEmpty()) || (name != null && !name.trim().isEmpty())) {
+                voucherList = voucherDAO.getVouchersByFilter(code, name, null, false);
             } else {
                 voucherList = voucherDAO.getAllVouchers();
             }
-            
+
+            // Log the size of the result list
+            LOGGER.log(Level.INFO, "Retrieved {0} vouchers", voucherList.size());
+
             request.setAttribute("voucherList", voucherList);
         } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Error retrieving voucher list: {0}", e.getMessage());
             request.setAttribute("errorMessage", "Lỗi khi lấy dữ liệu voucher: " + e.getMessage());
         }
 
-        // Forward to JSP
-        request.getRequestDispatcher("WEB-INF/views/admin/voucher/voucher-list.jsp").forward(request, response);
+        // Forward to JSP (corrected path to match expected directory)
+        request.getRequestDispatcher("/WEB-INF/views/admin/voucher/voucher-list.jsp").forward(request, response);
     }
 
     @Override
