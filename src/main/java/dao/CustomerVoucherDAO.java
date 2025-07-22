@@ -88,6 +88,20 @@ public class CustomerVoucherDAO {
         );
     }
 
+    public boolean addCustomerVoucher(long customerId, int voucherId) throws SQLException {
+        String sql = "INSERT INTO customer_vouchers (customer_id, voucher_id, is_used) VALUES (?, ?, 0)";
+        try (Connection conn = dbContext.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setLong(1, customerId);
+            stmt.setInt(2, voucherId);
+            int rowsAffected = stmt.executeUpdate();
+            return rowsAffected > 0;
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error adding customer voucher: {0}", e.getMessage());
+            throw e;
+        }
+    }
+
     public void closeConnection() {
         dbContext.closeConnection();
     }

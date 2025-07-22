@@ -108,6 +108,14 @@
         <servlet-name>BlogController</servlet-name>
         <url-pattern>/blog</url-pattern>
     </servlet-mapping>
+    <servlet>
+        <servlet-name>SendVouchersController</servlet-name>
+        <servlet-class>controller.admin.SendVouchersController</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>SendVouchersController</servlet-name>
+        <url-pattern>/admin/sendvouchers</url-pattern>
+    </servlet-mapping>
     <session-config>
         <session-timeout>30</session-timeout>
     </session-config>
