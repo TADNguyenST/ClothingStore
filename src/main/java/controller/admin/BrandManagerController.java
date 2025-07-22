@@ -53,12 +53,29 @@ public class BrandManagerController extends HttpServlet {
             action = "list";
         }
 
-        // Set currentModule for sidebar
         request.setAttribute("currentModule", "brand");
 
         switch (action.toLowerCase()) {
+            case "checkDuplicate":
+                String name = request.getParameter("name");
+                String brandIdRaw = request.getParameter("brandId");
+                try {
+                    Long brandId = brandIdRaw != null && !brandIdRaw.isEmpty() ? Long.parseLong(brandIdRaw) : null;
+                    String normalizedName = name != null ? name.trim().replaceAll("\\s+", " ").toLowerCase() : "";
+                    boolean exists = brandDAO.isBrandExists(normalizedName, brandId);
+                    response.setContentType("application/json");
+                    response.getWriter().write("{\"exists\": " + exists + "}");
+                } catch (NumberFormatException e) {
+                    response.setContentType("application/json");
+                    response.getWriter().write("{\"error\": \"Invalid brand ID\"}");
+                } catch (Exception e) {
+                    response.setContentType("application/json");
+                    response.getWriter().write("{\"error\": \"Error checking duplicate name\"}");
+                }
+                break;
+
             case "list":
-                request.setAttribute("currentAction", "brandList");
+                request.setAttribute("currentAction", "brands");
                 List<Brand> brands = brandDAO.getAll();
                 request.setAttribute("brands", brands);
                 if (brands.isEmpty()) {
@@ -68,12 +85,12 @@ public class BrandManagerController extends HttpServlet {
                 break;
 
             case "create":
-                request.setAttribute("currentAction", "brandForm");
+                request.setAttribute("currentAction", "brands");
                 request.getRequestDispatcher("/WEB-INF/views/admin/brand/create-brand.jsp").forward(request, response);
                 break;
 
             case "edit":
-                request.setAttribute("currentAction", "brandForm");
+                request.setAttribute("currentAction", "brands");
                 try {
                     long id = Long.parseLong(request.getParameter("id"));
                     Brand brand = brandDAO.getBrandById(id);
@@ -93,41 +110,48 @@ public class BrandManagerController extends HttpServlet {
                 break;
 
             case "delete":
-                request.setAttribute("currentAction", "brandList");
+                request.setAttribute("currentAction", "brands");
                 try {
                     long id = Long.parseLong(request.getParameter("id"));
                     boolean result = brandDAO.deleteBrand(id);
                     if (result) {
-                        request.setAttribute("msg", "<p class='text-success'>Brand deleted successfully</p>");
-                    } 
+                        request.getSession().setAttribute("msg", "Brand deleted successfully!");
+                        response.sendRedirect(request.getContextPath() + "/BrandManager?action=list");
+                    } else {
+                        request.setAttribute("err", "<p class='text-danger'>Failed to delete brand with ID: " + id + "</p>");
+                        request.setAttribute("brands", brandDAO.getAll());
+                        request.getRequestDispatcher("/WEB-INF/views/admin/brand/brands.jsp").forward(request, response);
+                    }
                 } catch (NumberFormatException e) {
                     request.setAttribute("err", "<p class='text-danger'>Invalid brand ID</p>");
+                    request.setAttribute("brands", brandDAO.getAll());
+                    request.getRequestDispatcher("/WEB-INF/views/admin/brand/brands.jsp").forward(request, response);
                 } catch (IllegalStateException e) {
                     request.setAttribute("err", "<p class='text-danger'>" + e.getMessage() + "</p>");
+                    request.setAttribute("brands", brandDAO.getAll());
+                    request.getRequestDispatcher("/WEB-INF/views/admin/brand/brands.jsp").forward(request, response);
                 } catch (RuntimeException e) {
-                    request.setAttribute("err", "<p class='text-danger'>Failed to delete brand</p>");
+                    request.setAttribute("err", "<p class='text-danger'>Failed to delete brand: " + e.getMessage() + "</p>");
+                    request.setAttribute("brands", brandDAO.getAll());
+                    request.getRequestDispatcher("/WEB-INF/views/admin/brand/brands.jsp").forward(request, response);
                 }
-                request.setAttribute("brands", brandDAO.getAll());
-                request.getRequestDispatcher("/WEB-INF/views/admin/brand/brands.jsp").forward(request, response);
                 break;
 
             case "detail":
-                request.setAttribute("currentAction", "brandDetails");
+                request.setAttribute("currentAction", "brands");
                 try {
                     long id = Long.parseLong(request.getParameter("id"));
                     Brand brand = brandDAO.getBrandById(id);
                     if (brand == null) {
                         request.setAttribute("err", "<p class='text-danger'>Brand not found</p>");
-                        request.setAttribute("brands", brandDAO.getAll());
-                        request.getRequestDispatcher("/WEB-INF/views/admin/brand/brands.jsp").forward(request, response);
+                        request.getRequestDispatcher("/WEB-INF/views/admin/brand/brandDetail.jsp").forward(request, response);
                     } else {
                         request.setAttribute("brand", brand);
                         request.getRequestDispatcher("/WEB-INF/views/admin/brand/brandDetail.jsp").forward(request, response);
                     }
                 } catch (NumberFormatException e) {
                     request.setAttribute("err", "<p class='text-danger'>Invalid brand ID</p>");
-                    request.setAttribute("brands", brandDAO.getAll());
-                    request.getRequestDispatcher("/WEB-INF/views/admin/brand/brands.jsp").forward(request, response);
+                    request.getRequestDispatcher("/WEB-INF/views/admin/brand/brandDetail.jsp").forward(request, response);
                 }
                 break;
 
@@ -145,25 +169,26 @@ public class BrandManagerController extends HttpServlet {
             return;
         }
 
-        // Set currentModule for sidebar
         request.setAttribute("currentModule", "brand");
 
         switch (action.toLowerCase()) {
             case "create":
-                request.setAttribute("currentAction", "brandForm");
+                request.setAttribute("currentAction", "brands");
                 try {
                     String name = request.getParameter("name");
                     String description = request.getParameter("description");
                     boolean isActive = request.getParameter("isActive") != null && request.getParameter("isActive").equals("true");
-                    String existingLogoUrl = request.getParameter("logoUrl"); // For fallback if no new file is uploaded
-                    String logoUrl = null;
 
                     if (name == null || name.trim().isEmpty()) {
                         throw new IllegalArgumentException("Brand name is required");
                     }
+                    String normalizedName = name.trim().replaceAll("\\s+", " ").toLowerCase();
+                    if (brandDAO.isBrandExists(normalizedName, null)) {
+                        throw new IllegalArgumentException("Thương hiệu '" + name + "' đã tồn tại.");
+                    }
 
-                    // Handle logo file upload
                     Part filePart = request.getPart("logo");
+                    String logoUrl = null;
                     if (filePart != null && filePart.getSize() > 0) {
                         String fileName = filePart.getSubmittedFileName();
                         if (fileName != null && !fileName.toLowerCase().matches(".*\\.(jpg|jpeg|png|gif)$")) {
@@ -173,7 +198,7 @@ public class BrandManagerController extends HttpServlet {
                         File tempFile = null;
                         try {
                             tempFile = File.createTempFile("upload", fileName);
-                            try (InputStream input = filePart.getInputStream(); FileOutputStream output = new FileOutputStream(tempFile)) {
+                            try ( InputStream input = filePart.getInputStream();  FileOutputStream output = new FileOutputStream(tempFile)) {
                                 byte[] buffer = new byte[1024];
                                 int len;
                                 while ((len = input.read(buffer)) != -1) {
@@ -185,7 +210,7 @@ public class BrandManagerController extends HttpServlet {
                                 Map uploadResult = cloudinary.uploader().upload(tempFile, ObjectUtils.asMap(
                                         "quality", "auto",
                                         "fetch_format", "auto",
-                                        "width", 400, // Smaller size for logos
+                                        "width", 400,
                                         "crop", "limit",
                                         "folder", "brands"
                                 ));
@@ -202,8 +227,6 @@ public class BrandManagerController extends HttpServlet {
                             }
                             throw e;
                         }
-                    } else if (existingLogoUrl != null && !existingLogoUrl.trim().isEmpty()) {
-                        logoUrl = existingLogoUrl; // Use existing URL if no new file is uploaded
                     } else {
                         throw new IllegalArgumentException("A logo image is required");
                     }
@@ -216,7 +239,8 @@ public class BrandManagerController extends HttpServlet {
                     brand.setCreatedAt(new Date());
 
                     brandDAO.insertBrand(brand);
-                    response.sendRedirect("BrandManager?action=list&module=brand");
+                    request.getSession().setAttribute("msg", "Brand created successfully!");
+                    response.sendRedirect("BrandManager?action=list");
                 } catch (IllegalArgumentException e) {
                     request.setAttribute("err", "<p class='text-danger'>" + e.getMessage() + "</p>");
                     request.getRequestDispatcher("/WEB-INF/views/admin/brand/create-brand.jsp").forward(request, response);
@@ -228,20 +252,23 @@ public class BrandManagerController extends HttpServlet {
                 break;
 
             case "update":
-                request.setAttribute("currentAction", "brandForm");
+                request.setAttribute("currentAction", "brands");
                 try {
                     long id = Long.parseLong(request.getParameter("id"));
                     String name = request.getParameter("name");
                     String description = request.getParameter("description");
                     boolean isActive = request.getParameter("isActive") != null && request.getParameter("isActive").equals("true");
-                    String existingLogoUrl = request.getParameter("logoUrl"); // For fallback if no new file is uploaded
-                    String logoUrl = null;
+                    String existingLogoUrl = request.getParameter("logoUrl");
 
                     if (name == null || name.trim().isEmpty()) {
                         throw new IllegalArgumentException("Brand name is required");
                     }
+                    String normalizedName = name.trim().replaceAll("\\s+", " ").toLowerCase();
+                    if (brandDAO.isBrandExists(normalizedName, id)) {
+                        throw new IllegalArgumentException("Thương hiệu '" + name + "' đã tồn tại.");
+                    }
 
-                    // Handle logo file upload
+                    String logoUrl = existingLogoUrl;
                     Part filePart = request.getPart("logo");
                     if (filePart != null && filePart.getSize() > 0) {
                         String fileName = filePart.getSubmittedFileName();
@@ -252,7 +279,7 @@ public class BrandManagerController extends HttpServlet {
                         File tempFile = null;
                         try {
                             tempFile = File.createTempFile("upload", fileName);
-                            try (InputStream input = filePart.getInputStream(); FileOutputStream output = new FileOutputStream(tempFile)) {
+                            try ( InputStream input = filePart.getInputStream();  FileOutputStream output = new FileOutputStream(tempFile)) {
                                 byte[] buffer = new byte[1024];
                                 int len;
                                 while ((len = input.read(buffer)) != -1) {
@@ -264,7 +291,7 @@ public class BrandManagerController extends HttpServlet {
                                 Map uploadResult = cloudinary.uploader().upload(tempFile, ObjectUtils.asMap(
                                         "quality", "auto",
                                         "fetch_format", "auto",
-                                        "width", 400, // Smaller size for logos
+                                        "width", 400,
                                         "crop", "limit",
                                         "folder", "brands"
                                 ));
@@ -281,9 +308,7 @@ public class BrandManagerController extends HttpServlet {
                             }
                             throw e;
                         }
-                    } else if (existingLogoUrl != null && !existingLogoUrl.trim().isEmpty()) {
-                        logoUrl = existingLogoUrl; // Use existing URL if no new file is uploaded
-                    } else {
+                    } else if (logoUrl == null || logoUrl.trim().isEmpty()) {
                         throw new IllegalArgumentException("A logo image is required");
                     }
 
@@ -297,7 +322,8 @@ public class BrandManagerController extends HttpServlet {
 
                     boolean result = brandDAO.updateBrand(brand);
                     if (result) {
-                        response.sendRedirect("BrandManager?action=list&module=brand");
+                        request.getSession().setAttribute("msg", "Brand updated successfully!");
+                        response.sendRedirect("BrandManager?action=list");
                     } else {
                         request.setAttribute("err", "<p class='text-danger'>Failed to update brand</p>");
                         request.setAttribute("brand", brandDAO.getBrandById(id));

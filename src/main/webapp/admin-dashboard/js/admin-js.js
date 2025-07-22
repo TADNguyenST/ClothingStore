@@ -20,9 +20,4 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
-
-    // Phần này cần các biến từ JSP, nên ta sẽ để lại trong JSP
-    // const currentAction = "${requestScope.currentAction}";
-    // const currentModule = "${requestScope.currentModule}";
-    // ...
 });
