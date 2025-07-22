@@ -1,5 +1,6 @@
 package dao;
 
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -8,17 +9,13 @@ import java.util.List;
 import model.Category;
 import util.DBContext;
 
-public class CategoryDAO extends DBContext {
+public class CategoryDAO {
 
     public int insertCategory(String name, String description, Long parentCategoryId, boolean isActive) {
         String sql = "INSERT INTO categories (name, description, parent_category_id, is_active, created_at) "
-                + "VALUES (?, ?, ?, ?, GETDATE())";
-        try {
-            if (conn == null) {
-                throw new SQLException("Database connection is null");
-            }
-            PreparedStatement ps = conn.prepareStatement(sql);
-            System.out.println("Inserting: name=" + name + ", parentId=" + parentCategoryId + ", isActive=" + isActive);
+                + "VALUES (?, ?, ?, ?, SYSDATETIMEOFFSET() AT TIME ZONE 'SE Asia Standard Time')";
+        try (Connection conn = DBContext.getNewConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, name);
             ps.setString(2, description != null ? description : null);
             if (parentCategoryId != null) {
@@ -38,76 +35,72 @@ public class CategoryDAO extends DBContext {
     public Category getCategoryById(Long categoryId) {
         String sql = "SELECT category_id, name, description, parent_category_id, is_active, created_at "
                 + "FROM categories WHERE category_id = ?";
-        try {
-            if (conn == null) {
-                throw new SQLException("Database connection is null");
-            }
-            PreparedStatement ps = conn.prepareStatement(sql);
+        try (Connection conn = DBContext.getNewConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setLong(1, categoryId);
-            ResultSet rs = ps.executeQuery();
-            if (rs.next()) {
-                Long parentCategoryId = rs.getLong("parent_category_id");
-                if (rs.wasNull()) {
-                    parentCategoryId = null;
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    Long parentCategoryId = rs.getLong("parent_category_id");
+                    if (rs.wasNull()) {
+                        parentCategoryId = null;
+                    }
+                    return new Category(
+                            rs.getLong("category_id"),
+                            rs.getString("name"),
+                            rs.getString("description"),
+                            parentCategoryId,
+                            rs.getBoolean("is_active"),
+                            rs.getTimestamp("created_at")
+                    );
                 }
-                return new Category(
-                        rs.getLong("category_id"),
-                        rs.getString("name"),
-                        rs.getString("description"),
-                        parentCategoryId,
-                        rs.getBoolean("is_active"),
-                        rs.getTimestamp("created_at")
-                );
+                return null;
             }
-            return null;
         } catch (SQLException e) {
             throw new RuntimeException("Error fetching category: " + e.getMessage(), e);
         }
     }
 
     public boolean deleteCategory(long categoryId) {
+        String checkSql = "SELECT COUNT(*) FROM products WHERE category_id = ?";
         String sql = "DELETE FROM categories WHERE category_id = ?";
-        try {
-            if (conn == null) {
-                throw new SQLException("Database connection is null");
+        try (Connection conn = DBContext.getNewConnection()) {
+            try (PreparedStatement psCheck = conn.prepareStatement(checkSql)) {
+                psCheck.setLong(1, categoryId);
+                try (ResultSet rs = psCheck.executeQuery()) {
+                    if (rs.next() && rs.getInt(1) > 0) {
+                        throw new RuntimeException("Cannot delete category: It is used by products");
+                    }
+                }
             }
-            String checkSql = "SELECT COUNT(*) FROM products WHERE category_id = ?";
-            PreparedStatement psCheck = conn.prepareStatement(checkSql);
-            psCheck.setLong(1, categoryId);
-            ResultSet rs = psCheck.executeQuery();
-            if (rs.next() && rs.getInt(1) > 0) {
-                throw new RuntimeException("Cannot delete category: It is used by products");
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setLong(1, categoryId);
+                int rowsAffected = ps.executeUpdate();
+                return rowsAffected == 1;
             }
-
-            PreparedStatement ps = conn.prepareStatement(sql);
-            ps.setLong(1, categoryId);
-            int rowsAffected = ps.executeUpdate();
-            return rowsAffected == 1;
         } catch (SQLException e) {
             throw new RuntimeException("Error deleting category: " + e.getMessage(), e);
         }
     }
 
     public boolean updateCategory(long id, String name, String description, Long parentCategoryId, boolean isActive) {
-        String sql = "UPDATE categories SET name = ?, description = ?, parent_category_id = ?, is_active = ? WHERE category_id = ?";
-        try {
-            if (conn == null) {
-                throw new SQLException("Database connection is null");
-            }
-            PreparedStatement ps = conn.prepareStatement(sql);
+        String sql = "UPDATE categories SET name = ?, description = ?, parent_category_id = ?, is_active = ?, updated_at = GETDATE() "
+                + "WHERE category_id = ?";
+        try (Connection conn = DBContext.getNewConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, name);
             ps.setString(2, description);
-            if (parentCategoryId == null) {
-                ps.setNull(3, java.sql.Types.BIGINT);
-            } else {
+            if (parentCategoryId != null) {
                 ps.setLong(3, parentCategoryId);
+            } else {
+                ps.setNull(3, java.sql.Types.BIGINT);
             }
             ps.setBoolean(4, isActive);
             ps.setLong(5, id);
-            int rowsAffected = ps.executeUpdate();
-            return rowsAffected > 0;
+            int result = ps.executeUpdate();
+            return result == 1;
         } catch (SQLException e) {
             System.out.println("Error in updateCategory: " + e.getMessage());
+            e.printStackTrace();
             return false;
         }
     }
@@ -116,12 +109,9 @@ public class CategoryDAO extends DBContext {
         List<Category> list = new ArrayList<>();
         String sql = "SELECT category_id, name, description, parent_category_id, is_active, created_at "
                 + "FROM categories";
-        try {
-            if (conn == null) {
-                throw new SQLException("Database connection is null");
-            }
-            PreparedStatement ps = conn.prepareStatement(sql);
-            ResultSet rs = ps.executeQuery();
+        try (Connection conn = DBContext.getNewConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
                 Long parentCategoryId = rs.getLong("parent_category_id");
                 if (rs.wasNull()) {
@@ -146,13 +136,10 @@ public class CategoryDAO extends DBContext {
     public List<Category> getParentCategories() {
         List<Category> list = new ArrayList<>();
         String sql = "SELECT category_id, name, description, parent_category_id, is_active, created_at "
-                    + "FROM categories WHERE parent_category_id IS NULL";
-        try {
-            if (conn == null) {
-                throw new SQLException("Database connection is null");
-            }
-            PreparedStatement ps = conn.prepareStatement(sql);
-            ResultSet rs = ps.executeQuery();
+                + "FROM categories WHERE parent_category_id IS NULL";
+        try (Connection conn = DBContext.getNewConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
                 Long parentCategoryId = rs.getLong("parent_category_id");
                 if (rs.wasNull()) {
@@ -172,6 +159,39 @@ public class CategoryDAO extends DBContext {
         } catch (SQLException e) {
             throw new RuntimeException("Error fetching parent categories: " + e.getMessage(), e);
         }
+    }
+
+    public boolean isCategoryExists(String name, Long parentCategoryId, Long excludeCategoryId) {
+        String sql = "SELECT COUNT(*) AS count FROM categories WHERE LOWER(name) = ? AND " +
+                "(parent_category_id = ? OR (? IS NULL AND parent_category_id IS NULL)) " +
+                "AND (category_id != ? OR ? IS NULL)";
+        try (Connection conn = DBContext.getNewConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, name.trim().replaceAll("\\s+", " ").toLowerCase());
+            if (parentCategoryId != null) {
+                ps.setLong(2, parentCategoryId);
+                ps.setLong(3, parentCategoryId);
+            } else {
+                ps.setNull(2, java.sql.Types.BIGINT);
+                ps.setNull(3, java.sql.Types.BIGINT);
+            }
+            if (excludeCategoryId != null) {
+                ps.setLong(4, excludeCategoryId);
+                ps.setLong(5, excludeCategoryId);
+            } else {
+                ps.setNull(4, java.sql.Types.BIGINT);
+                ps.setNull(5, java.sql.Types.BIGINT);
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("count") > 0;
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println("Error in isCategoryExists: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return false;
     }
 
     public static void main(String[] args) {
