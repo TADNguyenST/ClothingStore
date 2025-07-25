@@ -134,7 +134,7 @@
                             <div class="action-buttons-container">
                                 <div id="save-status"></div>
                                 <div class="action-buttons" style="border-top: none; padding-top: 0; margin-top: 0;">
-                                    <a href="${pageContext.request.contextPath}/admindashboard?action=purchaseorder&module=stock" class="btn btn-secondary"><i class="fa fa-arrow-left me-1"></i> Back to List</a>
+                                    <a href="${pageContext.request.contextPath}/Admindashboard?action=purchaseorder&module=stock" class="btn btn-secondary"><i class="fa fa-arrow-left me-1"></i> Back to List</a>
 
                                     <button type="button" class="btn btn-info action-btn" data-action="sendOrder"><i class="fas fa-paper-plane me-1"></i> Send Order</button>
                                     <button type="button" class="btn btn-success action-btn" data-action="confirmOrder"><i class="fas fa-check-double me-1"></i> Confirm Order</button>
@@ -497,7 +497,7 @@
                                             if (result) {
                                                 showToast(result.message);
                                                 setTimeout(function () {
-                                                    window.location.href = '${pageContext.request.contextPath}/admindashboard?action=purchaseorder&module=stock';
+                                                    window.location.href = '${pageContext.request.contextPath}/Admindashboard?action=purchaseorder&module=stock';
                                                 }, 1500);
                                             }
                                         })

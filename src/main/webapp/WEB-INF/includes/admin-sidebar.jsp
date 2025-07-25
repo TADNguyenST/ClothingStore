@@ -186,8 +186,16 @@
                 <li class="${requestScope.currentAction eq 'stockList' ? 'active' : ''}">
                     <a href="${pageContext.request.contextPath}/admindashboard?action=stockList&module=stock"><i class="fa fa-circle-o"></i> Stock List</a>
                 </li>
+<<<<<<< Updated upstream
                 <li class="${requestScope.currentAction eq 'importStock' ? 'active' : ''}">
                     <a href="${pageContext.request.contextPath}/admindashboard?action=importStock&module=stock"><i class="fa fa-circle-o"></i> Stock Movement</a>
+=======
+                <li class="${requestScope.currentAction eq 'stockmovement' ? 'active' : ''}">
+                    <a href="${pageContext.request.contextPath}/Admindashboard?action=stockmovement&module=stock"><i class="fa fa-circle-o"></i> Stock Movement</a>
+                <li class="${requestScope.currentAction eq 'purchaseorder' ? 'active' : ''}">
+                    <a href="${pageContext.request.contextPath}/Admindashboard?action=purchaseorder&module=stock"><i class="fa fa-circle-o"></i> Purchase Order List</a>
+                </li>
+>>>>>>> Stashed changes
             </ul>
         </li>
         <li class="treeview ${requestScope.currentModule eq 'supplier' ? 'active menu-open' : ''}">

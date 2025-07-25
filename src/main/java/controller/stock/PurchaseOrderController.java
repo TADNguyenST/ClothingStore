@@ -62,7 +62,7 @@ public class PurchaseOrderController extends HttpServlet {
                     handlePrintReceipt(request, response);
                     break;
                 default:
-                    response.sendRedirect(request.getContextPath() + "/admindashboard?action=purchaseorder&module=stock");
+                    response.sendRedirect(request.getContextPath() + "/Admindashboard?action=purchaseorder&module=stock");
                     break;
             }
         } catch (Exception e) {
