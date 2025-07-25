@@ -14,6 +14,11 @@
                 parentCategories.add(cat);
             }
         }
+    } else {
+        System.out.println("Warning: allCategories is null in header.jsp");
+    }
+    if (parentCategories.isEmpty()) {
+        System.out.println("Warning: parentCategories is empty in header.jsp");
     }
     String selectedParentCategoryId = request.getParameter("parentCategoryId");
     String selectedCategoryId = request.getParameter("categoryId");
@@ -25,8 +30,8 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>ClothingStore - ${pageTitle}</title>
 
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -105,6 +110,8 @@
                 border-radius: 0;
                 border: 1px solid #f0f0f0;
                 box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+                min-width: 200px; /* Đảm bảo dropdown đủ rộng */
+                z-index: 1050; /* Đảm bảo hiển thị trên các phần tử khác */
             }
             .suggestion-item:hover {
                 background-color: #f5f5f5;
@@ -139,7 +146,7 @@
                             <%
                                 if (parentCategories != null && !parentCategories.isEmpty()) {
                                     for (Category parentCategory : parentCategories) {
-                                        String selected = selectedParentCategoryId != null && selectedParentCategoryId.equals(String.valueOf(parentCategory.getCategoryId())) ? "active" : "";
+                                        String selected = (selectedParentCategoryId != null && selectedParentCategoryId.equals(String.valueOf(parentCategory.getCategoryId()))) ? "active" : "";
                             %>
                             <li class="nav-item dropdown <%= selected%>">
                                 <a class="nav-link dropdown-toggle" href="#" id="<%= parentCategory.getName().toLowerCase().replaceAll(" ", "")%>Dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -169,6 +176,8 @@
                             </li>
                             <%
                                     }
+                                } else {
+                                    System.out.println("Warning: No parent categories available in header.jsp");
                                 }
                             %>
                             <li class="nav-item"><a class="nav-link" href="${pageContext.request.contextPath}/ProductList/sale">Sale</a></li>
@@ -180,7 +189,9 @@
                                 <div id="suggestions" class="position-absolute w-100" style="border: 1px solid #eee; background: white; display: none; z-index: 1000; max-height: 300px; overflow-y: auto;"></div>
                             </div>
                             <div class="nav-item dropdown user-dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" id="userAccountDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="fas fa-user"></i></a>
+                                <a class="nav-link dropdown-toggle" href="#" id="userAccountDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fas fa-user"></i>
+                                </a>
                                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userAccountDropdown">
                                     <c:choose>
                                         <c:when test="${not empty sessionScope.user}">
@@ -200,19 +211,19 @@
                             <a href="${pageContext.request.contextPath}/wishlist?action=view" class="nav-link d-none d-lg-inline-block">
                                 <i class="fas fa-heart"></i>
                             </a>
-                            <a href="${pageContext.request.contextPath}/customer/cart" class="nav-link position-relative">
+                            <a href="${pageContext.request.contextPath}/customer/cart" class="nav-link position-relative" id="cartLink">
                                 <i class="fas fa-shopping-bag"></i>
-                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-dark" style="font-size: 0.6em;">
-                                    ${not empty cartItemCount ? cartItemCount : '0'}
-                                </span>
+                                <span id="cartCount" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger text-white ms-1" style="font-size: 0.6em;">0</span>
                             </a>
                         </div>
                     </div>
                 </div>
             </nav>
-            <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+            <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+            <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-0pUGZvbkm6XF6gxjEnlmuGrJXVbNuzT9qBBavbLwCsOGabYfZo0T0to5eqruptLy" crossorigin="anonymous"></script>
             <script>
                 $(document).ready(function () {
+                    console.log('jQuery and Bootstrap loaded'); // Debug
                     $("#searchInput").on("input", function () {
                         var keyword = $(this).val().trim();
                         if (keyword.length >= 1) {
@@ -237,6 +248,36 @@
                         }
                     });
                 });
+
+                // Cập nhật số lượng giỏ hàng
+                function updateCartCount() {
+                    fetch('${pageContext.request.contextPath}/customer/cart/count', {
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'application/json'
+                        }
+                    })
+                            .then(response => {
+                                if (!response.ok)
+                                    throw new Error('Network response was not ok');
+                                return response.json();
+                            })
+                            .then(data => {
+                                const cartCount = document.getElementById('cartCount');
+                                if (cartCount)
+                                    cartCount.textContent = data.count || 0;
+                                console.log('Cart count updated:', data.count); // Debug
+                            })
+                            .catch(error => {
+                                console.error('Error fetching cart count:', error);
+                                const cartCount = document.getElementById('cartCount');
+                                if (cartCount)
+                                    cartCount.textContent = '0';
+                            });
+                }
+
+                // Gọi khi trang load
+                document.addEventListener('DOMContentLoaded', updateCartCount);
             </script>
         </header>
 

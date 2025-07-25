@@ -507,6 +507,7 @@
                                 setTimeout(() => {
                                     window.location.href = '${pageContext.request.contextPath}/customer/cart';
                                 }, 1000); // Chuyển hướng sau 1 giây
+                                updateCartCount(); // Cập nhật số lượng giỏ hàng
                             } else {
                                 showToast(result.message || 'Failed to add to cart.', false);
                             }
@@ -518,31 +519,33 @@
             });
         });
 
-        // Khôi phục hành vi dropdown (nếu bị ảnh hưởng)
-        const dropdownToggles = document.querySelectorAll('[data-bs-toggle="dropdown"]');
-        dropdownToggles.forEach(toggle => {
-            toggle.addEventListener('click', function (e) {
-                const dropdown = document.getElementById(this.getAttribute('aria-controls'));
-                if (dropdown) {
-                    const isOpen = dropdown.classList.contains('show');
-                    dropdownToggles.forEach(t => {
-                        document.getElementById(t.getAttribute('aria-controls')).classList.remove('show');
+        // Cập nhật số lượng giỏ hàng
+        function updateCartCount() {
+            fetch('${pageContext.request.contextPath}/customer/cart/count', {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json'
+                }
+            })
+                    .then(response => {
+                        if (!response.ok)
+                            throw new Error('Network response was not ok');
+                        return response.json();
+                    })
+                    .then(data => {
+                        const cartCount = document.getElementById('cartCount');
+                        if (cartCount)
+                            cartCount.textContent = data.count || 0;
+                    })
+                    .catch(error => {
+                        console.error('Error fetching cart count:', error);
+                        const cartCount = document.getElementById('cartCount');
+                        if (cartCount)
+                            cartCount.textContent = '0';
                     });
-                    if (!isOpen) {
-                        dropdown.classList.add('show');
-                    }
-                }
-            });
-        });
+        }
 
-        // Ngăn chặn sự kiện click từ các phần tử khác ảnh hưởng đến dropdown
-        document.addEventListener('click', function (e) {
-            const dropdowns = document.querySelectorAll('.dropdown-menu.show');
-            dropdowns.forEach(dropdown => {
-                if (!dropdown.closest('.dropdown').contains(e.target)) {
-                    dropdown.classList.remove('show');
-                }
-            });
-        });
+        // Gọi khi trang load
+        updateCartCount();
     });
 </script>

@@ -111,7 +111,7 @@ public class AdmindashboardController extends HttpServlet {
                     switch (action) {
                         case "voucherList":
                             pageTitle = "Voucher List";
-                            targetJspPath = "/WEB-INF/views/admin/voucher/voucher-list.jsp";
+                            targetJspPath = "/vouchers";
                             break;
                         case "voucherForm":
                             pageTitle = "Voucher Form";
@@ -217,17 +217,13 @@ public class AdmindashboardController extends HttpServlet {
                             pageTitle = "Stock List";
                             targetJspPath = "/Stock";
                             break;
-                        case "importStock":
+                        case "stockmovement":
                             pageTitle = "Import Stock";
                             targetJspPath = "/StockMovement";
                             break;
-                        case "stockDetails":
-                            pageTitle = "Stock Details";
-                            targetJspPath = "/WEB-INF/views/staff/stock/stock-details.jsp";
-                            break;
-                        case "stockStatistics":
-                            pageTitle = "Stock Statistics";
-                            targetJspPath = "/StockController";
+                        case "purchaseorder":
+                            pageTitle = "Purchase Order List";
+                            targetJspPath = "/PurchaseOrderList";
                             break;
                     }
                     break;
@@ -235,15 +231,7 @@ public class AdmindashboardController extends HttpServlet {
                     switch (action) {
                         case "supplierList":
                             pageTitle = "Supplier List";
-                            targetJspPath = "/WEB-INF/views/staff/supplier/supplier-list.jsp";
-                            break;
-                        case "supplierForm":
-                            pageTitle = "Supplier Form";
-                            targetJspPath = "/WEB-INF/views/staff/supplier/supplier-form.jsp";
-                            break;
-                        case "supplierDetails":
-                            pageTitle = "Supplier Details";
-                            targetJspPath = "/WEB-INF/views/staff/supplier/supplier-details.jsp";
+                            targetJspPath = "/Supplier";
                             break;
                     }
                     break;
