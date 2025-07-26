@@ -139,7 +139,9 @@
             </a>
             <ul class="treeview-menu">
                 <li class="${requestScope.currentAction eq 'customerList' ? 'active' : ''}">
-                    <a href="${pageContext.request.contextPath}/admindashboard?action=customerList&module=customer"><i class="fa fa-circle-o"></i> Customer List</a>
+                    <a href="${pageContext.request.contextPath}/CustomerManagement">
+                        <i class="fa fa-circle-o"></i> Customer List
+                    </a>
                 </li>
                 <li class="${requestScope.currentAction eq 'customerDetails' ? 'active' : ''}">
                     <a href="${pageContext.request.contextPath}/admindashboard?action=customerDetails&module=customer"><i class="fa fa-circle-o"></i> Customer Details</a>
