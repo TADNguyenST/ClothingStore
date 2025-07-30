@@ -182,6 +182,7 @@
                             %>
                             <li class="nav-item"><a class="nav-link" href="${pageContext.request.contextPath}/ProductList/sale">Sale</a></li>
                             <li class="nav-item"><a class="nav-link" href="${pageContext.request.contextPath}/blog">Blog</a></li>
+                            <li class="nav-item"><a class="nav-link" href="${pageContext.request.contextPath}/VoucherPublic">Voucher</a></li>
                         </ul>
                         <div class="d-flex align-items-center header-actions">
                             <div class="search-bar position-relative">
