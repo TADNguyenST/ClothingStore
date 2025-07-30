@@ -111,7 +111,7 @@ public class AdmindashboardController extends HttpServlet {
                     switch (action) {
                         case "voucherList":
                             pageTitle = "Voucher List";
-                            targetJspPath = "/WEB-INF/views/admin/voucher/voucher-list.jsp";
+                            targetJspPath = "/vouchers";
                             break;
                         case "voucherForm":
                             pageTitle = "Voucher Form";
