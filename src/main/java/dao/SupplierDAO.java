@@ -228,4 +228,20 @@ public void updatePurchaseOrderTotalAmount(long poId, Connection conn) throws SQ
         ps.executeUpdate();
     }
 }
+public boolean isPhoneNumberExists(String phoneNumber, long currentSupplierId) throws SQLException {
+    String sql = "SELECT COUNT(*) FROM suppliers WHERE phone_number = ? AND supplier_id <> ?";
+    try (Connection conn = new DBContext().getConnection();
+         PreparedStatement ps = conn.prepareStatement(sql)) {
+        
+        ps.setString(1, phoneNumber);
+        ps.setLong(2, currentSupplierId);
+        
+        try (ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) {
+                return rs.getInt(1) > 0;
+            }
+        }
+    }
+    return false;
+}
 }
