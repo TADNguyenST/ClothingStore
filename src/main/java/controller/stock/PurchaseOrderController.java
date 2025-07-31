@@ -1,233 +1,285 @@
 package controller.stock;
 
+import DTO.ApiResponse;
+import DTO.PurchaseOrderContextDTO;
+import DTO.PurchaseOrderItemDTO;
+import DTO.ProductVariantSelectionDTO;
+import DTO.PurchaseOrderHeaderDTO;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import dao.PurchaseOrderDAO;
-import dao.StockManagermentDAO;
-import model.PurchaseOrder;
+import dao.UserDAO;
 import model.PurchaseOrderDetail;
 import model.StockMovement;
+import model.Supplier;
+import model.Users;
 import util.DBContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import util.PdfGenerator;
 
 @WebServlet(name = "PurchaseOrderController", urlPatterns = {"/PurchaseOrder"})
 public class PurchaseOrderController extends HttpServlet {
 
     private static final Logger LOGGER = Logger.getLogger(PurchaseOrderController.class.getName());
     private PurchaseOrderDAO purchaseDAO;
-    private StockManagermentDAO stockDAO;
+    private Gson gson;
 
     @Override
     public void init() {
         purchaseDAO = new PurchaseOrderDAO();
-        stockDAO = new StockManagermentDAO();
+        gson = new GsonBuilder().setDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'").create();
     }
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        HttpSession session = request.getSession();
+        Users currentUser = (Users) session.getAttribute("admin");
+        if (currentUser == null) {
+            currentUser = (Users) session.getAttribute("staff");
+        }
+
+        if (currentUser == null) {
+            response.sendRedirect(request.getContextPath() + "/AdminLogin");
+            return;
+        }
+
         String action = request.getParameter("action");
-        if (action == null) {
-            if (request.getParameter("poId") != null) {
-                action = "edit";
-            } else {
-                response.sendRedirect("Stock");
-                return;
-            }
+        if (action == null && request.getParameter("poId") != null) {
+            action = "edit";
+        } else if (action == null) {
+            action = "list";
         }
 
         try {
             switch (action) {
-                case "startNewPO":
-                    handleStartNewPO(request, response);
-                    break;
                 case "edit":
-                    handleEditPO(request, response);
+                    handleEditPOPage(request, response);
                     break;
-                case "showProductSelector":
-                    handleShowProductSelector(request, response);
+                case "startNewPO":
+                    handleStartNewPO(request, response, currentUser);
                     break;
-                case "deleteItem":
-                    handleDeleteItem(request, response);
+                case "printReceipt":
+                    handlePrintReceipt(request, response);
                     break;
-                case "cancel":
-                    handleCancelPO(request, response);
+                default:
+                    response.sendRedirect(request.getContextPath() + "/admindashboard?action=purchaseorder&module=stock");
                     break;
             }
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Error in PurchaseOrderController GET", e);
-            throw new ServletException("GET action failed in PurchaseOrderController", e);
+            LOGGER.log(Level.SEVERE, "Error in doGet", e);
+            request.setAttribute("errorMessage", "Error loading page: " + e.getMessage());
+            request.getRequestDispatcher("/WEB-INF/views/error.jsp").forward(request, response);
         }
     }
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        request.setCharacterEncoding("UTF-8");
-        String action = request.getParameter("action");
-        if (action == null) {
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Action parameter is missing.");
+
+        HttpSession session = request.getSession();
+        Users currentUser = (Users) session.getAttribute("admin");
+        if (currentUser == null) {
+            currentUser = (Users) session.getAttribute("staff");
+        }
+
+        if (currentUser == null) {
+            sendJsonResponse(response, HttpServletResponse.SC_UNAUTHORIZED, ApiResponse.error("Authentication required. Please login again."));
             return;
         }
 
+        request.setCharacterEncoding("UTF-8");
+        String action = request.getParameter("action");
+        ApiResponse<?> apiResponse;
+
         try {
             switch (action) {
+                case "autoSave":
+                    apiResponse = handleAutoSave(request);
+                    break;
+                case "deleteItem":
+                    apiResponse = handleAjaxDeleteItem(request);
+                    break;
+                case "sendOrder":
+                    apiResponse = handleAjaxSendOrder(request);
+                    break;
+                case "confirmOrder":
+                    apiResponse = handleAjaxConfirmOrder(request, currentUser);
+                    break;
+                case "receiveDelivery":
+                    apiResponse = handleAjaxReceiveDelivery(request, currentUser);
+                    break;
+                case "cancelOrder":
+                    apiResponse = handleAjaxCancelOrder(request);
+                    break;
+                case "deleteDraft":
+                    apiResponse = handleAjaxDeleteDraft(request);
+                    break;
+                case "getProductsForSelection":
+                    apiResponse = handleAjaxGetProductsForSelection();
+                    break;
                 case "addProducts":
-                    handleAddProducts(request, response);
+                    apiResponse = handleAjaxAddProducts(request);
                     break;
-                case "saveDraft":
-                    handleSaveDraft(request, response);
-                    break;
-                case "finalize":
-                    handleFinalizePO(request, response);
+                default:
+                    apiResponse = ApiResponse.error("Invalid action.");
                     break;
             }
+            sendJsonResponse(response, HttpServletResponse.SC_OK, apiResponse);
+
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Error in PurchaseOrderController POST", e);
-            throw new ServletException("POST action failed in PurchaseOrderController", e);
+            LOGGER.log(Level.SEVERE, "Error processing AJAX request for action: " + action, e);
+            apiResponse = ApiResponse.error(e.getMessage());
+            sendJsonResponse(response, HttpServletResponse.SC_BAD_REQUEST, apiResponse);
         }
     }
 
-    private void handleStartNewPO(HttpServletRequest request, HttpServletResponse response) throws SQLException, IOException {
-        long staffId = 1;
-        String poName = "Purchase Order " + new SimpleDateFormat("dd/MM/yyyy HH:mm").format(new Date());
-        long newPoId = purchaseDAO.createDraftPO(poName, staffId);
-        response.sendRedirect("PurchaseOrder?action=edit&poId=" + newPoId);
+    private ApiResponse<Object> handleAutoSave(HttpServletRequest request) throws SQLException {
+        long poId = Long.parseLong(request.getParameter("poId"));
+        String updateType = request.getParameter("updateType");
+        PurchaseOrderHeaderDTO po = purchaseDAO.getPurchaseOrderHeader(poId);
+        if (!"Draft".equals(po.getStatus()) && !"Sent".equals(po.getStatus())) {
+            throw new IllegalStateException("Cannot edit a PO that is not in Draft or Sent status.");
+        }
+        switch (updateType) {
+            case "quantity":
+                long podIdQty = Long.parseLong(request.getParameter("podId"));
+                int quantity = Integer.parseInt(request.getParameter("value"));
+                if (quantity <= 0) {
+                    throw new IllegalArgumentException("Quantity must be a positive number.");
+                }
+                purchaseDAO.updateItemQuantity(podIdQty, quantity);
+                break;
+            case "price":
+                long podIdPrice = Long.parseLong(request.getParameter("podId"));
+                BigDecimal price = new BigDecimal(request.getParameter("value"));
+                if (price.compareTo(BigDecimal.ZERO) < 0) {
+                    throw new IllegalArgumentException("Unit price cannot be negative.");
+                }
+                purchaseDAO.updateItemPrice(podIdPrice, price);
+                break;
+            case "notes":
+                String userNotes = request.getParameter("value");
+                PurchaseOrderHeaderDTO currentPO = purchaseDAO.getPurchaseOrderHeader(poId);
+                String currentFullNotes = currentPO.getNotes();
+                String prefix = "";
+                int prefixLength = 31;
+                if (currentFullNotes != null && currentFullNotes.startsWith("Purchase Order") && currentFullNotes.length() >= prefixLength) {
+                    prefix = currentFullNotes.substring(0, prefixLength);
+                } else {
+                    prefix = currentFullNotes != null ? currentFullNotes : "";
+                }
+                String newFullNotes = (prefix + " " + userNotes).trim();
+                purchaseDAO.updatePONotes(poId, newFullNotes);
+                break;
+            case "supplier":
+                String supplierIdStr = request.getParameter("value");
+                if (supplierIdStr != null && !supplierIdStr.isEmpty()) {
+                    long supplierId = Long.parseLong(supplierIdStr);
+                    purchaseDAO.updateDraftPOSupplier(poId, supplierId);
+                } else {
+                    purchaseDAO.clearPOSupplier(poId);
+                }
+                break;
+            default:
+                throw new IllegalArgumentException("Invalid update type.");
+        }
+        return ApiResponse.success(null, "Saved");
     }
 
-    private void handleEditPO(HttpServletRequest request, HttpServletResponse response) throws SQLException, ServletException, IOException {
-        long poId = Long.parseLong(request.getParameter("poId"));
-        Map<String, Object> poData = purchaseDAO.getPurchaseOrderHeader(poId);
-        List<Map<String, Object>> itemsInPO = purchaseDAO.getItemsInPurchaseOrder(poId);
-        List<model.Supplier> suppliers = purchaseDAO.getAllActiveSuppliers();
-
-        request.setAttribute("poData", poData);
-        request.setAttribute("itemsInPO", itemsInPO);
-        request.setAttribute("suppliers", suppliers);
-        request.getRequestDispatcher("/WEB-INF/views/staff/stock/po-detail.jsp").forward(request, response);
-    }
-
-    private void handleShowProductSelector(HttpServletRequest request, HttpServletResponse response) throws SQLException, ServletException, IOException {
-        long poId = Long.parseLong(request.getParameter("poId"));
-        List<Map<String, Object>> productDataList = purchaseDAO.getAllVariantsForSelection();
-
-        request.setAttribute("poId", poId);
-        request.setAttribute("productDataList", productDataList);
-        request.getRequestDispatcher("/WEB-INF/views/staff/stock/po-product-selector.jsp").forward(request, response);
-    }
-
-    private void handleDeleteItem(HttpServletRequest request, HttpServletResponse response) throws SQLException, IOException {
-        long poId = Long.parseLong(request.getParameter("poId"));
+    private ApiResponse<Object> handleAjaxDeleteItem(HttpServletRequest request) throws SQLException {
         long podId = Long.parseLong(request.getParameter("podId"));
         purchaseDAO.deleteItemFromPO(podId);
-        response.sendRedirect("PurchaseOrder?action=edit&poId=" + poId);
+        return ApiResponse.success(null, "Item deleted successfully.");
     }
 
-    private void handleCancelPO(HttpServletRequest request, HttpServletResponse response) throws SQLException, IOException {
+    private ApiResponse<Object> handleAjaxSendOrder(HttpServletRequest request) throws SQLException {
         long poId = Long.parseLong(request.getParameter("poId"));
-        purchaseDAO.deleteDraftPO(poId);
-        response.sendRedirect("admindashboard?action=purchaseorder&module=stock");
-    }
-
-    private void handleAddProducts(HttpServletRequest request, HttpServletResponse response) throws SQLException, IOException {
-        long poId = Long.parseLong(request.getParameter("poId"));
-        String[] selectedVariants = request.getParameterValues("selectedVariants");
-
-        if (selectedVariants != null && selectedVariants.length > 0) {
-            List<Long> variantIds = new ArrayList<>();
-            for (String idStr : selectedVariants) {
-                variantIds.add(Long.parseLong(idStr));
-            }
-            purchaseDAO.addVariantsToPODetails(poId, variantIds);
+        PurchaseOrderHeaderDTO poHeader = purchaseDAO.getPurchaseOrderHeader(poId);
+        List<PurchaseOrderItemDTO> poItems = purchaseDAO.getItemsInPurchaseOrder(poId);
+        if (poHeader.getSupplierId() == null || poHeader.getSupplierId() <= 0) {
+            throw new IllegalArgumentException("A supplier must be selected before sending.");
         }
-        response.sendRedirect("PurchaseOrder?action=edit&poId=" + poId);
-    }
-
-    private void handleSaveDraft(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
-        long poId = Long.parseLong(request.getParameter("poId"));
-        try {
-            // === START: CẬP NHẬT GHI CHÚ (NOTES) ===
-            String notes = request.getParameter("notes");
-            if (notes != null) {
-                // Bạn cần tự tạo phương thức này trong PurchaseOrderDAO
-                purchaseDAO.updatePONotes(poId, notes);
+        if (poItems == null || poItems.isEmpty()) {
+            throw new IllegalArgumentException("Cannot send an empty purchase order.");
+        }
+        for (PurchaseOrderItemDTO item : poItems) {
+            if (item.getQuantity() <= 0) {
+                throw new IllegalArgumentException("Quantity for product '" + item.getProductName() + "' must be greater than 0.");
             }
-            // === END: CẬP NHẬT GHI CHÚ (NOTES) ===
-            
-            String supplierIdStr = request.getParameter("supplierId");
-            if (supplierIdStr != null && !supplierIdStr.isEmpty()) {
-                long supplierId = Long.parseLong(supplierIdStr);
-                purchaseDAO.updateDraftPOSupplier(poId, supplierId);
-            }
-
-            Enumeration<String> paramNames = request.getParameterNames();
-            while (paramNames.hasMoreElements()) {
-                String paramName = paramNames.nextElement();
-                if (paramName.startsWith("quantity_")) {
-                    long podId = Long.parseLong(paramName.substring("quantity_".length()));
-                    int quantity = Integer.parseInt(request.getParameter(paramName));
-                    BigDecimal unitPrice = new BigDecimal(request.getParameter("price_" + podId));
-                    purchaseDAO.updatePODetail(podId, quantity, unitPrice);
+        }
+        try ( Connection conn = new DBContext().getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                if (!"Draft".equals(poHeader.getStatus())) {
+                    throw new IllegalStateException("Only Draft orders can be sent.");
                 }
+                purchaseDAO.updatePOStatus(poId, "Sent", conn);
+                conn.commit();
+            } catch (Exception e) {
+                conn.rollback();
+                throw e;
             }
-            response.sendRedirect("PurchaseOrder?action=edit&poId=" + poId + "&save=success");
-        } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Error saving draft PO", e);
-            throw new ServletException("Error saving draft", e);
         }
+        return ApiResponse.success(null, "Order has been sent.");
     }
 
-    private void handleFinalizePO(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    private ApiResponse<Object> handleAjaxConfirmOrder(HttpServletRequest request, Users currentUser) throws SQLException {
+        if (!"Admin".equals(currentUser.getRole())) {
+            throw new SecurityException("Access Denied: Only Admins can confirm orders.");
+        }
         long poId = Long.parseLong(request.getParameter("poId"));
+        try ( Connection conn = new DBContext().getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                PurchaseOrderHeaderDTO po = purchaseDAO.getPurchaseOrderHeader(poId);
+                if (!"Sent".equals(po.getStatus())) {
+                    throw new IllegalStateException("Only Sent orders can be confirmed.");
+                }
+                purchaseDAO.updatePOStatus(poId, "Confirmed", conn);
+                conn.commit();
+            } catch (Exception e) {
+                conn.rollback();
+                throw e;
+            }
+        }
+        return ApiResponse.success(null, "Order has been confirmed.");
+    }
+
+    private ApiResponse<Object> handleAjaxReceiveDelivery(HttpServletRequest request, Users currentUser) throws SQLException, IOException {
+        long poId = Long.parseLong(request.getParameter("poId"));
+        UserDAO userDAO = new UserDAO();
+        Long staffId = userDAO.getStaffIdByUserId(currentUser.getUserId());
         Connection conn = null;
-
         try {
-            List<Map<String, Object>> itemsInPO = purchaseDAO.getItemsInPurchaseOrder(poId);
-            if (itemsInPO == null || itemsInPO.isEmpty()) {
-                request.setAttribute("errorMessage", "Cannot finalize an empty purchase order. Please add products.");
-                handleEditPO(request, response);
-                return;
-            }
-            String supplierIdStr = request.getParameter("supplierId");
-            if (supplierIdStr == null || supplierIdStr.isEmpty()) {
-                request.setAttribute("errorMessage", "Please select a supplier before finalizing the purchase order.");
-                handleEditPO(request, response);
-                return;
-            }
-            long supplierId = Long.parseLong(request.getParameter("supplierId"));
-            long staffId = 1;
-
             conn = new DBContext().getConnection();
             conn.setAutoCommit(false);
-
-            // === START: CẬP NHẬT GHI CHÚ (NOTES) TRONG GIAO DỊCH ===
-            String notes = request.getParameter("notes");
-            if (notes != null) {
-                // Bạn cần tự tạo phương thức này trong PurchaseOrderDAO, nhận vào Connection
-                purchaseDAO.updatePONotes(poId, notes, conn);
+            PurchaseOrderHeaderDTO po = purchaseDAO.getPurchaseOrderHeader(poId);
+            if (!"Confirmed".equals(po.getStatus())) {
+                throw new IllegalStateException("Only Confirmed orders can be delivered.");
             }
-            // === END: CẬP NHẬT GHI CHÚ (NOTES) TRONG GIAO DỊCH ===
-
-            Enumeration<String> paramNames = request.getParameterNames();
-            while (paramNames.hasMoreElements()) {
-                String paramName = paramNames.nextElement();
-                if (paramName.startsWith("quantity_")) {
-                    long podId = Long.parseLong(paramName.substring("quantity_".length()));
-                    int quantity = Integer.parseInt(request.getParameter(paramName));
-                    BigDecimal unitPrice = new BigDecimal(request.getParameter("price_" + podId));
-                    purchaseDAO.updatePODetail(podId, quantity, unitPrice, conn);
-                }
+            PurchaseOrderContextDTO context = purchaseDAO.getContextForNotes(poId, conn);
+            if (context == null) {
+                throw new SQLException("Could not find context for PO ID: " + poId);
             }
-
+            String currentDate = new SimpleDateFormat("dd/MM/yyyy").format(new Date());
+            String noteMessage = String.format("Purchase Order %s by %s, supplier %s", currentDate, context.getStaffName(), context.getSupplierName());
             List<PurchaseOrderDetail> items = purchaseDAO.getItemsForConfirmation(poId, conn);
             for (PurchaseOrderDetail item : items) {
                 purchaseDAO.increaseInventoryForVariant(item.getVariantId(), item.getQuantity(), conn);
@@ -238,19 +290,133 @@ public class PurchaseOrderController extends HttpServlet {
                 sm.setReferenceType("Purchase Order");
                 sm.setReferenceId(poId);
                 sm.setCreatedBy(staffId);
-                sm.setNotes("Stock import from PO#" + poId);
+                sm.setNotes(noteMessage);
                 purchaseDAO.addStockMovement(sm, conn);
             }
-
-            purchaseDAO.finalizePO(poId, supplierId, "Delivered", conn);
+            purchaseDAO.updatePOStatus(poId, "Delivered", conn);
             conn.commit();
-            response.sendRedirect("PurchaseOrder?action=edit&poId=" + poId + "&confirm=success");
-
         } catch (Exception e) {
-            if (conn != null) try { conn.rollback(); } catch (SQLException ex) { LOGGER.log(Level.SEVERE, "Failed to rollback", ex); }
-            throw new ServletException("Transaction failed for PO finalization", e);
+            if (conn != null) {
+                conn.rollback();
+            }
+            throw new SQLException("Failed to receive delivery for PO#" + poId, e);
         } finally {
-            if (conn != null) try { conn.close(); } catch (SQLException ex) { LOGGER.log(Level.SEVERE, "Failed to close connection", ex); }
+            if (conn != null) {
+                conn.close();
+            }
         }
+        return ApiResponse.success(null, "Delivery received and stock updated.");
+    }
+
+    private ApiResponse<Object> handleAjaxCancelOrder(HttpServletRequest request) throws SQLException {
+        long poId = Long.parseLong(request.getParameter("poId"));
+        try ( Connection conn = new DBContext().getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                PurchaseOrderHeaderDTO po = purchaseDAO.getPurchaseOrderHeader(poId);
+                if (!"Draft".equals(po.getStatus()) && !"Sent".equals(po.getStatus())) {
+                    throw new IllegalStateException("This order can no longer be cancelled.");
+                }
+                purchaseDAO.updatePOStatus(poId, "Cancelled", conn);
+                conn.commit();
+            } catch (Exception e) {
+                conn.rollback();
+                throw e;
+            }
+        }
+        return ApiResponse.success(null, "Order has been cancelled.");
+    }
+
+    private ApiResponse<Object> handleAjaxDeleteDraft(HttpServletRequest request) throws SQLException {
+        long poId = Long.parseLong(request.getParameter("poId"));
+        int deletedRows = purchaseDAO.deleteDraftPO(poId);
+        if (deletedRows > 0) {
+            return ApiResponse.success(null, "Draft order has been deleted successfully.");
+        } else {
+            throw new IllegalStateException("Could not delete the order. It might not be a draft anymore.");
+        }
+    }
+
+    private ApiResponse<List<ProductVariantSelectionDTO>> handleAjaxGetProductsForSelection() throws SQLException {
+        List<ProductVariantSelectionDTO> variants = purchaseDAO.getAllVariantsForSelection();
+        return ApiResponse.success(variants);
+    }
+
+    private ApiResponse<List<PurchaseOrderItemDTO>> handleAjaxAddProducts(HttpServletRequest request) throws SQLException {
+        long poId = Long.parseLong(request.getParameter("poId"));
+        String[] selectedVariants = request.getParameterValues("variantIds[]");
+        if (selectedVariants != null && selectedVariants.length > 0) {
+            List<Long> variantIds = new ArrayList<>();
+            for (String idStr : selectedVariants) {
+                variantIds.add(Long.parseLong(idStr));
+            }
+            purchaseDAO.addVariantsToPODetails(poId, variantIds);
+            List<PurchaseOrderItemDTO> updatedItems = purchaseDAO.getItemsInPurchaseOrder(poId);
+            return ApiResponse.success(updatedItems, "Products added successfully.");
+        }
+        throw new IllegalArgumentException("No products selected.");
+    }
+
+    private void handleEditPOPage(HttpServletRequest request, HttpServletResponse response) throws SQLException, ServletException, IOException {
+        long poId = Long.parseLong(request.getParameter("poId"));
+        PurchaseOrderHeaderDTO poData = purchaseDAO.getPurchaseOrderHeader(poId);
+        List<PurchaseOrderItemDTO> itemsInPO = purchaseDAO.getItemsInPurchaseOrder(poId);
+        List<Supplier> suppliers = purchaseDAO.getAllActiveSuppliers();
+        if (poData != null && poData.getNotes() != null) {
+            String fullNotes = poData.getNotes();
+            int prefixLength = 31;
+            if (fullNotes.startsWith("Purchase Order") && fullNotes.length() >= prefixLength) {
+                String prefix = fullNotes.substring(0, prefixLength);
+                poData.setNotePrefix(prefix);
+                if (fullNotes.length() > prefixLength) {
+                    poData.setUserNotes(fullNotes.substring(prefixLength).trim());
+                } else {
+                    poData.setUserNotes("");
+                }
+            } else {
+                poData.setNotePrefix(fullNotes);
+                poData.setUserNotes("");
+            }
+        }
+        request.setAttribute("poData", gson.toJson(poData));
+        request.setAttribute("itemsInPO", gson.toJson(itemsInPO));
+        request.setAttribute("suppliers", suppliers);
+        request.getRequestDispatcher("/WEB-INF/views/staff/stock/po-detail.jsp").forward(request, response);
+    }
+
+    private void handleStartNewPO(HttpServletRequest request, HttpServletResponse response, Users currentUser) throws SQLException, IOException {
+        UserDAO userDAO = new UserDAO();
+        Long staffId = userDAO.getStaffIdByUserId(currentUser.getUserId());
+        String poName = "Purchase Order " + new SimpleDateFormat("dd/MM/yyyy HH:mm").format(new Date());
+        long newPoId = purchaseDAO.createDraftPO(poName, staffId);
+        response.sendRedirect("PurchaseOrder?action=edit&poId=" + newPoId);
+    }
+
+    private void sendJsonResponse(HttpServletResponse response, int statusCode, Object data) throws IOException {
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+        response.setStatus(statusCode);
+        PrintWriter out = response.getWriter();
+        out.print(gson.toJson(data));
+        out.flush();
+    }
+
+    private void handlePrintReceipt(HttpServletRequest request, HttpServletResponse response) throws Exception {
+        long poId = Long.parseLong(request.getParameter("poId"));
+        PurchaseOrderHeaderDTO poHeader = purchaseDAO.getPurchaseOrderHeader(poId);
+        List<PurchaseOrderItemDTO> poItems = purchaseDAO.getItemsInPurchaseOrder(poId);
+        if (poHeader == null || poItems == null) {
+            LOGGER.log(Level.SEVERE, "Data not found for Purchase Order ID: " + poId);
+            response.sendError(HttpServletResponse.SC_NOT_FOUND, "Purchase Order data not found for ID: " + poId);
+            return;
+        }
+        if (poItems.isEmpty()) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Cannot print a receipt for an empty Purchase Order.");
+            return;
+        }
+        response.setContentType("application/pdf");
+        response.setHeader("Content-Disposition", "inline; filename=\"PhieuNhapKho_" + poId + ".pdf\"");
+        OutputStream out = response.getOutputStream();
+        PdfGenerator.generateReceiptPdf(out, poHeader, poItems);
     }
 }

@@ -174,7 +174,7 @@
     }
 </style>
 
-<div class="container my-5 py-5">
+<div class="container my-3 ">
     <div class="text-center">
         <h2 class="section-title"><%= pageTitle %></h2>
         <% if (error != null && !error.isEmpty()) { %>
@@ -257,7 +257,7 @@
 
 <script>
 let currentPage = <%= currentPage %>;
-const pageSize = 9;
+const pageSize = 6; // Updated to 6 products per page as requested
 let totalPages = <%= totalPages %>;
 let currentSort = '<%= sort %>';
 

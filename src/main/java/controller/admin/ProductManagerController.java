@@ -16,6 +16,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -51,7 +52,6 @@ public class ProductManagerController extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         ProductDAO dao = new ProductDAO();
-        CategoryDAO categoryDAO = new CategoryDAO();
         String action = request.getParameter("action");
         if (action == null) {
             action = "list";
@@ -79,13 +79,8 @@ public class ProductManagerController extends HttpServlet {
             }
             return;
         } else if (action.equalsIgnoreCase("list")) {
-            List<Product> data = dao.getAll();
-            request.setAttribute("list", data);
-            List<Category> categories = dao.getAllCategories();
-            List<Brand> brands = dao.getAllBrands();
-            request.setAttribute("categories", categories);
-            request.setAttribute("brands", brands);
-            request.getRequestDispatcher("/WEB-INF/views/staff/product/products.jsp").forward(request, response);
+            // Forward to doPost for pagination handling
+            doPost(request, response);
         } else if (action.equalsIgnoreCase("create")) {
             List<Category> categories = dao.getAllCategories();
             List<Brand> brands = dao.getAllBrands();
@@ -94,22 +89,32 @@ public class ProductManagerController extends HttpServlet {
             request.getRequestDispatcher("/WEB-INF/views/staff/product/create-product.jsp").forward(request, response);
         } else if (action.equalsIgnoreCase("delete")) {
             String idRaw = request.getParameter("id");
+            String pageParam = request.getParameter("page");
+            String sort = request.getParameter("sort") != null ? request.getParameter("sort") : "created_at_desc";
             try {
                 long id = Long.parseLong(idRaw);
                 int result = dao.delete(id);
                 if (result == 1) {
-                    request.setAttribute("msg", "<p class='text-success'>Product deleted successfully!</p>");
+                    request.getSession().setAttribute("msg", "Product deleted successfully!");
+                    StringBuilder redirectUrl = new StringBuilder(request.getContextPath() + "/ProductManager?action=list");
+                    if (pageParam != null && !pageParam.isEmpty()) {
+                        redirectUrl.append("&page=").append(URLEncoder.encode(pageParam, "UTF-8"));
+                    }
+                    if (sort != null && !sort.isEmpty()) {
+                        redirectUrl.append("&sort=").append(URLEncoder.encode(sort, "UTF-8"));
+                    }
+                    response.sendRedirect(redirectUrl.toString());
                 } else {
                     request.setAttribute("err", "<p class='text-danger'>Failed to delete product with ID: " + id + "</p>");
+                    doPost(request, response);
                 }
             } catch (NumberFormatException e) {
                 request.setAttribute("err", "<p class='text-danger'>Invalid product ID</p>");
+                doPost(request, response);
             } catch (Exception e) {
                 request.setAttribute("err", "<p class='text-danger'>Error deleting product: " + e.getMessage() + "</p>");
+                doPost(request, response);
             }
-            List<Product> data = dao.getAll();
-            request.setAttribute("list", data);
-            request.getRequestDispatcher("/WEB-INF/views/staff/product/products.jsp").forward(request, response);
         } else if (action.equalsIgnoreCase("update")) {
             String idRaw = request.getParameter("id");
             try {
@@ -117,9 +122,7 @@ public class ProductManagerController extends HttpServlet {
                 Product product = dao.getProductById(id);
                 if (product == null) {
                     request.setAttribute("err", "<p class='text-danger'>Product not found with ID: " + id + "</p>");
-                    List<Product> data = dao.getAll();
-                    request.setAttribute("list", data);
-                    request.getRequestDispatcher("/WEB-INF/views/staff/product/products.jsp").forward(request, response);
+                    doPost(request, response);
                 } else {
                     request.setAttribute("data", product);
                     List<Category> categories = dao.getAllCategories();
@@ -130,14 +133,10 @@ public class ProductManagerController extends HttpServlet {
                 }
             } catch (NumberFormatException e) {
                 request.setAttribute("err", "<p class='text-danger'>Invalid product ID</p>");
-                List<Product> data = dao.getAll();
-                request.setAttribute("list", data);
-                request.getRequestDispatcher("/WEB-INF/views/staff/product/products.jsp").forward(request, response);
+                doPost(request, response);
             } catch (Exception e) {
                 request.setAttribute("err", "<p class='text-danger'>Error retrieving product: " + e.getMessage() + "</p>");
-                List<Product> data = dao.getAll();
-                request.setAttribute("list", data);
-                request.getRequestDispatcher("/WEB-INF/views/staff/product/products.jsp").forward(request, response);
+                doPost(request, response);
             }
         } else if (action.equalsIgnoreCase("detail")) {
             String idRaw = request.getParameter("id");
@@ -158,13 +157,51 @@ public class ProductManagerController extends HttpServlet {
                 request.getRequestDispatcher("/WEB-INF/views/staff/product/productDetail.jsp").forward(request, response);
             }
         } else if (action.equalsIgnoreCase("filter")) {
+            // Forward to doPost for pagination handling
+            doPost(request, response);
+        }
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        ProductDAO dao = new ProductDAO();
+        String action = request.getParameter("action");
+        if (action == null) {
+            action = "list"; // Default to list for pagination
+        }
+
+        // Handle page and sort parameters
+        int pageSize = 5;
+        int page = 1;
+        String pageParam = request.getParameter("page");
+        if (pageParam != null && !pageParam.isEmpty()) {
+            try {
+                page = Integer.parseInt(pageParam);
+                if (page < 1) page = 1;
+            } catch (NumberFormatException e) {
+                page = 1;
+            }
+        }
+        int offset = (page - 1) * pageSize;
+        String sort = request.getParameter("sort") != null ? request.getParameter("sort") : "created_at_desc";
+
+        if (action.equalsIgnoreCase("list")) {
+            List<Product> data = dao.getAllPaginated(offset, pageSize, sort);
+            int totalProducts = dao.getTotalProductCount();
+            request.setAttribute("list", data);
+            request.setAttribute("totalProducts", totalProducts);
+            List<Category> categories = dao.getAllCategories();
+            List<Brand> brands = dao.getAllBrands();
+            request.setAttribute("categories", categories);
+            request.setAttribute("brands", brands);
+            request.getRequestDispatcher("/WEB-INF/views/staff/product/products.jsp").forward(request, response);
+        } else if (action.equalsIgnoreCase("filter")) {
             String parentCategoryIdRaw = request.getParameter("parentCategoryId");
             String categoryIdRaw = request.getParameter("categoryId");
             String brandIdRaw = request.getParameter("brandId");
             String size = request.getParameter("size");
             String color = request.getParameter("color");
-            String minPriceRaw = request.getParameter("minPrice");
-            String maxPriceRaw = request.getParameter("maxPrice");
             String status = request.getParameter("status");
 
             Long parentCategoryId = null;
@@ -208,35 +245,11 @@ public class ProductManagerController extends HttpServlet {
                 }
             }
 
-            BigDecimal minPrice = null;
-            if (minPriceRaw != null && !minPriceRaw.isEmpty()) {
-                try {
-                    minPrice = new BigDecimal(minPriceRaw.replace(".", "").replace(",", "."));
-                } catch (NumberFormatException e) {
-                    System.out.println("Invalid BigDecimal format for minPrice: " + minPriceRaw);
-                    request.setAttribute("err", "<p class='text-danger'>Invalid Min Price format</p>");
-                }
-            }
-
-            BigDecimal maxPrice = null;
-            if (maxPriceRaw != null && !maxPriceRaw.isEmpty()) {
-                try {
-                    maxPrice = new BigDecimal(maxPriceRaw.replace(".", "").replace(",", "."));
-                } catch (NumberFormatException e) {
-                    System.out.println("Invalid BigDecimal format for maxPrice: " + maxPriceRaw);
-                    request.setAttribute("err", "<p class='text-danger'>Invalid Max Price format</p>");
-                }
-            }
-
-            if (minPrice != null && maxPrice != null && minPrice.compareTo(maxPrice) > 0) {
-                request.setAttribute("err", "<p class='text-danger'>Min Price cannot be greater than Max Price</p>");
-                minPrice = null;
-                maxPrice = null;
-            }
-
             try {
-                List<Product> data = dao.filterProducts(parentCategoryId, categoryId, brandId, size, color, minPrice, maxPrice, status);
+                List<Product> data = dao.filterProductsPaginated(parentCategoryId, categoryId, brandId, size, color, status, offset, pageSize, sort);
+                int totalProducts = dao.getFilteredProductCount(parentCategoryId, categoryId, brandId, size, color, status);
                 request.setAttribute("list", data);
+                request.setAttribute("totalProducts", totalProducts);
                 if (data.isEmpty()) {
                     request.setAttribute("err", "<p class='text-danger'>No products found matching the filter criteria</p>");
                 }
@@ -250,20 +263,7 @@ public class ProductManagerController extends HttpServlet {
             request.setAttribute("categories", categories);
             request.setAttribute("brands", brands);
             request.getRequestDispatcher("/WEB-INF/views/staff/product/products.jsp").forward(request, response);
-        }
-    }
-
-    @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        ProductDAO dao = new ProductDAO();
-        String action = request.getParameter("action");
-        if (action == null) {
-            action = "create";
-        }
-
-        if (action.equalsIgnoreCase("create")) {
-            // Your existing create action (unchanged)
+        } else if (action.equalsIgnoreCase("create")) {
             try {
                 String name = request.getParameter("name");
                 String description = request.getParameter("description");
@@ -400,7 +400,7 @@ public class ProductManagerController extends HttpServlet {
                             File tempFile = null;
                             try {
                                 tempFile = File.createTempFile("upload", fileName);
-                                try ( InputStream input = filePart.getInputStream();  FileOutputStream output = new FileOutputStream(tempFile)) {
+                                try (InputStream input = filePart.getInputStream(); FileOutputStream output = new FileOutputStream(tempFile)) {
                                     byte[] buffer = new byte[1024];
                                     int len;
                                     while ((len = input.read(buffer)) != -1) {
@@ -504,10 +504,12 @@ public class ProductManagerController extends HttpServlet {
                 String[] sizes = request.getParameterValues("size");
                 String[] colors = request.getParameterValues("color");
                 String[] priceModifiers = request.getParameterValues("priceModifier");
+                String[] existingImageIds = request.getParameterValues("existingImageId");
                 String[] existingImageUrls = request.getParameterValues("existingImageUrl");
-                String[] isMainImages = request.getParameterValues("isMainImage");
+                String[] isMainImages = request.getParameterValues("isMainImages");
 
                 System.out.println("Update action started for ID: " + idRaw);
+                System.out.println("Existing Image IDs: " + (existingImageIds != null ? String.join(", ", existingImageIds) : "null"));
                 System.out.println("Existing Image URLs: " + (existingImageUrls != null ? String.join(", ", existingImageUrls) : "null"));
                 System.out.println("Is Main Images: " + (isMainImages != null ? String.join(", ", isMainImages) : "null"));
 
@@ -526,7 +528,7 @@ public class ProductManagerController extends HttpServlet {
 
                 long id = Long.parseLong(idRaw);
                 String normalizedName = name.trim().replaceAll("\\s+", " ");
-                System.out.println("Update - Original name: " + name + ", Normalized name: " + normalizedName);
+                //System.out.println("Update - Original name: " culprit + ", Normalized name: " + normalizedName);
 
                 priceRaw = priceRaw.replace(".", "").replace(",", ".");
                 BigDecimal price;
@@ -553,17 +555,10 @@ public class ProductManagerController extends HttpServlet {
                     throw new IllegalArgumentException("Brand name not found for ID: " + brandId);
                 }
 
-                // Kiểm tra trùng tên sản phẩm và brand, ngoại trừ sản phẩm hiện tại
                 if (dao.isProductExistsForUpdate(normalizedName, brandId, id)) {
                     throw new IllegalArgumentException("A product with name '" + normalizedName + "' and brand '" + brandName + "' already exists.");
                 }
 
-                System.out.println("Sizes: " + (sizes != null ? String.join(", ", sizes) : "null"));
-                System.out.println("Colors: " + (colors != null ? String.join(", ", colors) : "null"));
-                System.out.println("Price Modifiers: " + (priceModifiers != null ? String.join(", ", priceModifiers) : "null"));
-                System.out.println("Variant IDs: " + (variantIds != null ? String.join(", ", variantIds) : "null"));
-
-                // Handle variants
                 List<ProductVariant> variants = new ArrayList<>();
                 if (sizes != null && colors != null && priceModifiers != null
                         && sizes.length == colors.length && colors.length == priceModifiers.length && sizes.length > 0) {
@@ -631,23 +626,25 @@ public class ProductManagerController extends HttpServlet {
                             + "VariantIds=" + (variantIds != null ? variantIds.length : "null"));
                 }
 
-                // Handle existing and new images
                 List<ProductImage> images = new ArrayList<>();
-                if (existingImageUrls != null) {
-                    for (int i = 0; i < existingImageUrls.length; i++) {
+                int imageIndex = 0;
+
+                if (existingImageIds != null && existingImageUrls != null && existingImageIds.length == existingImageUrls.length) {
+                    for (int i = 0; i < existingImageIds.length; i++) {
                         ProductImage image = new ProductImage();
+                        image.setImageId(Long.parseLong(existingImageIds[i]));
                         image.setImageUrl(existingImageUrls[i]);
                         image.setDisplayOrder(i + 1);
-                        image.setMain(isMainImages != null && i < isMainImages.length && "true".equals(isMainImages[i]));
+                        image.setMain(isMainImages != null && imageIndex < isMainImages.length && "true".equals(isMainImages[imageIndex]));
                         images.add(image);
+                        imageIndex++;
                     }
                 }
+
                 Collection<Part> fileParts = request.getParts();
                 System.out.println("Number of file parts: " + (fileParts != null ? fileParts.size() : "null"));
                 if (fileParts != null && !fileParts.isEmpty()) {
-                    int imageIndex = existingImageUrls != null ? existingImageUrls.length : 0;
                     for (Part filePart : fileParts) {
-                        System.out.println("Processing part: " + filePart.getName() + ", Size: " + filePart.getSize());
                         if ("images".equals(filePart.getName()) && filePart.getSize() > 0) {
                             String fileName = filePart.getSubmittedFileName();
                             if (fileName != null && !fileName.toLowerCase().matches(".*\\.(jpg|jpeg|png|gif)$")) {
@@ -657,7 +654,7 @@ public class ProductManagerController extends HttpServlet {
                             File tempFile = null;
                             try {
                                 tempFile = File.createTempFile("upload", fileName);
-                                try ( InputStream input = filePart.getInputStream();  FileOutputStream output = new FileOutputStream(tempFile)) {
+                                try (InputStream input = filePart.getInputStream(); FileOutputStream output = new FileOutputStream(tempFile)) {
                                     byte[] buffer = new byte[1024];
                                     int len;
                                     while ((len = input.read(buffer)) != -1) {
@@ -707,7 +704,6 @@ public class ProductManagerController extends HttpServlet {
                     throw new IllegalArgumentException("At least one image is required");
                 }
 
-                // Ensure only one main image
                 int mainIndex = -1;
                 for (int i = 0; i < images.size(); i++) {
                     if (images.get(i).isMain()) {

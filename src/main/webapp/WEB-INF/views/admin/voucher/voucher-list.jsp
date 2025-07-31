@@ -8,6 +8,9 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <title>${requestScope.pageTitle != null ? requestScope.pageTitle : "Voucher List"}</title>
 
     <%-- Link đến thư viện ngoài --%>
@@ -136,9 +139,6 @@
     <%-- Nhúng Sidebar --%>
     <jsp:include page="/WEB-INF/includes/admin-sidebar.jsp" />
 
-    <div class="main-content-wrapper">
-        <%-- Nhúng Header --%>
-        <jsp:include page="/WEB-INF/includes/admin-header.jsp" />
 
         <%-- Nội dung chính của trang Voucher List --%>
         <div class="content-area">
@@ -254,35 +254,34 @@
                 </div>
             </div>
         </div>
-    </div>
+    
 
     <%-- Link đến file JS dùng chung --%>
-    <script src="${pageContext.request.contextPath}/admin-dashboard/js/admin-js.js"></script>
+   <script src="${pageContext.request.contextPath}/admin-dashboard/js/admin-js.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
 
     <%-- Phần JS để active menu và xử lý modal --%>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Active menu logic
-            const currentAction = "${requestScope.currentAction}";
-            const currentModule = "${requestScope.currentModule}";
+       document.addEventListener('DOMContentLoaded', function() {
+    const currentAction = "${requestScope.currentAction}"; // Giá trị là "vouchers"
+    // Xóa các lớp active và menu-open hiện có
+    document.querySelectorAll('.sidebar-menu li.active').forEach(li => li.classList.remove('active'));
+    document.querySelectorAll('.sidebar-menu .treeview.menu-open').forEach(treeview => treeview.classList.remove('menu-open'));
 
-            document.querySelectorAll('.sidebar-menu li.active').forEach(li => li.classList.remove('active'));
-            document.querySelectorAll('.sidebar-menu .treeview.menu-open').forEach(treeview => treeview.classList.remove('menu-open'));
-
-            if (currentAction && currentModule) {
-                const activeLink = document.querySelector(`.sidebar-menu a[href*="${currentAction}"][href*="${currentModule}"]`);
-                if (activeLink) {
-                    activeLink.parentElement.classList.add('active');
-                    const parentTreeview = activeLink.closest('.treeview');
-                    if (parentTreeview) {
-                        parentTreeview.classList.add('active');
-                        parentTreeview.classList.add('menu-open');
-                    }
-                } else {
-                    console.warn('No matching link found for currentAction and currentModule');
-                }
+    if (currentAction) {
+        // Tìm thẻ <a> có href chứa một phần của currentAction
+        const activeLink = document.querySelector(`.sidebar-menu a[href*="${currentAction.toLowerCase()}"], .sidebar-menu a[href*="/voucher"]`);
+        if (activeLink) {
+            activeLink.parentElement.classList.add('active');
+            const parentTreeview = activeLink.closest('.treeview');
+            if (parentTreeview) {
+                parentTreeview.classList.add('active', 'menu-open');
             }
-        });
+        } else {
+            console.warn('No matching link found for currentAction: ' + currentAction);
+        }
+    }
+});
 
         // Modal handling functions
         function showVoucherDetails(button) {

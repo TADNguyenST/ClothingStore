@@ -29,6 +29,19 @@
         opacity: 0.5;
         pointer-events: none;
     }
+    .cart-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.1);
+        z-index: 1000;
+        display: none;
+    }
+    .cart-overlay.active {
+        display: block;
+    }
 </style>
 
 <div class="container my-5">
@@ -49,6 +62,8 @@
             <div class="d-flex"><div class="toast-body" id="errorToastBody"></div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
         </div>
     </div>
+
+    <div class="cart-overlay"></div>
 
     <c:if test="${empty cartItems}">
         <div class="text-center p-5 border rounded bg-light">
@@ -76,7 +91,7 @@
                                     <form class="d-flex justify-content-end align-items-center mb-2 update-quantity-form" data-cart-item-id="${item.cartItemId}" data-variant-id="${item.variantId}">
                                         <input type="hidden" name="action" value="update">
                                         <input type="hidden" name="cartItemId" value="${item.cartItemId}">
-                                        <input type="number" name="quantity" class="form-control form-control-sm quantity-input" value="${item.quantity}" min="1" max="${productDAO.getAvailableQuantityByVariantId(item.variantId)}" onchange="validateQuantity(this, ${item.cartItemId}, ${productDAO.getAvailableQuantityByVariantId(item.variantId)})">
+                                        <input type="number" name="quantity" class="form-control form-control-sm quantity-input" value="${item.quantity}" min="1" max="${productDAO.getAvailableQuantityByVariantId(item.variantId) > 0 ? productDAO.getAvailableQuantityByVariantId(item.variantId) : 1}" onchange="validateQuantity(this, ${item.cartItemId}, ${productDAO.getAvailableQuantityByVariantId(item.variantId)})">
                                         <button type="button" class="btn btn-sm btn-light ms-2" onclick="updateQuantity(${item.cartItemId}, ${item.variantId})" title="Update Quantity"><i class="fas fa-sync-alt"></i></button>
                                     </form>
                                     <button class="btn btn-link text-danger p-0 remove-item-btn" data-cart-item-id="${item.cartItemId}" data-bs-toggle="modal" data-bs-target="#removeItemModal">Remove</button>
@@ -132,54 +147,13 @@
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-0pUGZvbkm6XF6gxjEnlmuGrJXVbNuzT9qBBavbLwCsOGabYfZo0T0to5eqruptLy" crossorigin="anonymous"></script>
 <script>
                                             document.addEventListener('DOMContentLoaded', function () {
                                                 var toastSuccess = new bootstrap.Toast(document.getElementById('successToast'), {delay: 3000});
                                                 var toastError = new bootstrap.Toast(document.getElementById('errorToast'), {delay: 3000});
-                                                window.addToCart = function () {
-                                                    const select = document.getElementById("variantSelect");
-                                                    const selectedOption = select.options[select.selectedIndex];
-                                                    const available = parseInt(selectedOption.getAttribute('data-available')) || 0;
-                                                    if (available <= 0) {
-                                                        alert("This product is out of stock.");
-                                                        return;
-                                                    }
-                                                    const variantId = select.value;
-                                                    const quantity = document.getElementById("quantity").value;
+                                                var cartOverlay = document.querySelector('.cart-overlay');
 
-                                                    fetch('${pageContext.request.contextPath}/customer/cart', {
-                                                        method: 'POST',
-                                                        body: new URLSearchParams({
-                                                            action: 'add',
-                                                            variantId: variantId,
-                                                            quantity: quantity
-                                                        }),
-                                                        headers: {
-                                                            'Content-Type': 'application/x-www-form-urlencoded',
-                                                            'Accept': 'application/json'
-                                                        }
-                                                    })
-                                                            .then(response => {
-                                                                if (!response.ok)
-                                                                    throw new Error('Network response was not ok: ' + response.statusText);
-                                                                return response.json();
-                                                            })
-                                                            .then(result => {
-                                                                if (result.success) {
-                                                                    showToast(result.message, true);
-                                                                    setTimeout(() => {
-                                                                        window.location.href = '${pageContext.request.contextPath}/customer/cart';
-                                                                    }, 1000); // Đợi toast hiển thị trước khi chuyển hướng
-                                                                } else {
-                                                                    showToast(result.message || 'Failed to add to cart.', false);
-                                                                }
-                                                            })
-                                                            .catch(error => {
-                                                                console.error('Error adding to cart:', error);
-                                                                showToast('An error occurred while adding to cart: ' + error.message, false);
-                                                            });
-                                                };
                                                 function showToast(message, isSuccess) {
                                                     var toast = isSuccess ? toastSuccess : toastError;
                                                     var toastBody = document.getElementById(isSuccess ? 'successToastBody' : 'errorToastBody');
@@ -187,9 +161,20 @@
                                                     toast.show();
                                                 }
 
+                                                function showOverlay() {
+                                                    if (cartOverlay)
+                                                        cartOverlay.classList.add('active');
+                                                }
+
+                                                function hideOverlay() {
+                                                    if (cartOverlay)
+                                                        cartOverlay.classList.remove('active');
+                                                }
+
                                                 function validateQuantity(input, cartItemId, maxQuantity) {
                                                     var quantity = parseInt(input.value);
-                                                    if (quantity > maxQuantity) {
+                                                    console.log('Validating quantity:', quantity, 'for cartItemId:', cartItemId, 'max:', maxQuantity); // Debug
+                                                    if (isNaN(quantity) || quantity > maxQuantity) {
                                                         showToast('Requested quantity exceeds available stock: ' + maxQuantity, false);
                                                         input.value = maxQuantity > 0 ? maxQuantity : 1;
                                                     } else if (quantity < 1) {
@@ -200,11 +185,16 @@
 
                                                 function updateQuantity(cartItemId, variantId) {
                                                     var form = document.querySelector(`.update-quantity-form[data-cart-item-id="${cartItemId}"]`);
+                                                    if (!form) {
+                                                        console.error('Form not found for cartItemId:', cartItemId); // Debug
+                                                        return;
+                                                    }
                                                     var quantityInput = form.querySelector('input[name="quantity"]');
                                                     var quantity = parseInt(quantityInput.value);
                                                     var maxQuantity = parseInt(quantityInput.getAttribute('max'));
 
-                                                    if (quantity > maxQuantity) {
+                                                    console.log('Updating quantity for cartItemId:', cartItemId, 'with quantity:', quantity, 'max:', maxQuantity); // Debug
+                                                    if (isNaN(quantity) || quantity > maxQuantity) {
                                                         showToast('Requested quantity exceeds available stock: ' + maxQuantity, false);
                                                         quantityInput.value = maxQuantity > 0 ? maxQuantity : 1;
                                                         return;
@@ -215,7 +205,7 @@
                                                     }
 
                                                     var formData = new FormData(form);
-                                                    document.getElementById('cartItem-' + cartItemId).classList.add('cart-total-updating');
+                                                    showOverlay(); // Hiển thị overlay
                                                     fetch('${pageContext.request.contextPath}/customer/cart', {
                                                         method: 'POST',
                                                         body: new URLSearchParams(formData),
@@ -230,26 +220,33 @@
                                                                 return response.json();
                                                             })
                                                             .then(result => {
+                                                                console.log('Update response:', result); // Debug
                                                                 if (result.success) {
                                                                     var data = result.data;
-                                                                    var unitPrice = data.unitPrice || parseFloat(document.getElementById('unitPrice-' + cartItemId).textContent.replace(/[^\d.]/g, ''));
+                                                                    if (!data || !data.unitPrice || !data.subtotal) {
+                                                                        console.error('Missing data in response:', data); // Debug
+                                                                        showToast('Invalid response data.', false);
+                                                                        return;
+                                                                    }
+                                                                    var unitPrice = parseFloat(data.unitPrice);
                                                                     var totalPrice = unitPrice * quantity;
                                                                     document.getElementById('unitPrice-' + cartItemId).textContent = new Intl.NumberFormat('vi-VN', {style: 'currency', currency: 'VND'}).format(unitPrice);
                                                                     document.getElementById('totalPrice-' + cartItemId).textContent = new Intl.NumberFormat('vi-VN', {style: 'currency', currency: 'VND'}).format(totalPrice);
                                                                     document.getElementById('subtotal').textContent = new Intl.NumberFormat('vi-VN', {style: 'currency', currency: 'VND'}).format(data.subtotal);
                                                                     document.getElementById('total').textContent = new Intl.NumberFormat('vi-VN', {style: 'currency', currency: 'VND'}).format(data.subtotal);
                                                                     showToast(result.message, true);
+                                                                    updateCartCount(); // Cập nhật số lượng giỏ hàng
                                                                 } else {
                                                                     showToast(result.message || 'Failed to update quantity.', false);
                                                                     quantityInput.value = parseInt('${item.quantity}'); // Reset
                                                                 }
-                                                                document.getElementById('cartItem-' + cartItemId).classList.remove('cart-total-updating');
+                                                                hideOverlay(); // Ẩn overlay
                                                             })
                                                             .catch(error => {
                                                                 console.error('Error updating quantity:', error);
                                                                 showToast('An error occurred while updating quantity: ' + error.message, false);
                                                                 quantityInput.value = parseInt('${item.quantity}'); // Reset
-                                                                document.getElementById('cartItem-' + cartItemId).classList.remove('cart-total-updating');
+                                                                hideOverlay(); // Ẩn overlay
                                                             });
                                                 }
 
@@ -262,7 +259,8 @@
 
                                                 document.getElementById('confirmRemoveBtn').addEventListener('click', function () {
                                                     if (removeItemId) {
-                                                        document.getElementById('cartItem-' + removeItemId).classList.add('cart-total-updating');
+                                                        var cartItemElement = document.getElementById('cartItem-' + removeItemId);
+                                                        showOverlay(); // Hiển thị overlay
                                                         fetch('${pageContext.request.contextPath}/customer/cart', {
                                                             method: 'POST',
                                                             body: new URLSearchParams({action: 'remove', cartItemId: removeItemId}),
@@ -278,22 +276,23 @@
                                                                 })
                                                                 .then(result => {
                                                                     if (result.success) {
-                                                                        document.getElementById('cartItem-' + removeItemId).remove();
+                                                                        if (cartItemElement)
+                                                                            cartItemElement.remove();
                                                                         document.getElementById('subtotal').textContent = new Intl.NumberFormat('vi-VN', {style: 'currency', currency: 'VND'}).format(result.data.subtotal);
                                                                         document.getElementById('total').textContent = new Intl.NumberFormat('vi-VN', {style: 'currency', currency: 'VND'}).format(result.data.subtotal);
                                                                         showToast(result.message, true);
                                                                         if (document.querySelectorAll('.card.mb-3').length === 0) {
-                                                                            window.location.reload(); // Reload nếu giỏ hàng trống
+                                                                            window.location.href = '${pageContext.request.contextPath}/customer/cart'; // Reload trang nếu giỏ hàng trống
                                                                         }
                                                                     } else {
                                                                         showToast(result.message || 'Failed to remove item.', false);
                                                                     }
-                                                                    document.getElementById('cartItem-' + removeItemId).classList.remove('cart-total-updating');
+                                                                    hideOverlay(); // Ẩn overlay
                                                                 })
                                                                 .catch(error => {
                                                                     console.error('Error removing item:', error);
                                                                     showToast('An error occurred while removing item: ' + error.message, false);
-                                                                    document.getElementById('cartItem-' + removeItemId).classList.remove('cart-total-updating');
+                                                                    hideOverlay(); // Ẩn overlay
                                                                 });
                                                         bootstrap.Modal.getInstance(document.getElementById('removeItemModal')).hide();
                                                     }

@@ -12,7 +12,7 @@ public class FeedbackDAO {
         String sql = "SELECT AVG(rating * 1.0) AS average_rating "
                 + "FROM feedbacks "
                 + "WHERE product_id = ? AND visibility = 'Public' AND is_verified = 1";
-        try ( Connection con = DBContext.getNewConnection();  PreparedStatement ps = con.prepareStatement(sql)) {
+        try ( Connection con = new DBContext().getConnection();  PreparedStatement ps = con.prepareStatement(sql)) {
 
             ps.setLong(1, productId);
             ResultSet rs = ps.executeQuery();
@@ -28,7 +28,7 @@ public class FeedbackDAO {
     public List<Feedback> getAllFeedbacks() {
         List<Feedback> list = new ArrayList<>();
         String sql = "SELECT * FROM feedbacks";
-        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql);  ResultSet rs = ps.executeQuery()) {
+        try ( Connection conn = new DBContext().getConnection();  PreparedStatement ps = conn.prepareStatement(sql);  ResultSet rs = ps.executeQuery()) {
 
             while (rs.next()) {
                 list.add(mapResultSetToFeedback(rs));
@@ -44,7 +44,7 @@ public class FeedbackDAO {
         String sql = "INSERT INTO feedbacks "
                 + "(product_id, customer_id, order_id, rating, comments, creation_date, visibility, is_verified) "
                 + "VALUES (?, ?, ?, ?, ?, GETDATE(), ?, ?)";
-        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+        try ( Connection conn = new DBContext().getConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setLong(1, fb.getProductId());
             ps.setLong(2, fb.getCustomerId());
@@ -64,7 +64,7 @@ public class FeedbackDAO {
         List<Feedback> list = new ArrayList<>();
         String sql = "SELECT * FROM feedbacks "
                 + "WHERE product_id = ? AND is_verified = 1 AND visibility = 'Public'";
-        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+        try ( Connection conn = new DBContext().getConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setLong(1, productId);
             try ( ResultSet rs = ps.executeQuery()) {
@@ -81,7 +81,7 @@ public class FeedbackDAO {
 
     public Feedback getFeedbackById(long feedbackId) {
         String sql = "SELECT * FROM feedbacks WHERE feedback_id = ?";
-        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+        try ( Connection conn = new DBContext().getConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setLong(1, feedbackId);
             try ( ResultSet rs = ps.executeQuery()) {

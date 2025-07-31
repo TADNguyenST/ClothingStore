@@ -23,6 +23,7 @@ public class ProductListController extends HttpServlet {
 
     private final ProductDAO productDAO = new ProductDAO();
     private final CategoryDAO categoryDAO = new CategoryDAO();
+    private static final int PAGE_SIZE = 6; // Updated to 6 products per page
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -89,7 +90,7 @@ public class ProductListController extends HttpServlet {
                                 .append("</div>");
                     }
                 } else {
-                    html.append("<div class='p-2 text-muted'>Không tìm thấy sản phẩm</div>");
+                    html.append("<div class='p-2 text-muted'>No products found</div>");
                 }
                 response.getWriter().write(html.toString());
                 return;
@@ -265,7 +266,7 @@ public class ProductListController extends HttpServlet {
                     + ", priceRange=" + priceRange + ", brandIds=" + brandIdList
                     + ", parentCategoryId=" + parentCategoryId + ", categoryId=" + categoryId + ", sort=" + sort);
 
-            // Fetch products with sorting
+            // Fetch products with sorting and correct page size
             List<Product> products = productDAO.filterProductsForShopWithSort(
                     colorList.isEmpty() ? null : colorList,
                     sizeList.isEmpty() ? null : sizeList,
@@ -274,11 +275,11 @@ public class ProductListController extends HttpServlet {
                     parentCategoryId,
                     categoryId,
                     currentPage,
-                    9,
+                    PAGE_SIZE, // Updated to use the constant PAGE_SIZE (6)
                     sort
             );
 
-            // Tính availableQuantity cho từng sản phẩm và lưu vào Map
+            // Calculate available quantity for each product and store in Map
             Map<Long, Integer> availableMap = new HashMap<>();
             for (Product product : products) {
                 Long variantId = product.getDefaultVariantId();
@@ -295,7 +296,7 @@ public class ProductListController extends HttpServlet {
                     parentCategoryId,
                     categoryId
             );
-            int totalPages = (int) Math.ceil((double) totalProducts / 9.0);
+            int totalPages = (int) Math.ceil((double) totalProducts / PAGE_SIZE); // Updated to use PAGE_SIZE (6)
             if (totalPages < 1) {
                 totalPages = 1;
             }

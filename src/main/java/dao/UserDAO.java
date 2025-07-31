@@ -180,4 +180,38 @@ public class UserDAO extends DBContext {
         }
         return null;
     }
+    //GoogleLogin
+
+// Thêm người dùng bằng Google (không có mật khẩu)
+    public long insertGoogleUser(String email, String fullName) {
+        String sql = "INSERT INTO users (email, full_name, status, role, created_at) VALUES (?, ?, 'Active', 'Customer', GETDATE())";
+        try ( Connection conn = getConnection();  PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            ps.setString(1, email);
+            ps.setString(2, fullName);
+            int rows = ps.executeUpdate();
+            if (rows > 0) {
+                ResultSet rs = ps.getGeneratedKeys();
+                if (rs.next()) {
+                    return rs.getLong(1); // Trả về user_id mới được tạo
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return -1; // Thêm thất bại
+    }
+
+    public Users getUserByEmailGoogle(String email) {
+        String sql = "SELECT * FROM users WHERE email = ? AND status = 'Active'";
+        try ( Connection conn = getConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, email);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                return map(rs);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
 }

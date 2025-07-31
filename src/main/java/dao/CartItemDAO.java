@@ -61,26 +61,41 @@ public class CartItemDAO {
     public CartItem findCartItem(long customerId, long cartItemId) {
         String sql = "SELECT ci.cart_item_id, ci.customer_id, ci.variant_id, ci.quantity, ci.date_added "
                 + "FROM cart_items ci WHERE ci.customer_id = ? AND ci.cart_item_id = ?";
-        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setLong(1, customerId);
-            ps.setLong(2, cartItemId);
-            try ( ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    CartItem item = new CartItem();
-                    item.setCartItemId(rs.getLong("cart_item_id"));
-                    item.setCustomerId(rs.getLong("customer_id"));
-                    item.setVariantId(rs.getLong("variant_id"));
-                    item.setQuantity(rs.getInt("quantity"));
-                    item.setDateAdded(rs.getTimestamp("date_added"));
-                    LOGGER.log(Level.INFO, "Found cart item with ID: {0} for customerId: {1}", new Object[]{cartItemId, customerId});
-                    return item;
+        try ( Connection conn = DBContext.getNewConnection()) {
+            if (conn == null) {
+                LOGGER.log(Level.SEVERE, "Database connection is null for customerId: " + customerId + ", cartItemId: " + cartItemId, new SQLException("Failed to establish database connection"));
+                throw new SQLException("Failed to establish database connection");
+            }
+            try ( PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setLong(1, customerId);
+                ps.setLong(2, cartItemId);
+                try ( ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        CartItem item = new CartItem();
+                        item.setCartItemId(rs.getLong("cart_item_id"));
+                        item.setCustomerId(rs.getLong("customer_id"));
+                        long variantId = rs.getLong("variant_id");
+                        if (rs.wasNull()) {
+                            LOGGER.warning("variant_id is NULL for cartItemId: " + cartItemId + ", customerId: " + customerId);
+                            item.setVariantId(0L); // Gán giá trị mặc định nếu NULL
+                        } else {
+                            item.setVariantId(variantId);
+                        }
+                        item.setQuantity(rs.getInt("quantity"));
+                        item.setDateAdded(rs.getTimestamp("date_added"));
+                        LOGGER.log(Level.INFO, "Found cart item with ID: {0} for customerId: {1}, variantId: {2}",
+                                new Object[]{cartItemId, customerId, item.getVariantId()});
+                        return item;
+                    } else {
+                        LOGGER.warning("No cart item found with ID: " + cartItemId + " for customerId: " + customerId);
+                        return null;
+                    }
                 }
             }
         } catch (SQLException ex) {
-            LOGGER.log(Level.SEVERE, "Error finding cart item with ID: {0} for customerId: {1}", new Object[]{cartItemId, customerId});
+            LOGGER.log(Level.SEVERE, "Error finding cart item with ID: " + cartItemId + " for customerId: " + customerId, ex);
             throw new RuntimeException("Failed to find cart item", ex);
         }
-        return null;
     }
 
     public void addToCart(long customerId, long variantId, int quantity) {

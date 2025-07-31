@@ -1,3 +1,4 @@
+<%@ page isELIgnored="false" %>
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt" %>
@@ -10,7 +11,6 @@
 <html lang="en">
     <head>
         <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>${pageTitle} - Admin Panel</title>
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
@@ -18,88 +18,56 @@
         <link rel="stylesheet" href="${pageContext.request.contextPath}/admin-dashboard/css/admin-css.css">
         <style>
             body {
-                background-color: #f5f7fa;
-                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            }
-            .main-content-wrapper {
-                padding: 20px;
-                max-width: 1200px;
-                margin: 0 auto;
+                background-color: #f4f6f9;
             }
             .content-area {
-                background: white;
-                border-radius: 10px;
-                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-                padding: 20px;
+                padding: 24px;
             }
-            .box-header {
+            .page-header {
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                padding-bottom: 15px;
-                border-bottom: 1px solid #e9ecef;
-            }
-            .box-title {
-                font-size: 1.5rem;
-                font-weight: 600;
-                color: #2c3e50;
-            }
-            .table th {
-                background-color: #f8f9fa;
-                color: #495057;
-                font-weight: 500;
-            }
-            .table-hover tbody tr:hover {
-                background-color: #f1f3f5;
-            }
-            .btn-info {
-                background-color: #17a2b8;
-                border: none;
-                padding: 6px 12px;
-                border-radius: 5px;
-                font-size: 0.85rem;
-                transition: background-color 0.2s;
-            }
-            .btn-info:hover {
-                background-color: #138496;
-            }
-            .badge {
-                font-size: 0.85rem;
-                padding: 6px 12px;
-                border-radius: 12px;
-            }
-            .search-container {
-                max-width: 300px;
-            }
-            .filter-container {
-                max-width: 250px;
-            }
-            .pagination {
-                margin-top: 20px;
-            }
-            .page-link {
-                border-radius: 5px;
-                color: #007bff;
-            }
-            .page-item.active .page-link {
-                background-color: #007bff;
-                border-color: #007bff;
-            }
-            #dateRangePicker {
-                width: 100%;
-                border-radius: 5px;
-            }
-            .time-period-display {
-                font-size: 1rem;
-                color: #495057;
-                margin-bottom: 15px;
-                background-color: #e9ecef;
-                padding: 10px;
-                border-radius: 5px;
-            }
-            .daterangepicker .ranges li.active {
-                background-color: #007bff;
+                padding: 16px 24px;
+                background-color: #4A90E2;
                 color: white;
+                border-radius: 8px;
+                margin-bottom: 24px;
+            }
+            .filter-form {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 15px;
+                align-items: flex-end;
+                padding: 20px;
+                background-color: #ffffff;
+                border-radius: 8px;
+                margin-bottom: 24px;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            }
+            .results-container {
+                background-color: #ffffff;
+                padding: 24px;
+                border-radius: 8px;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            }
+            .table thead th {
+                background-color: #f8f9fa;
+            }
+            .accordion-button:not(.collapsed) {
+                background-color: #e7f1ff;
+                color: #0c63e4;
+            }
+            .loading-overlay {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(255, 255, 255, 0.7);
+                z-index: 10;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
         </style>
     </head>
@@ -108,244 +76,310 @@
         <div class="main-content-wrapper">
             <jsp:include page="/WEB-INF/includes/admin-header.jsp"/>
             <main class="content-area">
-                <div class="box">
-                    <div class="box-header">
-                        <h3 class="box-title">Inventory Change History</h3>
+                <div class="page-header"><h3>Inventory Change History</h3></div>
+
+                <form id="filterForm" class="filter-form">
+                    <div>
+                        <label for="dateRangePicker" class="form-label fw-bold">Date Range</label>
+                        <input type="text" id="dateRangePicker" class="form-control">
+                        <input type="hidden" name="startDate" id="startDate" value="${startDate}">
+                        <input type="hidden" name="endDate" id="endDate" value="${endDate}">
                     </div>
-                    <div class="box-body">
-                        <div class="d-flex justify-content-between mb-4">
-                            <div class="filter-container">
-                                <input type="text" id="dateRangePicker" class="form-control" placeholder="Select time period...">
-                            </div>
-                            <div class="search-container">
-                                <input type="text" id="searchInput" class="form-control" placeholder="Search by product or SKU..." onkeyup="filterTable()">
-                            </div>
-                            <div class="filter-container">
-                                <select name="filterType" id="filterType" class="form-select" onchange="applyTypeFilter()">
-                                    <option value="all" ${empty param.filterType || param.filterType == 'all' ? 'selected' : ''}>-- All Change Types --</option>
-                                    <option value="In" ${param.filterType == 'In' ? 'selected' : ''}>Stock In</option>
-                                    <option value="Out" ${param.filterType == 'Out' ? 'selected' : ''}>Stock Out</option>
-                                    <option value="Adjustment" ${param.filterType == 'Adjustment' ? 'selected' : ''}>Adjustment</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="table-responsive">
-                            <table class="table table-bordered table-striped table-sm" id="movementTable">
-                                <thead>
-                                    <tr>
-                                        <th>Timestamp</th>
-                                        <th>Product</th>
-                                        <th>SKU</th>
-                                        <th>Change Type</th>
-                                        <th>Quantity</th>
-                                        <th>Notes</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <c:forEach var="move" items="${movementList}">
-                                        <tr>
-                                            <td>
-                                                <c:if test="${not empty move.createdAt}">
-                                                    <fmt:parseDate value="${move.createdAt}" pattern="yyyy-MM-dd'T'HH:mm:ss" var="parsedDateTime" type="both"/>
-                                                    <fmt:formatDate value="${parsedDateTime}" pattern="HH:mm:ss dd/MM/yyyy"/>
-                                                </c:if>
-                                            </td>
-                                            <td><c:out value="${move.productName}"/> (<c:out value="${move.size}"/>, <c:out value="${move.color}"/>)</td>
-                                            <td><c:out value="${move.sku}"/></td>
-                                            <td>
-                                                <c:choose>
-                                                    <c:when test="${move.movementType == 'In'}"><span class="badge bg-success">Stock In</span></c:when>
-                                                    <c:when test="${move.movementType == 'Out'}"><span class="badge bg-danger">Stock Out</span></c:when>
-                                                    <c:when test="${move.movementType == 'Adjustment'}"><span class="badge bg-warning text-dark">Adjustment</span></c:when>
-                                                    <c:otherwise><c:out value="${move.movementType}"/></c:otherwise>
-                                                </c:choose>
-                                            </td>
-                                            <td>
-                                                <strong class="${move.quantityChanged > 0 ? 'text-success' : 'text-danger'}">
-                                                    ${move.quantityChanged > 0 ? '+' : ''}<c:out value="${move.quantityChanged}"/>
-                                                </strong>
-                                            </td>
-                                            <td><c:out value="${move.notes}"/></td>
-                                            <td>
-                                                <a href="${pageContext.request.contextPath}/StockDetail?variantId=${move.variantId}" class="btn btn-info btn-xs ms-1">
-                                                    <i class="fa-solid fa-eye"></i> Details
-                                                </a>
-                                            </td>
-                                        </tr>
+                    <div>
+                        <label for="groupBy" class="form-label fw-bold">Change Type</label>
+                        <select name="groupBy" id="groupBy" class="form-select">
+                            <option value="all_references" ${groupBy == 'all_references' ? 'selected' : ''}>All References</option>
+                            <option value="purchase_order" ${groupBy == 'purchase_order' ? 'selected' : ''}>Purchase Order</option>
+                            <option value="sale_order" ${groupBy == 'sale_order' ? 'selected' : ''}>Sale Order</option>
+                            <option value="adjustment" ${groupBy == 'adjustment' ? 'selected' : ''}>Adjustment</option>
+                        </select>
+                    </div>
+                    <div class="flex-grow-1">
+                        <label for="searchInput" class="form-label fw-bold">Search Product/SKU</label>
+                        <input type="text" id="searchInput" name="searchTerm" class="form-control" placeholder="Enter product name or SKU..." value="${searchTerm}">
+                    </div>
+                    <div class="ms-auto">
+                        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-search"></i> Apply</button>
+                        <a href="StockMovement" class="btn btn-secondary"><i class="fa-solid fa-eraser"></i> Clear</a>
+                    </div>
+                </form>
+
+                <div class="results-container position-relative">
+                    <div id="loadingOverlay" class="loading-overlay d-none">
+                        <div class="spinner-border text-primary" role="status"></div>
+                    </div>
+                    <p id="resultsCount" class="mb-3">Total Records: <strong id="totalRecords">${totalRecords}</strong></p>
+                    <div id="resultsContent">
+                        <c:choose>
+                            <c:when test="${not empty groupBy && groupBy ne 'none'}">
+                                <div class="accordion">
+                                    <c:forEach var="entry" items="${groupedData}" varStatus="loop">
+                                        <div class="accordion-item">
+                                            <h2 class="accordion-header">
+                                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-${loop.index}">
+                                                    <strong>Order/Ref: ${entry.key}</strong>&nbsp;(${entry.value.size()} items)
+                                                </button>
+                                            </h2>
+                                            <div id="collapse-${loop.index}" class="accordion-collapse collapse">
+                                                <div class="accordion-body">
+                                                    <ul class="list-group">
+                                                        <c:forEach var="move" items="${entry.value}">
+                                                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                                <div>
+                                                                    <strong>${move.productName}</strong> (${move.sku})
+                                                                    <br><small class="text-muted">${move.size}, ${move.color}</small>
+                                                                </div>
+                                                                <span class="badge ${move.quantityChanged > 0 ? 'text-success' : 'text-danger'} rounded-pill">
+                                                                    ${move.quantityChanged > 0 ? '+' : ''}${move.quantityChanged}
+                                                                </span>
+                                                            </li>
+                                                        </c:forEach>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </c:forEach>
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <nav aria-label="Page navigation">
-                            <ul class="pagination justify-content-center">
-
-                                <%-- Nút Previous --%>
-                                <c:url var="prevUrl" value="StockMovement">
-                                    <c:param name="page" value="${currentPage - 1}"/>
-                                    <c:if test="${not empty param.startDate}"><c:param name="startDate" value="${param.startDate}"/></c:if>
-                                    <c:if test="${not empty param.endDate}"><c:param name="endDate" value="${param.endDate}"/></c:if>
-                                </c:url>
-                                <li class="page-item ${currentPage == 1 ? 'disabled' : ''}">
-                                    <a class="page-link" href="${prevUrl}">Previous</a>
-                                </li>
-
-                                <%-- Các nút số trang --%>
-                                <c:forEach begin="1" end="${totalPages}" var="i">
-                                    <c:url var="pageUrl" value="StockMovement">
-                                        <c:param name="page" value="${i}"/>
-                                        <c:if test="${not empty param.startDate}"><c:param name="startDate" value="${param.startDate}"/></c:if>
-                                        <c:if test="${not empty param.endDate}"><c:param name="endDate" value="${param.endDate}"/></c:if>
-                                    </c:url>
-                                    <li class="page-item ${currentPage == i ? 'active' : ''}">
-                                        <a class="page-link" href="${pageUrl}">${i}</a>
-                                    </li>
-                                </c:forEach>
-
-                                <%-- Nút Next --%>
-                                <c:url var="nextUrl" value="StockMovement">
-                                    <c:param name="page" value="${currentPage + 1}"/>
-                                    <c:if test="${not empty param.startDate}"><c:param name="startDate" value="${param.startDate}"/></c:if>
-                                    <c:if test="${not empty param.endDate}"><c:param name="endDate" value="${param.endDate}"/></c:if>
-                                    <c:if test="${not empty param.filterType}"><c:param name="filterType" value="${param.filterType}"/></c:if>
-                                </c:url>
-                                <li class="page-item ${currentPage == totalPages ? 'disabled' : ''}">
-                                    <a class="page-link" href="${nextUrl}">Next</a>
-                                </li>
-                            </ul>
-                        </nav>
+                                </div>
+                            </c:when>
+                            <c:otherwise>
+                                <table class="table table-striped table-hover">
+                                    <thead><tr><th>Timestamp</th><th>Product</th><th>SKU</th><th>Type</th><th>Quantity</th><th>Notes</th><th>Staff</th><th>Action</th></tr></thead>
+                                    <tbody>
+                                        <c:forEach var="move" items="${movementList}">
+                                            <%-- Trong vòng lặp c:forEach của file stock-movements.jsp --%>
+                                            <tr>
+                                                <td><c:out value="${move.createdAtFormatted}" default="N/A"/></td>
+                                                <td>
+                                                    <c:out value="${move.productName}" default="Unknown"/> 
+                                                    (<c:out value="${move.size}" default="N/A"/>, <c:out value="${move.color}" default="N/A"/>)
+                                                </td>
+                                                <td><c:out value="${move.sku}" default="N/A"/></td>
+                                                <td>
+                                                    <c:if test="${not empty move.movementType}">
+                                                        <span class="badge bg-info"><c:out value="${move.movementType}"/></span>
+                                                    </c:if>
+                                                </td>
+                                                <td>
+                                                    <strong class="${move.quantityChanged > 0 ? 'text-success' : 'text-danger'}">
+                                                        ${move.quantityChanged > 0 ? '+' : ''}<c:out value="${move.quantityChanged}"/>
+                                                    </strong>
+                                                </td>
+                                                <td><c:out value="${move.notes}" default=""/></td>
+                                                <td><c:out value="${move.staffName}" default="System"/></td>
+                                                <td>
+                                                    <a href="${pageContext.request.contextPath}/StockDetail?variantId=${move.variantId}" class="btn btn-sm btn-outline-primary">Details</a>
+                                                </td>
+                                            </tr>
+                                        </c:forEach>
+                                    </tbody>
+                                </table>
+                            </c:otherwise>
+                        </c:choose>
                     </div>
+                    <nav id="paginationContainer" class="mt-4 d-flex justify-content-center"></nav>
                 </div>
+
             </main>
         </div>
+
         <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script> 
         <script src="${pageContext.request.contextPath}/admin-dashboard/js/admin-js.js"></script>
+
         <script>
-                                    // Hàm filter table bằng ô tìm kiếm (giữ nguyên)
+            document.addEventListener('DOMContentLoaded', function () {
+                // --- KHAI BÁO BIẾN ---
+                var contextPath = '${pageContext.request.contextPath}';
+                var filterForm = document.getElementById('filterForm');
+                var resultsContent = document.getElementById('resultsContent');
+                var paginationContainer = document.getElementById('paginationContainer');
+                var totalRecordsSpan = document.getElementById('totalRecords');
+                var loadingOverlay = document.getElementById('loadingOverlay');
 
-                                    function filterTable() {
-                                        const searchInput = document.getElementById('searchInput').value.toLowerCase();
-                                        const table = document.getElementById('movementTable');
-                                        const rows = table.getElementsByTagName('tr');
+                // --- HÀM GỌI AJAX ---
+                function performFilter(page) {
+                    if (page === void 0) {
+                        page = 1;
+                    }
+                    var params = new URLSearchParams(new FormData(filterForm));
+                    params.append('ajax', 'true');
+                    params.set('page', page);
 
-                                        for (let i = 1; i < rows.length; i++) {
-                                            const cells = rows[i].getElementsByTagName('td');
-                                            let match = false;
-                                            // Chỉ tìm kiếm ở cột Product và SKU (cột thứ 2 và 3)
-                                            for (let j of [1, 2]) {
-                                                if (cells[j].textContent.toLowerCase().includes(searchInput)) {
-                                                    match = true;
-                                                    break;
-                                                }
-                                            }
-                                            rows[i].style.display = match ? '' : 'none';
-                                        }
-                                    }
-                                    function applyTypeFilter() {
-                                        const selectedType = document.getElementById('filterType').value;
+                    loadingOverlay.classList.remove('d-none');
+                    var url = contextPath + '/StockMovement?' + params.toString();
 
-                                        // Lấy các tham số hiện tại trên URL
-                                        const urlParams = new URLSearchParams(window.location.search);
+                    console.log("Requesting URL:", url); // DEBUG: In ra URL đang được gọi
 
-                                        // Đặt lại trang về 1 khi áp dụng bộ lọc mới
-                                        urlParams.set('page', '1');
+                    fetch(url)
+                            .then(function (response) {
+                                if (!response.ok) {
+                                    throw new Error('Network response was not ok. Status: ' + response.status);
+                                }
+                                return response.json();
+                            })
+                            .then(function (result) {
+                                console.log("Received data from server:", result); // DEBUG: In ra dữ liệu nhận được
 
-                                        // Cập nhật hoặc xóa tham số filterType
-                                        if (selectedType && selectedType !== 'all') {
-                                            urlParams.set('filterType', selectedType);
-                                        } else {
-                                            urlParams.delete('filterType');
-                                        }
+                                totalRecordsSpan.textContent = result.totalRecords;
 
-                                        // Chuyển hướng đến URL mới
-                                        window.location.href = window.location.pathname + '?' + urlParams.toString();
-                                    }
+                                if (result.viewMode === 'grouped') {
+                                    renderGroupedView(result.data);
+                                    // Khi group by, không hiển thị phân trang
+                                    paginationContainer.innerHTML = '';
+                                } else {
+                                    renderListView(result.data);
+                                    updatePagination(result.currentPage, result.totalPages);
+                                }
+                            })
+                            .catch(function (error) {
+                                console.error('Filter error:', error);
+                                resultsContent.innerHTML = '<div class="alert alert-danger">Failed to load data. Please try again.</div>';
+                            })
+                            .finally(function () {
+                                loadingOverlay.classList.add('d-none');
+                            });
+                }
 
+                // --- CÁC HÀM RENDER ---
+                function renderListView(movements) {
+                    var tableHeader = '<table class="table table-striped table-hover">' +
+                            '<thead><tr><th>Timestamp</th><th>Product</th><th>SKU</th><th>Type</th><th>Quantity</th><th>Notes</th><th>Staff</th><th>Action</th></tr></thead>' +
+                            '<tbody>';
+                    var tableFooter = '</tbody></table>';
+                    var tableRows = '';
 
-                                    // Khởi tạo và xử lý DateRangePicker
-                                    $(function () {
-                                        // Lấy các tham số ngày tháng từ URL hiện tại (nếu có)
-                                        const urlParams = new URLSearchParams(window.location.search);
-                                        const startDateParam = urlParams.get('startDate');
-                                        const endDateParam = urlParams.get('endDate');
+                    if (movements && movements.length > 0) {
+                        movements.forEach(function (move) {
+                            var quantityClass = move.quantityChanged > 0 ? 'text-success' : 'text-danger';
+                            var quantityPrefix = move.quantityChanged > 0 ? '+' : '';
 
-                                        // Khởi tạo DateRangePicker
-                                        $('#dateRangePicker').daterangepicker({
-                                            opens: 'left',
-                                            locale: {
-                                                format: 'DD/MM/YYYY',
-                                                cancelLabel: 'Clear'
-                                            },
-                                            ranges: {
-                                                'Today': [moment(), moment()],
-                                                'Last 7 Days': [moment().subtract(6, 'days'), moment()],
-                                                'Last 30 Days': [moment().subtract(29, 'days'), moment()],
-                                                'This Month': [moment().startOf('month'), moment().endOf('month')],
-                                                'Last Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
-                                            },
-                                            autoUpdateInput: false,
-                                            showDropdowns: true
-                                        });
+                            tableRows += '<tr>' +
+                                    '<td>' + (move.createdAtFormatted || '') + '</td>' +
+                                    '<td>' + (move.productName || 'N/A') + ' (' + (move.size || 'N/A') + ', ' + (move.color || 'N/A') + ')</td>' +
+                                    '<td>' + (move.sku || '') + '</td>' +
+                                    '<td><span class="badge bg-info">' + (move.movementType || '') + '</span></td>' +
+                                    '<td><strong class="' + quantityClass + '">' + quantityPrefix + move.quantityChanged + '</strong></td>' +
+                                    '<td>' + (move.notes || '') + '</td>' +
+                                    '<td>' + (move.staffName || 'System') + '</td>' +
+                                    '<td><a href="' + contextPath + '/StockDetail?variantId=' + move.variantId + '" class="btn btn-sm btn-outline-primary">Details</a></td>' +
+                                    '</tr>';
+                        });
+                    } else {
+                        tableRows = '<tr><td colspan="8" class="text-center p-4">No movements found for the selected criteria.</td></tr>';
+                    }
 
-                                        // Hàm cập nhật dòng chữ hiển thị khoảng thời gian
-                                        function updateTimePeriodDisplay(start, end) {
-                                            let displayText = 'All Time';
-                                            if (start && end) {
-                                                displayText = `${start.format('DD/MM/YYYY')} - ${end.format('DD/MM/YYYY')}`;
-                                                            }
-                                                            $('#timePeriodDisplay').text(`Showing results for: ${displayText}`);
-                                                        }
+                    resultsContent.innerHTML = tableHeader + tableRows + tableFooter;
+                }
 
-                                                        // Thiết lập giá trị ban đầu cho date picker nếu có trong URL
-                                                        if (startDateParam && endDateParam) {
-                                                            const start = moment(startDateParam, 'YYYY-MM-DD');
-                                                            const end = moment(endDateParam, 'YYYY-MM-DD');
-                                                            $('#dateRangePicker').val(start.format('DD/MM/YYYY') + ' - ' + end.format('DD/MM/YYYY'));
-                                                            updateTimePeriodDisplay(start, end);
-                                                        } else {
-                                                            updateTimePeriodDisplay(null, null);
-                                                        }
+                function renderGroupedView(groupedData) {
+                    if (!groupedData || Object.keys(groupedData).length === 0) {
+                        resultsContent.innerHTML = '<p class="text-center p-4">No data found for the selected grouping criteria.</p>';
+                        return;
+                    }
 
-                                                        // Xử lý sự kiện khi người dùng chọn ngày và bấm "Apply"
-                                                        $('#dateRangePicker').on('apply.daterangepicker', function (ev, picker) {
-                                                            const startDate = picker.startDate.format('YYYY-MM-DD');
-                                                            const endDate = picker.endDate.format('YYYY-MM-DD');
+                    var html = '<div class="accordion">';
+                    var index = 0;
+                    for (var groupKey in groupedData) {
+                        if (groupedData.hasOwnProperty(groupKey)) {
+                            var movements = groupedData[groupKey];
+                            var collapseId = 'collapse-' + index;
 
-                                                            // Lấy giá trị filterType hiện tại
-                                                            const filterType = $('#filterType').val();
+                            var listItemsHtml = movements.map(function (move) {
+                                var quantityClass = move.quantityChanged > 0 ? 'text-success' : 'text-danger';
+                                var quantityPrefix = move.quantityChanged > 0 ? '+' : '';
+                                return (
+                                        '<li class="list-group-item d-flex justify-content-between align-items-center">' +
+                                        '    <div>' +
+                                        '        <strong>' + (move.productName || '') + '</strong> (' + (move.sku || '') + ')' +
+                                        '        <br><small class="text-muted">' + (move.size || '') + ', ' + (move.color || '') + '</small>' +
+                                        '    </div>' +
+                                        '    <span class="badge ' + quantityClass + ' rounded-pill">' + quantityPrefix + move.quantityChanged + '</span>' +
+                                        '</li>'
+                                        );
+                            }).join('');
 
-                                                            // Xây dựng URL mới, giữ lại filterType nếu có
-                                                            const currentParams = new URLSearchParams(window.location.search);
-                                                            currentParams.set('page', '1');
-                                                            currentParams.set('startDate', startDate);
-                                                            currentParams.set('endDate', endDate);
+                            html +=
+                                    '<div class="accordion-item">' +
+                                    '    <h2 class="accordion-header">' +
+                                    '        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#' + collapseId + '">' +
+                                    '            <strong>Order/Ref: ' + groupKey + '</strong>&nbsp;<span class="badge bg-secondary ms-2">' + movements.length + ' items</span>' +
+                                    '        </button>' +
+                                    '    </h2>' +
+                                    '    <div id="' + collapseId + '" class="accordion-collapse collapse">' +
+                                    '        <div class="accordion-body">' +
+                                    '            <ul class="list-group">' + listItemsHtml + '</ul>' +
+                                    '        </div>' +
+                                    '    </div>' +
+                                    '</div>';
+                            index++;
+                        }
+                    }
+                    html += '</div>';
+                    resultsContent.innerHTML = html;
+                }
 
-                                                            if (filterType && filterType !== 'all') {
-                                                                currentParams.set('filterType', filterType);
-                                                            } else {
-                                                                currentParams.delete('filterType');
-                                                            }
+                function updatePagination(cPage, tPages) {
+                    paginationContainer.innerHTML = '';
+                    if (tPages > 1) {
+                        var html = '<ul class="pagination">';
+                        // Nút Previous
+                        html += '<li class="page-item ' + (cPage === 1 ? 'disabled' : '') + '"><a class="page-link" href="#" data-page="' + (cPage - 1) + '">&laquo;</a></li>';
 
-                                                            window.location.href = window.location.pathname + '?' + currentParams.toString();
-                                                        });
+                        // Các nút số trang
+                        for (var i = 1; i <= tPages; i++) {
+                            html += '<li class="page-item ' + (i === cPage ? 'active' : '') + '"><a class="page-link" href="#" data-page="' + i + '">' + i + '</a></li>';
+                        }
 
-                                                        // Xử lý sự kiện khi người dùng bấm "Cancel" hoặc "Clear"
-                                                        $('#dateRangePicker').on('cancel.daterangepicker', function (ev, picker) {
-                                                            $(this).val('');
+                        // Nút Next
+                        html += '<li class="page-item ' + (cPage === tPages ? 'disabled' : '') + '"><a class="page-link" href="#" data-page="' + (cPage + 1) + '">&raquo;</a></li>';
 
-                                                            const currentParams = new URLSearchParams(window.location.search);
-                                                            currentParams.set('page', '1');
-                                                            currentParams.delete('startDate');
-                                                            currentParams.delete('endDate');
+                        html += '</ul>';
+                        paginationContainer.innerHTML = html;
+                    }
+                }
 
-                                                            // Vẫn giữ lại filterType khi xóa bộ lọc ngày
-                                                            window.location.href = window.location.pathname + '?' + currentParams.toString();
-                                                        });
-                                                    });
+                // --- KHỞI TẠO & GẮN SỰ KIỆN ---
+                var startDateInput = $('#startDate');
+                var endDateInput = $('#endDate');
+                $('#dateRangePicker').daterangepicker({
+                    opens: 'left', autoUpdateInput: false, locale: {format: 'DD/MM/YYYY', cancelLabel: 'Clear'},
+                    ranges: {'Today': [moment(), moment()], 'Last 7 Days': [moment().subtract(6, 'days'), moment()], 'Last 30 Days': [moment().subtract(29, 'days'), moment()]}
+                });
+                if (startDateInput.val() && endDateInput.val()) {
+                    var start = moment(startDateInput.val(), 'YYYY-MM-DD');
+                    var end = moment(endDateInput.val(), 'YYYY-MM-DD');
+                    $('#dateRangePicker').val(start.format('DD/MM/YYYY') + ' - ' + end.format('DD/MM/YYYY'));
+                }
+                $('#dateRangePicker').on('apply.daterangepicker', function (ev, picker) {
+                    $(this).val(picker.startDate.format('DD/MM/YYYY') + ' - ' + picker.endDate.format('DD/MM/YYYY'));
+                    startDateInput.val(picker.startDate.format('YYYY-MM-DD'));
+                    endDateInput.val(picker.endDate.format('YYYY-MM-DD'));
+                }).on('cancel.daterangepicker', function (ev, picker) {
+                    $(this).val('');
+                    startDateInput.val('');
+                    endDateInput.val('');
+                });
+
+                filterForm.addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    performFilter(1);
+                });
+
+                paginationContainer.addEventListener('click', function (e) {
+                    if (e.target.matches('a.page-link')) {
+                        e.preventDefault();
+                        var page = parseInt(e.target.dataset.page);
+                        if (page)
+                            performFilter(page);
+                    }
+                });
+
+                // Tải dữ liệu lần đầu tiên dựa trên các tham số có sẵn trên URL (nếu có)
+                var initialPage = ${not empty currentPage ? currentPage : 1};
+                performFilter(initialPage);
+            });
         </script>
     </body>
 </html>

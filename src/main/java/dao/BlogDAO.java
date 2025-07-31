@@ -13,7 +13,7 @@ public class BlogDAO {
     public List<Blog> getAllBlogs() {
         List<Blog> blogs = new ArrayList<>();
         String sql = "SELECT * FROM blogs ORDER BY created_at DESC";
-        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql);  ResultSet rs = ps.executeQuery()) {
+        try ( Connection conn = new DBContext().getConnection();  PreparedStatement ps = conn.prepareStatement(sql);  ResultSet rs = ps.executeQuery()) {
 
             while (rs.next()) {
                 blogs.add(extractFromResultSet(rs));
@@ -28,7 +28,7 @@ public class BlogDAO {
     public List<Blog> getPublishedBlogsByPage(int offset, int limit) {
         List<Blog> blogs = new ArrayList<>();
         String sql = "SELECT * FROM blogs WHERE status = 'Published' ORDER BY published_at DESC OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
-        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+        try ( Connection conn = new DBContext().getConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setInt(1, offset);
             ps.setInt(2, limit);
@@ -48,7 +48,7 @@ public class BlogDAO {
     // ✅ Đếm số lượng bài viết đã xuất bản
     public int countPublishedBlogs() {
         String sql = "SELECT COUNT(*) FROM blogs WHERE status = 'Published'";
-        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql);  ResultSet rs = ps.executeQuery()) {
+        try ( Connection conn = new DBContext().getConnection();  PreparedStatement ps = conn.prepareStatement(sql);  ResultSet rs = ps.executeQuery()) {
 
             if (rs.next()) {
                 return rs.getInt(1);
@@ -63,7 +63,7 @@ public class BlogDAO {
     // ✅ Lấy blog theo ID
     public Blog getBlogById(long id) {
         String sql = "SELECT * FROM blogs WHERE blog_id = ?";
-        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+        try ( Connection conn = new DBContext().getConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setLong(1, id);
             try ( ResultSet rs = ps.executeQuery()) {
@@ -81,7 +81,7 @@ public class BlogDAO {
     // ✅ Thêm blog mới
     public void insert(Blog blog) {
         String sql = "INSERT INTO blogs (staff_id, title, slug, content, excerpt, thumbnail_url, category, tags, view_count, created_at, updated_at, published_at, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+        try ( Connection conn = new DBContext().getConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setLong(1, blog.getStaffId());
             ps.setString(2, blog.getTitle());
@@ -106,7 +106,7 @@ public class BlogDAO {
     // ✅ Cập nhật blog
     public void update(Blog blog) {
         String sql = "UPDATE blogs SET title=?, slug=?, content=?, excerpt=?, thumbnail_url=?, category=?, tags=?, view_count=?, updated_at=?, published_at=?, status=? WHERE blog_id=?";
-        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+        try ( Connection conn = new DBContext().getConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, blog.getTitle());
             ps.setString(2, blog.getSlug());
@@ -130,7 +130,7 @@ public class BlogDAO {
     // ✅ Xóa blog
     public void delete(long blogId) {
         String sql = "DELETE FROM blogs WHERE blog_id = ?";
-        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+        try ( Connection conn = new DBContext().getConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setLong(1, blogId);
             ps.executeUpdate();
         } catch (Exception e) {
