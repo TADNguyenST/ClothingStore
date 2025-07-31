@@ -2,17 +2,24 @@ package controller.stock;
 
 import DTO.ApiResponse;
 import DTO.PurchaseOrderContextDTO;
+import DTO.PurchaseOrderItemDTO;
+import DTO.ProductVariantSelectionDTO;
+import DTO.PurchaseOrderHeaderDTO;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import dao.PurchaseOrderDAO;
-import model.*;
-import DTO.*;
+import dao.UserDAO;
+import model.PurchaseOrderDetail;
+import model.StockMovement;
+import model.Supplier;
+import model.Users;
 import util.DBContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -43,6 +50,17 @@ public class PurchaseOrderController extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        HttpSession session = request.getSession();
+        Users currentUser = (Users) session.getAttribute("admin");
+        if (currentUser == null) {
+            currentUser = (Users) session.getAttribute("staff");
+        }
+
+        if (currentUser == null) {
+            response.sendRedirect(request.getContextPath() + "/AdminLogin");
+            return;
+        }
+
         String action = request.getParameter("action");
         if (action == null && request.getParameter("poId") != null) {
             action = "edit";
@@ -56,7 +74,7 @@ public class PurchaseOrderController extends HttpServlet {
                     handleEditPOPage(request, response);
                     break;
                 case "startNewPO":
-                    handleStartNewPO(request, response);
+                    handleStartNewPO(request, response, currentUser);
                     break;
                 case "printReceipt":
                     handlePrintReceipt(request, response);
@@ -74,15 +92,21 @@ public class PurchaseOrderController extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+
+        HttpSession session = request.getSession();
+        Users currentUser = (Users) session.getAttribute("admin");
+        if (currentUser == null) {
+            currentUser = (Users) session.getAttribute("staff");
+        }
+
+        if (currentUser == null) {
+            sendJsonResponse(response, HttpServletResponse.SC_UNAUTHORIZED, ApiResponse.error("Authentication required. Please login again."));
+            return;
+        }
+
         request.setCharacterEncoding("UTF-8");
         String action = request.getParameter("action");
-        ApiResponse<?> apiResponse = null;
-
-        // Giả lập lấy user từ session để kiểm tra quyền
-        // Lưu ý: Đổi tên lớp thành Users cho khớp với code của bạn
-        Users currentUser = new Users();
-        currentUser.setUserId(1L);
-        currentUser.setRole("Admin");
+        ApiResponse<?> apiResponse;
 
         try {
             switch (action) {
@@ -107,15 +131,12 @@ public class PurchaseOrderController extends HttpServlet {
                 case "deleteDraft":
                     apiResponse = handleAjaxDeleteDraft(request);
                     break;
-
                 case "getProductsForSelection":
                     apiResponse = handleAjaxGetProductsForSelection();
                     break;
                 case "addProducts":
                     apiResponse = handleAjaxAddProducts(request);
                     break;
-                // --- KẾT THÚC PHẦN THÊM VÀO ---
-
                 default:
                     apiResponse = ApiResponse.error("Invalid action.");
                     break;
@@ -129,8 +150,6 @@ public class PurchaseOrderController extends HttpServlet {
         }
     }
 
-    // --- CÁC HÀM XỬ LÝ LOGIC ---
-    // ... (Các hàm handleAutoSave, handleAjaxDeleteItem, handleAjaxSendOrder giữ nguyên) ...
     private ApiResponse<Object> handleAutoSave(HttpServletRequest request) throws SQLException {
         long poId = Long.parseLong(request.getParameter("poId"));
         String updateType = request.getParameter("updateType");
@@ -142,10 +161,7 @@ public class PurchaseOrderController extends HttpServlet {
             case "quantity":
                 long podIdQty = Long.parseLong(request.getParameter("podId"));
                 int quantity = Integer.parseInt(request.getParameter("value"));
-
-                // --- SERVER-SIDE VALIDATION CHO SỐ LƯỢNG ---
                 if (quantity <= 0) {
-                    // Ném ra lỗi, Controller sẽ bắt và gửi về cho client
                     throw new IllegalArgumentException("Quantity must be a positive number.");
                 }
                 purchaseDAO.updateItemQuantity(podIdQty, quantity);
@@ -153,10 +169,7 @@ public class PurchaseOrderController extends HttpServlet {
             case "price":
                 long podIdPrice = Long.parseLong(request.getParameter("podId"));
                 BigDecimal price = new BigDecimal(request.getParameter("value"));
-
-                // --- SERVER-SIDE VALIDATION CHO GIÁ TIỀN ---
                 if (price.compareTo(BigDecimal.ZERO) < 0) {
-                    // Ném ra lỗi
                     throw new IllegalArgumentException("Unit price cannot be negative.");
                 }
                 purchaseDAO.updateItemPrice(podIdPrice, price);
@@ -166,25 +179,21 @@ public class PurchaseOrderController extends HttpServlet {
                 PurchaseOrderHeaderDTO currentPO = purchaseDAO.getPurchaseOrderHeader(poId);
                 String currentFullNotes = currentPO.getNotes();
                 String prefix = "";
-                int prefixLength = 31; // Độ dài chính xác
-
+                int prefixLength = 31;
                 if (currentFullNotes != null && currentFullNotes.startsWith("Purchase Order") && currentFullNotes.length() >= prefixLength) {
                     prefix = currentFullNotes.substring(0, prefixLength);
                 } else {
                     prefix = currentFullNotes != null ? currentFullNotes : "";
                 }
-
                 String newFullNotes = (prefix + " " + userNotes).trim();
                 purchaseDAO.updatePONotes(poId, newFullNotes);
                 break;
             case "supplier":
                 String supplierIdStr = request.getParameter("value");
                 if (supplierIdStr != null && !supplierIdStr.isEmpty()) {
-                    // Nếu có giá trị, cập nhật bình thường
                     long supplierId = Long.parseLong(supplierIdStr);
                     purchaseDAO.updateDraftPOSupplier(poId, supplierId);
                 } else {
-                    // Nếu giá trị rỗng, gọi hàm xóa supplier
                     purchaseDAO.clearPOSupplier(poId);
                 }
                 break;
@@ -231,7 +240,6 @@ public class PurchaseOrderController extends HttpServlet {
         return ApiResponse.success(null, "Order has been sent.");
     }
 
-    // Lưu ý: Đã đổi tên lớp thành Users cho khớp với code của bạn
     private ApiResponse<Object> handleAjaxConfirmOrder(HttpServletRequest request, Users currentUser) throws SQLException {
         if (!"Admin".equals(currentUser.getRole())) {
             throw new SecurityException("Access Denied: Only Admins can confirm orders.");
@@ -254,9 +262,10 @@ public class PurchaseOrderController extends HttpServlet {
         return ApiResponse.success(null, "Order has been confirmed.");
     }
 
-    private ApiResponse<Object> handleAjaxReceiveDelivery(HttpServletRequest request, Users currentUser) throws SQLException {
+    private ApiResponse<Object> handleAjaxReceiveDelivery(HttpServletRequest request, Users currentUser) throws SQLException, IOException {
         long poId = Long.parseLong(request.getParameter("poId"));
-        long staffId = currentUser.getUserId();
+        UserDAO userDAO = new UserDAO();
+        Long staffId = userDAO.getStaffIdByUserId(currentUser.getUserId());
         Connection conn = null;
         try {
             conn = new DBContext().getConnection();
@@ -328,7 +337,6 @@ public class PurchaseOrderController extends HttpServlet {
         }
     }
 
-    // --- CÁC HÀM XỬ LÝ CHO VIỆC CHỌN SẢN PHẨM (ĐÃ THÊM) ---
     private ApiResponse<List<ProductVariantSelectionDTO>> handleAjaxGetProductsForSelection() throws SQLException {
         List<ProductVariantSelectionDTO> variants = purchaseDAO.getAllVariantsForSelection();
         return ApiResponse.success(variants);
@@ -349,18 +357,14 @@ public class PurchaseOrderController extends HttpServlet {
         throw new IllegalArgumentException("No products selected.");
     }
 
-    // --- CÁC HÀM HELPER VÀ TẢI TRANG ---
     private void handleEditPOPage(HttpServletRequest request, HttpServletResponse response) throws SQLException, ServletException, IOException {
         long poId = Long.parseLong(request.getParameter("poId"));
         PurchaseOrderHeaderDTO poData = purchaseDAO.getPurchaseOrderHeader(poId);
         List<PurchaseOrderItemDTO> itemsInPO = purchaseDAO.getItemsInPurchaseOrder(poId);
         List<Supplier> suppliers = purchaseDAO.getAllActiveSuppliers();
-
         if (poData != null && poData.getNotes() != null) {
             String fullNotes = poData.getNotes();
-            // Độ dài chính xác của tiền tố: "Purchase Order " (15) + "dd/MM/yyyy HH:mm" (16) = 31
             int prefixLength = 31;
-
             if (fullNotes.startsWith("Purchase Order") && fullNotes.length() >= prefixLength) {
                 String prefix = fullNotes.substring(0, prefixLength);
                 poData.setNotePrefix(prefix);
@@ -373,18 +377,16 @@ public class PurchaseOrderController extends HttpServlet {
                 poData.setNotePrefix(fullNotes);
                 poData.setUserNotes("");
             }
-
         }
-        // --- KẾT THÚC ---
-
         request.setAttribute("poData", gson.toJson(poData));
         request.setAttribute("itemsInPO", gson.toJson(itemsInPO));
         request.setAttribute("suppliers", suppliers);
         request.getRequestDispatcher("/WEB-INF/views/staff/stock/po-detail.jsp").forward(request, response);
     }
 
-    private void handleStartNewPO(HttpServletRequest request, HttpServletResponse response) throws SQLException, IOException {
-        long staffId = 1; // Giả lập lấy từ session
+    private void handleStartNewPO(HttpServletRequest request, HttpServletResponse response, Users currentUser) throws SQLException, IOException {
+        UserDAO userDAO = new UserDAO();
+        Long staffId = userDAO.getStaffIdByUserId(currentUser.getUserId());
         String poName = "Purchase Order " + new SimpleDateFormat("dd/MM/yyyy HH:mm").format(new Date());
         long newPoId = purchaseDAO.createDraftPO(poName, staffId);
         response.sendRedirect("PurchaseOrder?action=edit&poId=" + newPoId);
@@ -399,35 +401,21 @@ public class PurchaseOrderController extends HttpServlet {
         out.flush();
     }
 
-    // Trong PurchaseOrderController.java
-    private void handlePrintReceipt(HttpServletRequest request, HttpServletResponse response)
-            throws Exception {
-
+    private void handlePrintReceipt(HttpServletRequest request, HttpServletResponse response) throws Exception {
         long poId = Long.parseLong(request.getParameter("poId"));
-
-        // 1. Lấy dữ liệu từ DAO
         PurchaseOrderHeaderDTO poHeader = purchaseDAO.getPurchaseOrderHeader(poId);
         List<PurchaseOrderItemDTO> poItems = purchaseDAO.getItemsInPurchaseOrder(poId);
-
-        // --- THÊM BƯỚC KIỂM TRA NULL VÀO ĐÂY ---
         if (poHeader == null || poItems == null) {
             LOGGER.log(Level.SEVERE, "Data not found for Purchase Order ID: " + poId);
-            // Trả về một lỗi rõ ràng cho trình duyệt thay vì file PDF trắng
             response.sendError(HttpServletResponse.SC_NOT_FOUND, "Purchase Order data not found for ID: " + poId);
-            return; // Dừng thực thi
+            return;
         }
-
         if (poItems.isEmpty()) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Cannot print a receipt for an empty Purchase Order.");
-            return; // Dừng thực thi
+            return;
         }
-        // --- KẾT THÚC BƯỚC KIỂM TRA ---
-
-        // 2. Thiết lập response header để trả về file PDF
         response.setContentType("application/pdf");
         response.setHeader("Content-Disposition", "inline; filename=\"PhieuNhapKho_" + poId + ".pdf\"");
-
-        // 3. Gọi hàm tạo PDF và ghi vào OutputStream của response
         OutputStream out = response.getOutputStream();
         PdfGenerator.generateReceiptPdf(out, poHeader, poItems);
     }

@@ -8,6 +8,7 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.sql.Timestamp;
@@ -20,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import model.Users;
 
 @WebServlet(name = "StockMovementController", urlPatterns = {"/StockMovement"})
 public class StockMovementController extends HttpServlet {
@@ -54,6 +56,16 @@ public class StockMovementController extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        HttpSession session = request.getSession();
+        Users currentUser = (Users) session.getAttribute("admin");
+        if (currentUser == null) {
+            currentUser = (Users) session.getAttribute("staff");
+        }
+
+        if (currentUser == null) {
+            response.sendRedirect(request.getContextPath() + "/AdminLogin");
+            return;
+        }
         try {
             // Lấy tất cả các tham số
             String startDate = request.getParameter("startDate");
