@@ -60,7 +60,7 @@
         <form action="${pageContext.request.contextPath}/VoucherPublic" method="get" class="mb-10 max-w-4xl mx-auto p-6 bg-white rounded-xl shadow-md">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                 <div class="md:col-span-1">
-                    <label for="code" class="block text-sm font-medium text-gray-700 mb-1">Voucher Code</label>
+<label for="code" class="block text-sm font-medium text-gray-700 mb-1">Voucher Code</label>
                     <input type="text" id="code" name="code" placeholder="e.g., SALE50"
                            class="border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full" value="${param.code}">
                 </div>
@@ -103,7 +103,7 @@
                         <!-- Expiry and Actions -->
                         <div class="p-6 bg-gray-100">
                              <div class="flex items-center space-x-2 text-sm text-red-600 font-medium mb-4">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.414-1.415L11 9.586V6z" clip-rule="evenodd" /></svg>
+<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.414-1.415L11 9.586V6z" clip-rule="evenodd" /></svg>
                                 <span>Expires on: <fmt:formatDate value="${voucher.expirationDate}" pattern="dd MMM, yyyy"/></span>
                             </div>
                             <div class="flex flex-col sm:flex-row gap-3">
@@ -137,7 +137,7 @@
             <div class="text-center py-16">
                  <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                     <path vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
-                </svg>
+</svg>
                 <h3 class="mt-2 text-lg font-medium text-gray-900">No Vouchers Found</h3>
                 <p class="mt-1 text-sm text-gray-500">No public vouchers match your search. Try different keywords or check back later!</p>
             </div>
@@ -180,7 +180,7 @@
 
         function openVoucherModal(id, code, name, description, discountType, discountValue, minimumOrderAmount, maximumDiscountAmount, usageLimit, usedCount, expirationDate, isActive, visibility, createdAt) {
             document.getElementById('modalCode').textContent = code;
-            document.getElementById('modalName').textContent = name || 'N/A';
+document.getElementById('modalName').textContent = name || 'N/A';
             document.getElementById('modalDescription').textContent = description || 'No description provided.';
             document.getElementById('modalDiscountType').textContent = discountType;
             document.getElementById('modalDiscountValue').textContent = discountType === 'Percentage' ? discountValue + '%' : new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(discountValue);

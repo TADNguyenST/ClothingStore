@@ -1,14 +1,23 @@
 package controller.auth;
 
 import dao.UserDAO;
+import dao.CustomerDAO;
+import dao.CartItemDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
 import java.io.IOException;
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import model.Users;
+import model.CartItem;
+import model.Customer;
 
 @WebServlet(name = "LoginController", urlPatterns = {"/Login"})
 public class LoginController extends HttpServlet {
+
+    private static final Logger LOGGER = Logger.getLogger(LoginController.class.getName());
 
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -44,6 +53,25 @@ public class LoginController extends HttpServlet {
             HttpSession session = request.getSession();
             session.setAttribute("user", user);
             session.setAttribute("userId", user.getUserId()); // dùng để check login ở các controller khác
+
+            // FIXED: Merge guest cart if exists
+            CustomerDAO customerDAO = new CustomerDAO();
+            Customer customer = customerDAO.getCustomerByUserId(user.getUserId());
+            if (customer != null) {
+                long customerId = customer.getCustomerId();
+                Map<Long, CartItem> sessionCart = (Map<Long, CartItem>) session.getAttribute("sessionCart");
+                if (sessionCart != null && !sessionCart.isEmpty()) {
+                    CartItemDAO cartItemDAO = new CartItemDAO();
+                    for (CartItem item : sessionCart.values()) {
+                        try {
+                            cartItemDAO.addToCart(customerId, item.getVariantId(), item.getQuantity());
+                        } catch (Exception e) {
+                            LOGGER.log(Level.WARNING, "Failed to merge cart item for variantId: " + item.getVariantId(), e);
+                        }
+                    }
+                    session.removeAttribute("sessionCart");
+                }
+            }
 
             // Quay lại trang ban đầu nếu có
             String redirectTo = (String) session.getAttribute("redirectAfterLogin");

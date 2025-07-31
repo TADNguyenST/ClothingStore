@@ -85,14 +85,15 @@
                                     <h5 class="mb-1">${item.productName}</h5>
                                     <p class="text-muted small mb-1">Size: ${item.size} / Color: ${item.color}</p>
                                     <p class="fw-bold mb-0" id="unitPrice-${item.cartItemId}"><fmt:formatNumber value="${item.unitPrice}" type="currency" currencyCode="VND"/></p>
-                                    <p class="fw-bold mb-0" id="totalPrice-${item.cartItemId}"><fmt:formatNumber value="${item.totalPrice}" type="currency" currencyCode="VND"/></p>
+                                    <p class="fw-bold mb-0" id="totalPrice-${item.cartItemId}"><fmt:formatNumber value="${item.unitPrice * item.quantity}" type="currency" currencyCode="VND"/></p>
                                 </div>
                                 <div class="text-end" style="min-width: 150px;">
                                     <form class="d-flex justify-content-end align-items-center mb-2 update-quantity-form" data-cart-item-id="${item.cartItemId}" data-variant-id="${item.variantId}">
                                         <input type="hidden" name="action" value="update">
                                         <input type="hidden" name="cartItemId" value="${item.cartItemId}">
-                                        <input type="number" name="quantity" class="form-control form-control-sm quantity-input" value="${item.quantity}" min="1" max="${productDAO.getAvailableQuantityByVariantId(item.variantId) > 0 ? productDAO.getAvailableQuantityByVariantId(item.variantId) : 1}" onchange="validateQuantity(this, ${item.cartItemId}, ${productDAO.getAvailableQuantityByVariantId(item.variantId)})">
-                                        <button type="button" class="btn btn-sm btn-light ms-2" onclick="updateQuantity(${item.cartItemId}, ${item.variantId})" title="Update Quantity"><i class="fas fa-sync-alt"></i></button>
+                                        <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
+                                        <input type="number" name="quantity" class="form-control form-control-sm quantity-input" value="${item.quantity}" min="1" max="${availableQuantities[item.variantId]}">
+                                        <button type="button" class="btn btn-sm btn-light ms-2 update-quantity-btn" data-cart-item-id="${item.cartItemId}" data-variant-id="${item.variantId}" title="Update Quantity"><i class="fas fa-sync-alt"></i></button>
                                     </form>
                                     <button class="btn btn-link text-danger p-0 remove-item-btn" data-cart-item-id="${item.cartItemId}" data-bs-toggle="modal" data-bs-target="#removeItemModal">Remove</button>
                                 </div>
@@ -110,15 +111,7 @@
                             <span>Subtotal</span>
                             <span id="subtotal"><fmt:formatNumber value="${subtotal}" type="currency" currencyCode="VND"/></span>
                         </div>
-                        <div class="d-flex justify-content-between mt-2 text-muted">
-                            <span>Shipping</span>
-                            <span>Calculated at next step</span>
-                        </div>
-                        <hr>
-                        <div class="d-flex justify-content-between fw-bold fs-5">
-                            <span>Total</span>
-                            <span id="total"><fmt:formatNumber value="${subtotal}" type="currency" currencyCode="VND"/></span>
-                        </div>
+                        <p class="text-muted small">* Shipping fee and vouchers will be applied at checkout.</p>
                         <div class="d-grid mt-4">
                             <a href="${pageContext.request.contextPath}/customer/checkout" class="btn btn-primary btn-lg">Proceed to Checkout</a>
                         </div>
@@ -149,155 +142,275 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-0pUGZvbkm6XF6gxjEnlmuGrJXVbNuzT9qBBavbLwCsOGabYfZo0T0to5eqruptLy" crossorigin="anonymous"></script>
 <script>
-                                            document.addEventListener('DOMContentLoaded', function () {
-                                                var toastSuccess = new bootstrap.Toast(document.getElementById('successToast'), {delay: 3000});
-                                                var toastError = new bootstrap.Toast(document.getElementById('errorToast'), {delay: 3000});
-                                                var cartOverlay = document.querySelector('.cart-overlay');
+    document.addEventListener('DOMContentLoaded', function () {
+        console.log('Cart page loaded');
 
-                                                function showToast(message, isSuccess) {
-                                                    var toast = isSuccess ? toastSuccess : toastError;
-                                                    var toastBody = document.getElementById(isSuccess ? 'successToastBody' : 'errorToastBody');
-                                                    toastBody.textContent = message;
-                                                    toast.show();
-                                                }
+        // Initialize Bootstrap toasts
+        const toastSuccess = new bootstrap.Toast(document.getElementById('successToast'), {delay: 3000});
+        const toastError = new bootstrap.Toast(document.getElementById('errorToast'), {delay: 3000});
+        const cartOverlay = document.querySelector('.cart-overlay');
 
-                                                function showOverlay() {
-                                                    if (cartOverlay)
-                                                        cartOverlay.classList.add('active');
-                                                }
+        // Toast helper function
+        function showToast(message, isSuccess) {
+            const toast = isSuccess ? toastSuccess : toastError;
+            const toastBody = document.getElementById(isSuccess ? 'successToastBody' : 'errorToastBody');
+            toastBody.textContent = message;
+            toast.show();
+        }
 
-                                                function hideOverlay() {
-                                                    if (cartOverlay)
-                                                        cartOverlay.classList.remove('active');
-                                                }
+        // Overlay helper functions
+        function showOverlay() {
+            if (cartOverlay) {
+                cartOverlay.classList.add('active');
+            }
+        }
 
-                                                function validateQuantity(input, cartItemId, maxQuantity) {
-                                                    var quantity = parseInt(input.value);
-                                                    console.log('Validating quantity:', quantity, 'for cartItemId:', cartItemId, 'max:', maxQuantity); // Debug
-                                                    if (isNaN(quantity) || quantity > maxQuantity) {
-                                                        showToast('Requested quantity exceeds available stock: ' + maxQuantity, false);
-                                                        input.value = maxQuantity > 0 ? maxQuantity : 1;
-                                                    } else if (quantity < 1) {
-                                                        showToast('Quantity must be at least 1.', false);
-                                                        input.value = 1;
-                                                    }
-                                                }
+        function hideOverlay() {
+            if (cartOverlay) {
+                cartOverlay.classList.remove('active');
+            }
+        }
 
-                                                function updateQuantity(cartItemId, variantId) {
-                                                    var form = document.querySelector(`.update-quantity-form[data-cart-item-id="${cartItemId}"]`);
-                                                    if (!form) {
-                                                        console.error('Form not found for cartItemId:', cartItemId); // Debug
-                                                        return;
-                                                    }
-                                                    var quantityInput = form.querySelector('input[name="quantity"]');
-                                                    var quantity = parseInt(quantityInput.value);
-                                                    var maxQuantity = parseInt(quantityInput.getAttribute('max'));
+        // Currency formatting helper
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('vi-VN', {
+                style: 'currency',
+                currency: 'VND'
+            }).format(amount);
+        }
 
-                                                    console.log('Updating quantity for cartItemId:', cartItemId, 'with quantity:', quantity, 'max:', maxQuantity); // Debug
-                                                    if (isNaN(quantity) || quantity > maxQuantity) {
-                                                        showToast('Requested quantity exceeds available stock: ' + maxQuantity, false);
-                                                        quantityInput.value = maxQuantity > 0 ? maxQuantity : 1;
-                                                        return;
-                                                    } else if (quantity < 1) {
-                                                        showToast('Quantity must be at least 1.', false);
-                                                        quantityInput.value = 1;
-                                                        return;
-                                                    }
+        // Update quantity function
+        function updateQuantity(cartItemId, variantId) {
+            console.log('Updating quantity for cartItemId:', cartItemId, 'variantId:', variantId);
 
-                                                    var formData = new FormData(form);
-                                                    showOverlay(); // Hiển thị overlay
-                                                    fetch('${pageContext.request.contextPath}/customer/cart', {
-                                                        method: 'POST',
-                                                        body: new URLSearchParams(formData),
-                                                        headers: {
-                                                            'Content-Type': 'application/x-www-form-urlencoded',
-                                                            'Accept': 'application/json'
-                                                        }
-                                                    })
-                                                            .then(response => {
-                                                                if (!response.ok)
-                                                                    throw new Error('Network response was not ok: ' + response.statusText);
-                                                                return response.json();
-                                                            })
-                                                            .then(result => {
-                                                                console.log('Update response:', result); // Debug
-                                                                if (result.success) {
-                                                                    var data = result.data;
-                                                                    if (!data || !data.unitPrice || !data.subtotal) {
-                                                                        console.error('Missing data in response:', data); // Debug
-                                                                        showToast('Invalid response data.', false);
-                                                                        return;
-                                                                    }
-                                                                    var unitPrice = parseFloat(data.unitPrice);
-                                                                    var totalPrice = unitPrice * quantity;
-                                                                    document.getElementById('unitPrice-' + cartItemId).textContent = new Intl.NumberFormat('vi-VN', {style: 'currency', currency: 'VND'}).format(unitPrice);
-                                                                    document.getElementById('totalPrice-' + cartItemId).textContent = new Intl.NumberFormat('vi-VN', {style: 'currency', currency: 'VND'}).format(totalPrice);
-                                                                    document.getElementById('subtotal').textContent = new Intl.NumberFormat('vi-VN', {style: 'currency', currency: 'VND'}).format(data.subtotal);
-                                                                    document.getElementById('total').textContent = new Intl.NumberFormat('vi-VN', {style: 'currency', currency: 'VND'}).format(data.subtotal);
-                                                                    showToast(result.message, true);
-                                                                    updateCartCount(); // Cập nhật số lượng giỏ hàng
-                                                                } else {
-                                                                    showToast(result.message || 'Failed to update quantity.', false);
-                                                                    quantityInput.value = parseInt('${item.quantity}'); // Reset
-                                                                }
-                                                                hideOverlay(); // Ẩn overlay
-                                                            })
-                                                            .catch(error => {
-                                                                console.error('Error updating quantity:', error);
-                                                                showToast('An error occurred while updating quantity: ' + error.message, false);
-                                                                quantityInput.value = parseInt('${item.quantity}'); // Reset
-                                                                hideOverlay(); // Ẩn overlay
-                                                            });
-                                                }
+            const form = document.querySelector(`form[data-cart-item-id="${cartItemId}"]`);
+            if (!form) {
+                console.error('Form not found for cartItemId:', cartItemId);
+                showToast('Form not found', false);
+                return;
+            }
 
-                                                var removeItemId = null;
-                                                document.querySelectorAll('.remove-item-btn').forEach(function (btn) {
-                                                    btn.addEventListener('click', function () {
-                                                        removeItemId = btn.getAttribute('data-cart-item-id');
-                                                    });
-                                                });
+            const quantityInput = form.querySelector('input[name="quantity"]');
+            const quantity = parseInt(quantityInput.value);
+            const maxQuantity = parseInt(quantityInput.getAttribute('max'));
 
-                                                document.getElementById('confirmRemoveBtn').addEventListener('click', function () {
-                                                    if (removeItemId) {
-                                                        var cartItemElement = document.getElementById('cartItem-' + removeItemId);
-                                                        showOverlay(); // Hiển thị overlay
-                                                        fetch('${pageContext.request.contextPath}/customer/cart', {
-                                                            method: 'POST',
-                                                            body: new URLSearchParams({action: 'remove', cartItemId: removeItemId}),
-                                                            headers: {
-                                                                'Content-Type': 'application/x-www-form-urlencoded',
-                                                                'Accept': 'application/json'
-                                                            }
-                                                        })
-                                                                .then(response => {
-                                                                    if (!response.ok)
-                                                                        throw new Error('Network response was not ok: ' + response.statusText);
-                                                                    return response.json();
-                                                                })
-                                                                .then(result => {
-                                                                    if (result.success) {
-                                                                        if (cartItemElement)
-                                                                            cartItemElement.remove();
-                                                                        document.getElementById('subtotal').textContent = new Intl.NumberFormat('vi-VN', {style: 'currency', currency: 'VND'}).format(result.data.subtotal);
-                                                                        document.getElementById('total').textContent = new Intl.NumberFormat('vi-VN', {style: 'currency', currency: 'VND'}).format(result.data.subtotal);
-                                                                        showToast(result.message, true);
-                                                                        if (document.querySelectorAll('.card.mb-3').length === 0) {
-                                                                            window.location.href = '${pageContext.request.contextPath}/customer/cart'; // Reload trang nếu giỏ hàng trống
-                                                                        }
-                                                                    } else {
-                                                                        showToast(result.message || 'Failed to remove item.', false);
-                                                                    }
-                                                                    hideOverlay(); // Ẩn overlay
-                                                                })
-                                                                .catch(error => {
-                                                                    console.error('Error removing item:', error);
-                                                                    showToast('An error occurred while removing item: ' + error.message, false);
-                                                                    hideOverlay(); // Ẩn overlay
-                                                                });
-                                                        bootstrap.Modal.getInstance(document.getElementById('removeItemModal')).hide();
-                                                    }
-                                                });
-                                            });
+            console.log('Quantity:', quantity, 'MaxQuantity:', maxQuantity);
+
+            if (isNaN(quantity) || quantity < 1) {
+                showToast('Quantity must be at least 1.', false);
+                quantityInput.value = 1;
+                return;
+            }
+
+            if (quantity > maxQuantity) {
+                showToast(`Requested quantity exceeds available stock: ${maxQuantity}`, false);
+                quantityInput.value = maxQuantity > 0 ? maxQuantity : 1;
+                return;
+            }
+
+            const formData = new FormData(form);
+            showOverlay();
+
+            // Show loading state on the update button
+            const updateBtn = form.querySelector('.update-quantity-btn');
+            if (updateBtn) {
+                updateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                updateBtn.disabled = true;
+            }
+
+            fetch('${pageContext.request.contextPath}/customer/cart', {
+                method: 'POST',
+                body: new URLSearchParams(formData),
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'Accept': 'application/json'
+                }
+            })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(result => {
+                        console.log('Update response:', result);
+                        if (result.success) {
+                            const data = result.data;
+                            // Update UI elements
+                            const unitPriceElement = document.getElementById(`unitPrice-${cartItemId}`);
+                            const totalPriceElement = document.getElementById(`totalPrice-${cartItemId}`);
+                            const subtotalElement = document.getElementById('subtotal');
+                            const cartCountElement = document.getElementById('cartCount');
+
+                            if (unitPriceElement && data.unitPrice) {
+                                unitPriceElement.textContent = formatCurrency(data.unitPrice);
+                            }
+
+                            if (totalPriceElement && data.unitPrice) {
+                                totalPriceElement.textContent = formatCurrency(data.unitPrice * quantity);
+                            }
+
+                            if (subtotalElement && data.subtotal) {
+                                subtotalElement.textContent = formatCurrency(data.subtotal);
+                            }
+
+                            if (cartCountElement && data.count !== undefined) {
+                                cartCountElement.textContent = data.count;
+                            }
+
+                            showToast(result.message, true);
+                            // Update cart count in header
+                            if (window.updateCartCount) {
+                                window.updateCartCount();
+                            }
+                        } else {
+                            showToast(result.message || 'Failed to update quantity.', false);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error updating quantity:', error);
+                        showToast('Error updating quantity: ' + error.message, false);
+                    })
+                    .finally(() => {
+                        hideOverlay();
+                        // Restore update button
+                        if (updateBtn) {
+                            updateBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
+                            updateBtn.disabled = false;
+                        }
+                    });
+        }
+
+        // Remove item functions
+        let removeItemId = null;
+
+        // Attach click handlers to remove buttons
+        document.querySelectorAll('.remove-item-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                removeItemId = btn.getAttribute('data-cart-item-id');
+                console.log('Remove button clicked for cartItemId:', removeItemId);
+            });
+        });
+
+        // Confirm remove button handler
+        const confirmRemoveBtn = document.getElementById('confirmRemoveBtn');
+        if (confirmRemoveBtn) {
+            confirmRemoveBtn.addEventListener('click', function () {
+                console.log('Confirm remove clicked, removeItemId:', removeItemId);
+
+                if (!removeItemId) {
+                    showToast('No item selected for removal.', false);
+                    return;
+                }
+
+                const cartItemElement = document.getElementById(`cartItem-${removeItemId}`);
+                console.log('Cart item element:', cartItemElement);
+
+                if (!cartItemElement) {
+                    showToast('Item element not found.', false);
+                    return;
+                }
+
+                showOverlay();
+
+                fetch('${pageContext.request.contextPath}/customer/cart', {
+                    method: 'POST',
+                    body: new URLSearchParams({
+                        action: 'remove',
+                        cartItemId: removeItemId,
+                        csrfToken: '${sessionScope.csrfToken}'
+                    }),
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'Accept': 'application/json'
+                    }
+                })
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error(`HTTP error! status: ${response.status}`);
+                            }
+                            return response.json();
+                        })
+                        .then(result => {
+                            console.log('Remove response:', result);
+                            if (result.success) {
+                                // Remove item from DOM
+                                cartItemElement.remove();
+
+                                // Update totals
+                                const subtotalElement = document.getElementById('subtotal');
+                                const cartCountElement = document.getElementById('cartCount');
+
+                                if (subtotalElement && result.data.subtotal !== undefined) {
+                                    subtotalElement.textContent = formatCurrency(result.data.subtotal);
+                                }
+
+                                if (cartCountElement && result.data.count !== undefined) {
+                                    cartCountElement.textContent = result.data.count;
+                                }
+
+                                showToast(result.message, true);
+
+                                // Update cart count in header
+                                if (window.updateCartCount) {
+                                    window.updateCartCount();
+                                }
+
+                                // Check if cart is empty and show empty cart message
+                                const remainingItems = document.querySelectorAll('[id^="cartItem-"]');
+                                if (remainingItems.length === 0) {
+                                    const container = document.querySelector('.container.my-5');
+                                    if (container) {
+                                        container.innerHTML = `
+                                <div class="text-center p-5 border rounded bg-light">
+                                    <i class="fas fa-shopping-bag fa-3x text-muted mb-3"></i>
+                                    <p class="fs-4">Your cart is empty.</p>
+                                    <a href="${pageContext.request.contextPath}/home" class="btn btn-primary mt-3">Continue Shopping</a>
+                                </div>`;
+                                    }
+                                }
+                            } else {
+                                showToast(result.message || 'Failed to remove product.', false);
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error removing product:', error);
+                            showToast('Error removing product: ' + error.message, false);
+                        })
+                        .finally(() => {
+                            hideOverlay();
+                            // Close modal
+                            const modal = bootstrap.Modal.getInstance(document.getElementById('removeItemModal'));
+                            if (modal) {
+                                modal.hide();
+                            }
+                        });
+            });
+        }
+
+        // Add click handlers for update quantity buttons
+        document.querySelectorAll('.update-quantity-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const cartItemId = this.getAttribute('data-cart-item-id');
+                const variantId = this.getAttribute('data-variant-id');
+                console.log('Update button clicked for cartItemId:', cartItemId, 'variantId:', variantId);
+                updateQuantity(cartItemId, variantId);
+            });
+        });
+
+        // Add input event listeners for real-time validation
+        document.querySelectorAll('.quantity-input').forEach(input => {
+            input.addEventListener('blur', function () {
+                const form = this.closest('.update-quantity-form');
+                const cartItemId = form.getAttribute('data-cart-item-id');
+                const variantId = form.getAttribute('data-variant-id');
+                console.log('Quantity input blur for cartItemId:', cartItemId, 'variantId:', variantId);
+                updateQuantity(cartItemId, variantId);
+            });
+        });
+
+        console.log('Cart functionality initialized');
+    });
 </script>
 
 <jsp:include page="/WEB-INF/views/common/footer.jsp" />
