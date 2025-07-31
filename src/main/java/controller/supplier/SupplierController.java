@@ -1,23 +1,34 @@
 package controller.supplier;
 
+import com.google.gson.*;
 import dao.SupplierDAO;
 import model.Supplier;
+import model.Users;
+
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.lang.reflect.Type;
 import java.sql.SQLException;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
 @WebServlet(name = "SupplierController", urlPatterns = {"/Supplier"})
 public class SupplierController extends HttpServlet {
+
     private SupplierDAO supplierDAO;
+    private Gson gson;
 
     private static final Pattern VIETNAMESE_PHONE_PATTERN = Pattern.compile("^0\\d{9}$");
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,6}$");
@@ -25,52 +36,144 @@ public class SupplierController extends HttpServlet {
     @Override
     public void init() {
         supplierDAO = new SupplierDAO();
+        // Cấu hình Gson để xử lý kiểu LocalDate sử dụng lớp nội tại bên dưới
+        gson = new GsonBuilder()
+                .registerTypeAdapter(LocalDate.class, new LocalDateAdapter())
+                .setPrettyPrinting() // Tùy chọn: giúp JSON dễ đọc khi debug
+                .create();
+    }
+
+    private boolean isAdmin(Users user) {
+        return user != null && "Admin".equals(user.getRole());
+    }
+
+    private void sendJsonResponse(HttpServletResponse response, Object object) throws IOException {
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+        try ( PrintWriter out = response.getWriter()) {
+            out.print(gson.toJson(object));
+            out.flush();
+        }
+    }
+
+    private void sendErrorResponse(HttpServletResponse response, int statusCode, String message) throws IOException {
+        response.setStatus(statusCode);
+        Map<String, String> error = new HashMap<>();
+        error.put("status", "error");
+        error.put("message", message);
+        sendJsonResponse(response, error);
+    }
+
+    private void sendSuccessResponse(HttpServletResponse response, String message, Object data) throws IOException {
+        Map<String, Object> success = new HashMap<>();
+        success.put("status", "success");
+        success.put("message", message);
+        if (data != null) {
+            success.put("data", data);
+        }
+        sendJsonResponse(response, success);
     }
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        HttpSession session = request.getSession(false); // Không tạo session mới nếu chưa có
+        Users currentUser = (session != null)
+                ? ((Users) session.getAttribute("admin") != null
+                ? (Users) session.getAttribute("admin")
+                : (Users) session.getAttribute("staff"))
+                : null;
+
+        if (currentUser == null) {
+            response.sendRedirect(request.getContextPath() + "/AdminLogin");
+            return;
+        }
+
         String action = request.getParameter("action");
         if (action == null) {
-            action = "list";
+            // Nếu không có action, chuyển đến trang JSP chính
+            request.getRequestDispatcher("/WEB-INF/views/staff/supplier/supplier-list.jsp").forward(request, response);
+            return;
         }
 
         try {
-            List<Supplier> supplierList = supplierDAO.getAllSuppliers();
-            request.setAttribute("supplierList", supplierList);
-
             switch (action) {
-                case "add":
-                    request.setAttribute("viewMode", "form");
-                    request.setAttribute("supplier", new Supplier());
-                    break;
-                case "edit":
-                    request.setAttribute("viewMode", "form");
-                    long idEdit = Long.parseLong(request.getParameter("id"));
-                    Supplier existingSupplier = supplierDAO.getSupplierById(idEdit);
-                    request.setAttribute("supplier", existingSupplier);
+                case "list":
+                    listSuppliers(response);
                     break;
                 case "detail":
-                    request.setAttribute("viewMode", "detail");
-                    long idDetail = Long.parseLong(request.getParameter("id"));
-                    Supplier supplier = supplierDAO.getSupplierById(idDetail);
-                    List<Map<String, Object>> poList = supplierDAO.getPurchaseOrdersBySupplierId(idDetail);
-                    request.setAttribute("supplier", supplier);
-                    request.setAttribute("poList", poList);
+                    getSupplierDetails(request, response);
                     break;
                 default:
+                    sendErrorResponse(response, HttpServletResponse.SC_BAD_REQUEST, "Invalid action specified.");
                     break;
             }
+        } catch (SQLException e) {
+            sendErrorResponse(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Database error occurred.");
+            e.printStackTrace(); // Ghi lại lỗi để debug
         } catch (Exception e) {
             throw new ServletException(e);
         }
+    }
 
-        request.getRequestDispatcher("/WEB-INF/views/staff/supplier/supplier-list.jsp").forward(request, response);
+    private void listSuppliers(HttpServletResponse response) throws SQLException, IOException {
+        List<Supplier> supplierList = supplierDAO.getAllSuppliers();
+        sendJsonResponse(response, supplierList);
+    }
+
+    private void getSupplierDetails(HttpServletRequest request, HttpServletResponse response) throws SQLException, IOException {
+        try {
+            long id = Long.parseLong(request.getParameter("id"));
+            Supplier supplier = supplierDAO.getSupplierById(id);
+
+            if (supplier == null) {
+                sendErrorResponse(response, HttpServletResponse.SC_NOT_FOUND, "Supplier not found.");
+                return;
+            }
+
+            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+            LocalDate today = LocalDate.now();
+            String startDateStr = request.getParameter("startDate");
+            String endDateStr = request.getParameter("endDate");
+
+            String startDate = (startDateStr != null && !startDateStr.isEmpty()) ? startDateStr : today.withDayOfMonth(1).format(dtf);
+            String endDate = (endDateStr != null && !endDateStr.isEmpty()) ? endDateStr : today.format(dtf);
+
+            Map<String, Object> stats = supplierDAO.getSupplierDashboardStats(id, startDate, endDate);
+            List<Map<String, Object>> poList = supplierDAO.getPurchaseOrdersBySupplierId(id);
+            List<Map<String, Object>> suppliedProducts = supplierDAO.getProductsSuppliedBySupplier(id, startDate, endDate);
+
+            Map<String, Object> responseData = new HashMap<>();
+            responseData.put("supplier", supplier);
+            responseData.put("stats", stats);
+            responseData.put("poList", poList);
+            responseData.put("suppliedProducts", suppliedProducts);
+            responseData.put("startDate", startDate);
+            responseData.put("endDate", endDate);
+
+            sendJsonResponse(response, responseData);
+
+        } catch (NumberFormatException e) {
+            sendErrorResponse(response, HttpServletResponse.SC_BAD_REQUEST, "Invalid supplier ID format.");
+        }
     }
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        HttpSession session = request.getSession(false);
+        Users currentUser = (session != null) ? (Users) session.getAttribute("admin") : null;
+
+        if (!isAdmin(currentUser)) {
+            sendErrorResponse(response, HttpServletResponse.SC_FORBIDDEN, "Access Denied. You do not have permission to perform this action.");
+            return;
+        }
+
         request.setCharacterEncoding("UTF-8");
         String action = request.getParameter("action");
+        if (action == null) {
+            sendErrorResponse(response, HttpServletResponse.SC_BAD_REQUEST, "Action parameter is missing.");
+            return;
+        }
+
         try {
             switch (action) {
                 case "save":
@@ -83,33 +186,17 @@ public class SupplierController extends HttpServlet {
                     setSupplierStatus(request, response, true);
                     break;
                 default:
-                    response.sendRedirect("Supplier?action=list");
+                    sendErrorResponse(response, HttpServletResponse.SC_BAD_REQUEST, "Invalid action specified.");
             }
+        } catch (SQLException e) {
+            sendErrorResponse(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Database error occurred during the POST request.");
+            e.printStackTrace();
         } catch (Exception e) {
             throw new ServletException(e);
         }
     }
 
-    private boolean isValidEmail(String email) {
-        if (email == null || email.isEmpty()) {
-            return false;
-        }
-        return EMAIL_PATTERN.matcher(email).matches();
-    }
-
-    private boolean isValidVietnamesePhone(String phone) {
-        if (phone == null || phone.isEmpty()) {
-            return false;
-        }
-        return VIETNAMESE_PHONE_PATTERN.matcher(phone).matches();
-    }
-    
-    /**
-     * SỬA LỖI TRIỆT ĐỂ: Tái cấu trúc lại hoàn toàn để chống NullPointerException.
-     */
-    private void saveSupplier(HttpServletRequest request, HttpServletResponse response) throws SQLException, IOException, ServletException {
-        // Bước 1: Lấy tất cả tham số từ request và xử lý trim() ngay lập tức.
-        // Nếu tham số là null, nó sẽ trở thành một chuỗi rỗng an toàn.
+    private void saveSupplier(HttpServletRequest request, HttpServletResponse response) throws SQLException, IOException {
         String idStr = request.getParameter("id");
         String name = request.getParameter("name") != null ? request.getParameter("name").trim() : "";
         String email = request.getParameter("email") != null ? request.getParameter("email").trim() : "";
@@ -117,67 +204,76 @@ public class SupplierController extends HttpServlet {
         String address = request.getParameter("address") != null ? request.getParameter("address").trim() : "";
         boolean isActive = "true".equals(request.getParameter("isActive"));
 
-        // Bước 2: Kiểm tra dữ liệu hợp lệ trên các biến cục bộ an toàn.
         List<String> errors = new ArrayList<>();
         if (name.isEmpty()) {
             errors.add("Supplier name is required.");
         }
-        if (!isValidEmail(email)) {
-            errors.add("A valid email is required.");
+        if (!EMAIL_PATTERN.matcher(email).matches()) {
+            errors.add("A valid email address is required.");
         }
-        if (!isValidVietnamesePhone(phone)) {
+        if (!VIETNAMESE_PHONE_PATTERN.matcher(phone).matches()) {
             errors.add("A valid 10-digit phone number starting with 0 is required.");
         }
         if (address.isEmpty()) {
             errors.add("Address is required.");
         }
 
-        // Bước 3: Xử lý kết quả kiểm tra
         if (!errors.isEmpty()) {
-            // Nếu có lỗi, tạo một đối tượng Supplier chỉ để gửi dữ liệu người dùng đã nhập trở lại form.
-            Supplier supplierWithOldData = new Supplier();
-            if (idStr != null && !idStr.isEmpty()) {
-                supplierWithOldData.setSupplierId(Long.parseLong(idStr));
-            }
-            supplierWithOldData.setName(name);
-            supplierWithOldData.setContactEmail(email);
-            supplierWithOldData.setPhoneNumber(phone);
-            supplierWithOldData.setAddress(address);
-            supplierWithOldData.setIsActive(isActive);
-
-            // Gửi lại form với thông tin đã nhập và danh sách lỗi
-            request.setAttribute("errorMessages", errors);
-            request.setAttribute("supplier", supplierWithOldData);
-            request.setAttribute("viewMode", "form");
-            List<Supplier> supplierList = supplierDAO.getAllSuppliers();
-            request.setAttribute("supplierList", supplierList);
-            request.getRequestDispatcher("/WEB-INF/views/staff/supplier/supplier-list.jsp").forward(request, response);
-        } else {
-            // Nếu không có lỗi, tạo đối tượng Supplier cuối cùng để lưu vào DB
-            Supplier supplierToSave = new Supplier();
-            supplierToSave.setName(name);
-            supplierToSave.setContactEmail(email);
-            supplierToSave.setPhoneNumber(phone);
-            supplierToSave.setAddress(address);
-            supplierToSave.setIsActive(isActive);
-
-            if (idStr == null || idStr.isEmpty()) {
-                supplierDAO.addSupplier(supplierToSave);
-            } else {
-                supplierToSave.setSupplierId(Long.parseLong(idStr));
-                supplierDAO.updateSupplier(supplierToSave);
-            }
-            response.sendRedirect("Supplier?action=list&save=success");
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("status", "error");
+            errorResponse.put("errors", errors);
+            sendJsonResponse(response, errorResponse);
+            return;
         }
+
+        Supplier supplierToSave = new Supplier();
+        supplierToSave.setName(name);
+        supplierToSave.setContactEmail(email);
+        supplierToSave.setPhoneNumber(phone);
+        supplierToSave.setAddress(address);
+        supplierToSave.setIsActive(isActive);
+
+        boolean isNew = (idStr == null || idStr.isEmpty() || "null".equals(idStr));
+
+        if (isNew) {
+            supplierDAO.addSupplier(supplierToSave);
+        } else {
+            supplierToSave.setSupplierId(Long.parseLong(idStr));
+            supplierDAO.updateSupplier(supplierToSave);
+        }
+
+        String message = isNew ? "Supplier added successfully!" : "Supplier updated successfully!";
+        sendSuccessResponse(response, message, supplierToSave);
     }
 
     private void setSupplierStatus(HttpServletRequest request, HttpServletResponse response, boolean isActive) throws SQLException, IOException {
         try {
             long id = Long.parseLong(request.getParameter("id"));
             supplierDAO.setSupplierStatus(id, isActive);
-            response.sendRedirect("Supplier?action=list");
+            String message = isActive ? "Supplier has been reactivated." : "Supplier has been deactivated.";
+            sendSuccessResponse(response, message, null);
         } catch (NumberFormatException e) {
-             response.sendRedirect("Supplier?action=list&error=invalidId");
+            sendErrorResponse(response, HttpServletResponse.SC_BAD_REQUEST, "Invalid ID format.");
+        }
+    }
+
+    /**
+     * Lớp nội tại tĩnh để giúp Gson chuyển đổi kiểu dữ liệu LocalDate. Nó chỉ
+     * được sử dụng bên trong SupplierController.
+     */
+    private static class LocalDateAdapter implements JsonSerializer<LocalDate>, JsonDeserializer<LocalDate> {
+
+        private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+        @Override
+        public JsonElement serialize(LocalDate date, Type typeOfSrc, JsonSerializationContext context) {
+            return new JsonPrimitive(formatter.format(date));
+        }
+
+        @Override
+        public LocalDate deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+            return LocalDate.parse(json.getAsString(), formatter);
         }
     }
 }

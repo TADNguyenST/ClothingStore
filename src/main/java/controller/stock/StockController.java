@@ -35,9 +35,17 @@ public class StockController extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        HttpSession session = request.getSession();
+        Users currentUser = (Users) session.getAttribute("admin");
+        if (currentUser == null) {
+            currentUser = (Users) session.getAttribute("staff");
+        }
 
+        if (currentUser == null) {
+            response.sendRedirect(request.getContextPath() + "/AdminLogin");
+            return;
+        }
         try {
-            HttpSession session = request.getSession();
 
             // Lấy tham số từ request
             String searchTerm = request.getParameter("searchTerm");
@@ -167,46 +175,46 @@ public class StockController extends HttpServlet {
                     }
                 });
             }
-                // Phân trang
-                int currentPage = (pageStr == null || pageStr.isEmpty()) ? 1 : Integer.parseInt(pageStr);
-                int itemsPerPage = 10;
-                int totalItems = fullFilteredList.size();
-                int totalPages = (int) Math.ceil((double) totalItems / itemsPerPage);
-                int fromIndex = (currentPage - 1) * itemsPerPage;
-                int toIndex = Math.min(fromIndex + itemsPerPage, totalItems);
-                List<Map<String, Object>> displayListForPage = (List<Map<String, Object>>) ((fromIndex < toIndex) ? new ArrayList<>(fullFilteredList.subList(fromIndex, toIndex)) : new ArrayList<>());
+            // Phân trang
+            int currentPage = (pageStr == null || pageStr.isEmpty()) ? 1 : Integer.parseInt(pageStr);
+            int itemsPerPage = 10;
+            int totalItems = fullFilteredList.size();
+            int totalPages = (int) Math.ceil((double) totalItems / itemsPerPage);
+            int fromIndex = (currentPage - 1) * itemsPerPage;
+            int toIndex = Math.min(fromIndex + itemsPerPage, totalItems);
+            List<Map<String, Object>> displayListForPage = (List<Map<String, Object>>) ((fromIndex < toIndex) ? new ArrayList<>(fullFilteredList.subList(fromIndex, toIndex)) : new ArrayList<>());
 
-                // === PHÂN LOẠI YÊU CẦU ĐỂ TRẢ VỀ KẾT QUẢ ===
-                if ("true".equals(isAjaxRequest)) {
-                    // Yêu cầu AJAX: Trả về JSON
-                    Map<String, Object> jsonData = new HashMap<>();
-                    jsonData.put("products", displayListForPage);
-                    jsonData.put("totalPages", totalPages);
-                    jsonData.put("currentPage", currentPage);
-                    jsonData.put("totalItems", totalItems);
+            // === PHÂN LOẠI YÊU CẦU ĐỂ TRẢ VỀ KẾT QUẢ ===
+            if ("true".equals(isAjaxRequest)) {
+                // Yêu cầu AJAX: Trả về JSON
+                Map<String, Object> jsonData = new HashMap<>();
+                jsonData.put("products", displayListForPage);
+                jsonData.put("totalPages", totalPages);
+                jsonData.put("currentPage", currentPage);
+                jsonData.put("totalItems", totalItems);
 
-                    response.setContentType("application/json");
-                    response.setCharacterEncoding("UTF-8");
-                    response.getWriter().write(gson.toJson(jsonData));
-                } else {
-                    // Yêu cầu tải trang bình thường: Forward đến JSP
-                    request.setAttribute("displayList", displayListForPage);
-                    request.setAttribute("categories", allCategories);
-                    request.setAttribute("totalPages", totalPages);
-                    request.setAttribute("currentPage", currentPage);
-                    request.setAttribute("totalItems", totalItems); // Gửi thêm tổng số kết quả
-                    request.setAttribute("searchTerm", searchTerm);
-                    request.setAttribute("filterCategory", filterCategory);
-                    request.setAttribute("sortBy", sortBy);
-                    request.setAttribute("sortOrder", sortOrder);
+                response.setContentType("application/json");
+                response.setCharacterEncoding("UTF-8");
+                response.getWriter().write(gson.toJson(jsonData));
+            } else {
+                // Yêu cầu tải trang bình thường: Forward đến JSP
+                request.setAttribute("displayList", displayListForPage);
+                request.setAttribute("categories", allCategories);
+                request.setAttribute("totalPages", totalPages);
+                request.setAttribute("currentPage", currentPage);
+                request.setAttribute("totalItems", totalItems); // Gửi thêm tổng số kết quả
+                request.setAttribute("searchTerm", searchTerm);
+                request.setAttribute("filterCategory", filterCategory);
+                request.setAttribute("sortBy", sortBy);
+                request.setAttribute("sortOrder", sortOrder);
 
-                    List<Supplier> suppliers = purchaseDAO.getAllActiveSuppliers();
-                    request.setAttribute("suppliersForModal", suppliers);
+                List<Supplier> suppliers = purchaseDAO.getAllActiveSuppliers();
+                request.setAttribute("suppliersForModal", suppliers);
 
-                    request.getRequestDispatcher("/WEB-INF/views/staff/stock/stock-statistics.jsp").forward(request, response);
-                }
+                request.getRequestDispatcher("/WEB-INF/views/staff/stock/stock-statistics.jsp").forward(request, response);
+            }
 
-            }catch (ServletException | IOException | NumberFormatException | SQLException e) {
+        } catch (ServletException | IOException | NumberFormatException | SQLException e) {
             LOGGER.log(Level.SEVERE, "Error in StockController", e);
             // Nếu là yêu cầu ajax thì trả về lỗi JSON, nếu không thì ném exception
             if ("true".equals(request.getParameter("ajax"))) {
@@ -218,6 +226,6 @@ public class StockController extends HttpServlet {
                 throw new ServletException("An unexpected error occurred in StockController", e);
             }
         }
-        }
-    
+    }
+
 }

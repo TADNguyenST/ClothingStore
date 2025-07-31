@@ -8,6 +8,7 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import model.*;
 
 import java.io.IOException;
@@ -39,7 +40,16 @@ public class StockDetailController extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        // Lấy tham số 'ajax' để xác định loại yêu cầu
+        HttpSession session = request.getSession();
+        Users currentUser = (Users) session.getAttribute("admin");
+        if (currentUser == null) {
+            currentUser = (Users) session.getAttribute("staff");
+        }
+
+        if (currentUser == null) {
+            response.sendRedirect(request.getContextPath() + "/AdminLogin");
+            return;
+        }
         String ajaxRequest = request.getParameter("ajax");
 
         try {

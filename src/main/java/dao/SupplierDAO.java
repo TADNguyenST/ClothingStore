@@ -132,4 +132,100 @@ public class SupplierDAO {
             ps.executeUpdate();
         }
     }
+
+    public Map<String, Object> getSupplierDashboardStats(long supplierId, String startDate, String endDate) throws SQLException {
+        Map<String, Object> stats = new HashMap<>();
+        String sql = "SELECT "
+                + "COUNT(purchase_order_id) AS orderCount, "
+                + "SUM(total_amount) AS totalValue "
+                + "FROM purchase_orders "
+                + "WHERE supplier_id = ? "
+                + "AND status = 'Delivered' "
+                + "AND (order_date >= ? AND order_date < DATEADD(day, 1, ?))";
+
+        try ( Connection conn = new DBContext().getConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, supplierId);
+            ps.setString(2, startDate);
+            ps.setString(3, endDate);
+            try ( ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    stats.put("orderCount", rs.getInt("orderCount"));
+                    stats.put("totalValue", rs.getBigDecimal("totalValue"));
+                }
+            }
+        }
+        return stats;
+    }
+
+    public List<Map<String, Object>> getTopProductsBySupplier(long supplierId) throws SQLException {
+        List<Map<String, Object>> productList = new ArrayList<>();
+        String sql = "SELECT TOP 5 p.name, SUM(pod.quantity) as totalQuantity "
+                + "FROM purchase_order_details pod "
+                + "JOIN purchase_orders po ON pod.purchase_order_id = po.purchase_order_id "
+                + "JOIN product_variants pv ON pod.variant_id = pv.variant_id "
+                + "JOIN products p ON pv.product_id = p.product_id "
+                + "WHERE po.supplier_id = ? AND po.status = 'Delivered' "
+                + "GROUP BY p.name "
+                + "ORDER BY totalQuantity DESC";
+
+        try ( Connection conn = new DBContext().getConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, supplierId);
+            try ( ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Map<String, Object> product = new HashMap<>();
+                    product.put("name", rs.getString("name"));
+                    product.put("totalQuantity", rs.getInt("totalQuantity"));
+                    productList.add(product);
+                }
+            }
+        }
+        return productList;
+    }
+    // Lấy danh sách sản phẩm đã nhập từ một nhà cung cấp, sắp xếp theo số lượng
+
+    public List<Map<String, Object>> getProductsSuppliedBySupplier(long supplierId, String startDate, String endDate) throws SQLException {
+        List<Map<String, Object>> productList = new ArrayList<>();
+        String sql = "SELECT p.name as productName, pv.sku, SUM(pod.quantity) as totalQuantity "
+                + "FROM purchase_order_details pod "
+                + "JOIN purchase_orders po ON pod.purchase_order_id = po.purchase_order_id "
+                + "JOIN product_variants pv ON pod.variant_id = pv.variant_id "
+                + "JOIN products p ON pv.product_id = p.product_id "
+                + "WHERE po.supplier_id = ? "
+                + "AND po.status = 'Delivered' "
+                + // Chỉ tính các đơn đã nhập kho
+                "AND (po.order_date >= ? AND po.order_date < DATEADD(day, 1, ?)) "
+                + "GROUP BY p.name, pv.sku "
+                + "ORDER BY totalQuantity DESC";
+
+        try ( Connection conn = new DBContext().getConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, supplierId);
+            ps.setString(2, startDate);
+            ps.setString(3, endDate);
+            try ( ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Map<String, Object> product = new HashMap<>();
+                    product.put("productName", rs.getString("productName"));
+                    product.put("sku", rs.getString("sku"));
+                    product.put("totalQuantity", rs.getInt("totalQuantity"));
+                    productList.add(product);
+                }
+            }
+        }
+        return productList;
+    }
+    // Thêm phương thức này vào file dao/PurchaseOrderDAO.java
+
+public void updatePurchaseOrderTotalAmount(long poId, Connection conn) throws SQLException {
+    String sql = "UPDATE po SET po.total_amount = ( " +
+                 "  SELECT SUM(pod.total_price) " +
+                 "  FROM purchase_order_details pod " +
+                 "  WHERE pod.purchase_order_id = po.purchase_order_id " +
+                 ") " +
+                 "FROM purchase_orders po WHERE po.purchase_order_id = ?";
+    
+    try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        ps.setLong(1, poId);
+        ps.executeUpdate();
+    }
+}
 }
