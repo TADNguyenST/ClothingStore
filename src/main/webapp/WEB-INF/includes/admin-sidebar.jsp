@@ -2,7 +2,6 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 
 <div class="sidebar">
-    <div class="sidebar-header">Admin Panel</div>
     <ul class="sidebar-menu">
         <li class="header">MAIN NAVIGATION</li>
 
@@ -139,13 +138,9 @@
             </a>
             <ul class="treeview-menu">
                 <li class="${requestScope.currentAction eq 'customerList' ? 'active' : ''}">
-                    <a href="${pageContext.request.contextPath}/admindashboard?action=customerList&module=customer"><i class="fa fa-circle-o"></i> Customer List</a>
-                </li>
-                <li class="${requestScope.currentAction eq 'customerDetails' ? 'active' : ''}">
-                    <a href="${pageContext.request.contextPath}/admindashboard?action=customerDetails&module=customer"><i class="fa fa-circle-o"></i> Customer Details</a>
-                </li>
-                <li class="${requestScope.currentAction eq 'customerOrderHistory' ? 'active' : ''}">
-                    <a href="${pageContext.request.contextPath}/admindashboard?action=customerOrderHistory&module=customer"><i class="fa fa-circle-o"></i> Order History</a>
+                    <a href="${pageContext.request.contextPath}/CustomerManagement">
+                        <i class="fa fa-circle-o"></i> Customer List
+                    </a>
                 </li>
             </ul>
         </li>
