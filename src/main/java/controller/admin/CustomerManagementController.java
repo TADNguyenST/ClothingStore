@@ -2,34 +2,39 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/JSP_Servlet/Servlet.java to edit this template
  */
-package controller.auth;
 
+package controller.admin;
+
+import dao.CustomerDAO;
+import dao.CustomerDAO.CustomerInfo;
 import java.io.IOException;
+import java.util.List;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
-/**
- *
- * @author Khoa
- */
-@WebServlet(name = "LogoutController", urlPatterns = {"/Logout"})
-public class LogoutController extends HttpServlet {
+
+@WebServlet(name = "CustomerManagementController", urlPatterns = {"/CustomerManagement"})
+public class CustomerManagementController extends HttpServlet {
 
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         response.setContentType("text/html;charset=UTF-8");
 
-        // Huỷ session hiện tại nếu tồn tại
-        HttpSession session = request.getSession(false); // false = không tạo session mới nếu chưa có
-        if (session != null) {
-            session.invalidate();
+        CustomerDAO dao = new CustomerDAO();
+        List<CustomerInfo> customerList;
+
+        String keyword = request.getParameter("keyword");
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            customerList = dao.searchCustomerByKeyword(keyword); // nếu có thêm hàm search
+        } else {
+            customerList = dao.getAllCustomers();
         }
 
-        // ✅ Redirect về trang chủ qua controller (chứ không phải forward tới JSP trực tiếp)
-        response.sendRedirect(request.getContextPath() + "/home");
+        request.setAttribute("customerList", customerList);
+        request.setAttribute("pageTitle", "Customer List");
+        request.getRequestDispatcher("/WEB-INF/views/admin/managecustomer/customer-list.jsp").forward(request, response);
     }
 
     @Override
@@ -46,7 +51,7 @@ public class LogoutController extends HttpServlet {
 
     @Override
     public String getServletInfo() {
-        return "Logout and redirect to homepage";
+        return "Customer management servlet";
     }
 }
 

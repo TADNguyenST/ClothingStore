@@ -260,12 +260,10 @@ public class StaffDAO extends DBContext {
         String deleteStaffSQL = "DELETE FROM staff WHERE user_id = ?";
         String deleteUserSQL = "DELETE FROM users WHERE user_id = ?";
 
-        try (Connection conn = getConnection()) {
+        try ( Connection conn = getConnection()) {
             conn.setAutoCommit(false);
             try (
-                PreparedStatement ps1 = conn.prepareStatement(deleteStaffSQL);
-                PreparedStatement ps2 = conn.prepareStatement(deleteUserSQL)
-            ) {
+                     PreparedStatement ps1 = conn.prepareStatement(deleteStaffSQL);  PreparedStatement ps2 = conn.prepareStatement(deleteUserSQL)) {
                 ps1.setLong(1, userId);
                 ps1.executeUpdate();
 
@@ -282,5 +280,33 @@ public class StaffDAO extends DBContext {
             ex.printStackTrace();
         }
         return false;
+    }
+    //StaffLogin
+
+    public Users loginStaff(String email, String password) {
+        String sql = "SELECT * FROM users WHERE email = ? AND role = 'Staff' AND status = 'Active'";
+        try ( PreparedStatement ps = getConnection().prepareStatement(sql)) {
+            ps.setString(1, email);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                String hashedPassword = rs.getString("password");
+                if (PasswordUtil.verifyPassword(password, hashedPassword)) { // dùng đúng hàm verifyPassword
+                    return new Users(
+                            rs.getLong("user_id"),
+                            rs.getString("email"),
+                            rs.getString("password"),
+                            rs.getString("full_name"),
+                            rs.getString("phone_number"),
+                            rs.getString("status"),
+                            rs.getString("role"),
+                            rs.getTimestamp("created_at"),
+                            rs.getTimestamp("updated_at")
+                    );
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }
