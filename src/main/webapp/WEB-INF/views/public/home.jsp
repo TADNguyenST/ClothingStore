@@ -5,7 +5,6 @@
 <%@ page import="java.util.Locale" %>
 <%@ page import="dao.CategoryDAO" %>
 <%@ page import="model.Category" %>
-<%@ page import="java.sql.SQLException" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%
     String pageTitle = (String) request.getAttribute("pageTitle");
@@ -18,7 +17,6 @@
     Set<Integer> wishlistProductIds = (Set<Integer>) request.getAttribute("wishlistProductIds");
     NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(new Locale("vi", "VN"));
     request.setAttribute("pageTitle", pageTitle);
-
     Long menCategoryId = null;
     Long womenCategoryId = null;
     boolean showMenCategory = false;
@@ -39,9 +37,7 @@
                         + ", parentCategoryId=" + (c != null ? c.getParentCategoryId() : "null")
                         + ", isActive=" + (c != null ? c.isActive() : "null") + "]");
             }
-
             List<Category> parentCats = parentCategories;
-
             if (!parentCats.isEmpty()) {
                 menCategoryId = parentCats.get(0).getCategoryId();
                 showMenCategory = true;
@@ -56,7 +52,6 @@
                 System.out.println("Warning: No parent categories found, hiding Men and Women sections");
                 categoryError = "No categories available. Please contact the administrator.";
             }
-
             System.out.println("Men Category ID: " + menCategoryId);
             System.out.println("Women Category ID: " + womenCategoryId);
         }
@@ -68,9 +63,7 @@
         categoryError = "Error loading categories: " + e.getMessage();
     }
 %>
-
 <jsp:include page="/WEB-INF/views/common/header.jsp" />
-
 <style>
     body {
         font-family: 'Poppins', sans-serif;
@@ -305,7 +298,6 @@
         }
     }
 </style>
-
 <div class="hero-section">
     <div class="content">
         <h1>Discover Your Style</h1>
@@ -313,7 +305,6 @@
         <a href="${pageContext.request.contextPath}/ProductList" class="btn btn-light">Shop Now</a>
     </div>
 </div>
-
 <div class="category-section">
     <div class="container">
         <h2 class="section-title">Shop by Category</h2>
@@ -348,7 +339,6 @@
         </div>
     </div>
 </div>
-
 <div class="product-section">
     <div class="container">
         <h2 class="section-title">New Arrivals</h2>
@@ -413,7 +403,6 @@
         </div>
     </div>
 </div>
-
 <div class="promo-section">
     <div class="container">
         <h2>Exclusive Offers Await</h2>
@@ -421,7 +410,6 @@
         <a href="${pageContext.request.contextPath}/ProductList/sale" class="btn btn-light">Explore Deals</a>
     </div>
 </div>
-
 <div class="product-section">
     <div class="container">
         <h2 class="section-title">Best Sellers</h2>
@@ -486,8 +474,6 @@
         </div>
     </div>
 </div>
-
-<!-- Toast Container -->
 <div class="toast-container position-fixed bottom-0 end-0 p-3">
     <div id="successToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
         <div class="toast-header bg-success text-white">
@@ -504,9 +490,7 @@
         <div class="toast-body" id="errorToastBody"></div>
     </div>
 </div>
-
 <jsp:include page="/WEB-INF/views/common/footer.jsp" />
-
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         var toastSuccess = new bootstrap.Toast(document.getElementById('successToast'), {delay: 3000});
@@ -519,37 +503,29 @@
             toast.show();
         }
 
-        // Use the global updateCartCount function from header.jsp
         function updateCartCount() {
-            if (window.updateCartCount) {
-                window.updateCartCount();
-            } else {
-                // Fallback if global function is not available
-                fetch('${pageContext.request.contextPath}/customer/cart/count', {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json'
-                    }
-                })
-                        .then(response => {
-                            if (!response.ok)
-                                throw new Error('Network response was not ok: ' + response.statusText);
-                            return response.json();
-                        })
-                        .then(data => {
-                            const cartCountElement = document.getElementById('cartCount');
-                            if (cartCountElement) {
-                                cartCountElement.textContent = data.count || 0;
-                                console.log('Cart count updated:', data.count);
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Error updating cart count:', error);
-                            const cartCountElement = document.getElementById('cartCount');
-                            if (cartCountElement)
-                                cartCountElement.textContent = '0';
-                        });
-            }
+            fetch('${pageContext.request.contextPath}/customer/cart/count', {
+                method: 'GET',
+                headers: {'Accept': 'application/json'}
+            })
+                    .then(response => {
+                        if (!response.ok)
+                            throw new Error('Network response was not ok: ' + response.statusText);
+                        return response.json();
+                    })
+                    .then(data => {
+                        const cartCountElement = document.getElementById('cartCount');
+                        if (cartCountElement) {
+                            cartCountElement.textContent = data.count || 0;
+                            console.log('Cart count updated:', data.count);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error updating cart count:', error);
+                        const cartCountElement = document.getElementById('cartCount');
+                        if (cartCountElement)
+                            cartCountElement.textContent = '0';
+                    });
         }
 
         document.querySelectorAll('.add-to-cart-btn').forEach(button => {
@@ -561,6 +537,7 @@
                 const hasStock = form.getAttribute('data-has-stock') === 'true';
                 const quantity = parseInt(form.querySelector('input[name="quantity"]').value);
                 const csrfToken = form.querySelector('input[name="csrfToken"]').value;
+                console.log('Sending add to cart request:', {productId, variantId, quantity, csrfToken});
 
                 if (!hasStock) {
                     showToast('Product is out of stock.', false);
@@ -568,6 +545,10 @@
                 }
                 if (isNaN(quantity) || quantity < 1) {
                     showToast('Invalid quantity.', false);
+                    return;
+                }
+                if (!csrfToken) {
+                    showToast('CSRF token is missing.', false);
                     return;
                 }
 
@@ -595,12 +576,7 @@
                             console.log('Add to Cart response:', result);
                             if (result.success) {
                                 showToast(result.message, true);
-                                // Update cart count in header
-                                if (window.updateCartCount) {
-                                    window.updateCartCount();
-                                } else {
-                                    updateCartCount();
-                                }
+                                updateCartCount();
                             } else {
                                 showToast(result.message || 'Failed to add to cart.', false);
                             }

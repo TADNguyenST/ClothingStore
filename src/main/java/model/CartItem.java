@@ -1,26 +1,19 @@
 package model;
 
 import java.math.BigDecimal;
-import java.sql.Timestamp;
 
 public class CartItem {
 
     private long cartItemId;
-    private long customerId;
     private long variantId;
+    private long productId;
     private int quantity;
-    private Timestamp dateAdded;
-
+    private BigDecimal unitPrice;
     private String productName;
-    private String productImageUrl;
     private String size;
     private String color;
-    private String sku;
-    private BigDecimal unitPrice;
-    private BigDecimal totalPrice;
-
-    public CartItem() {
-    }
+    private String imageUrl;
+    private int availableStock;
 
     public long getCartItemId() {
         return cartItemId;
@@ -28,14 +21,6 @@ public class CartItem {
 
     public void setCartItemId(long cartItemId) {
         this.cartItemId = cartItemId;
-    }
-
-    public long getCustomerId() {
-        return customerId;
-    }
-
-    public void setCustomerId(long customerId) {
-        this.customerId = customerId;
     }
 
     public long getVariantId() {
@@ -46,6 +31,14 @@ public class CartItem {
         this.variantId = variantId;
     }
 
+    public long getProductId() {
+        return productId;
+    }
+
+    public void setProductId(long productId) {
+        this.productId = productId;
+    }
+
     public int getQuantity() {
         return quantity;
     }
@@ -54,12 +47,12 @@ public class CartItem {
         this.quantity = quantity;
     }
 
-    public Timestamp getDateAdded() {
-        return dateAdded;
+    public BigDecimal getUnitPrice() {
+        return unitPrice;
     }
 
-    public void setDateAdded(Timestamp dateAdded) {
-        this.dateAdded = dateAdded;
+    public void setUnitPrice(BigDecimal unitPrice) {
+        this.unitPrice = unitPrice;
     }
 
     public String getProductName() {
@@ -68,14 +61,6 @@ public class CartItem {
 
     public void setProductName(String productName) {
         this.productName = productName;
-    }
-
-    public String getProductImageUrl() {
-        return productImageUrl;
-    }
-
-    public void setProductImageUrl(String productImageUrl) {
-        this.productImageUrl = productImageUrl;
     }
 
     public String getSize() {
@@ -94,30 +79,26 @@ public class CartItem {
         this.color = color;
     }
 
-    public String getSku() {
-        return sku;
+    public String getImageUrl() {
+        return imageUrl;
     }
 
-    public void setSku(String sku) {
-        this.sku = sku;
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 
-    public BigDecimal getUnitPrice() {
-        return unitPrice != null ? unitPrice : BigDecimal.ZERO;
+    public int getAvailableStock() {
+        return availableStock;
     }
 
-    public void setUnitPrice(BigDecimal unitPrice) {
-        this.unitPrice = unitPrice != null ? unitPrice : BigDecimal.ZERO;
+    public void setAvailableStock(int availableStock) {
+        this.availableStock = availableStock;
     }
 
     public BigDecimal getTotalPrice() {
-        if (getUnitPrice() != null && getQuantity() > 0) {
-            return getUnitPrice().multiply(BigDecimal.valueOf(getQuantity()));
+        if (unitPrice == null) {
+            return BigDecimal.ZERO;
         }
-        return BigDecimal.ZERO;
-    }
-
-    public void setTotalPrice(BigDecimal totalPrice) {
-        this.totalPrice = totalPrice;
+        return unitPrice.multiply(BigDecimal.valueOf(quantity));
     }
 }
