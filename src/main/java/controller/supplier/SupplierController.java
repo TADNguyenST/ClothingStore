@@ -36,10 +36,9 @@ public class SupplierController extends HttpServlet {
     @Override
     public void init() {
         supplierDAO = new SupplierDAO();
-        // Cấu hình Gson để xử lý kiểu LocalDate sử dụng lớp nội tại bên dưới
         gson = new GsonBuilder()
                 .registerTypeAdapter(LocalDate.class, new LocalDateAdapter())
-                .setPrettyPrinting() // Tùy chọn: giúp JSON dễ đọc khi debug
+                .setPrettyPrinting()
                 .create();
     }
 
@@ -50,7 +49,7 @@ public class SupplierController extends HttpServlet {
     private void sendJsonResponse(HttpServletResponse response, Object object) throws IOException {
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
-        try ( PrintWriter out = response.getWriter()) {
+        try (PrintWriter out = response.getWriter()) {
             out.print(gson.toJson(object));
             out.flush();
         }
@@ -76,7 +75,7 @@ public class SupplierController extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        HttpSession session = request.getSession(false); // Không tạo session mới nếu chưa có
+        HttpSession session = request.getSession(false);
         Users currentUser = (session != null)
                 ? ((Users) session.getAttribute("admin") != null
                 ? (Users) session.getAttribute("admin")
@@ -90,7 +89,6 @@ public class SupplierController extends HttpServlet {
 
         String action = request.getParameter("action");
         if (action == null) {
-            // Nếu không có action, chuyển đến trang JSP chính
             request.getRequestDispatcher("/WEB-INF/views/staff/supplier/supplier-list.jsp").forward(request, response);
             return;
         }
@@ -104,12 +102,12 @@ public class SupplierController extends HttpServlet {
                     getSupplierDetails(request, response);
                     break;
                 default:
-                    sendErrorResponse(response, HttpServletResponse.SC_BAD_REQUEST, "Invalid action specified.");
+                    request.getRequestDispatcher("/WEB-INF/views/staff/supplier/supplier-list.jsp").forward(request, response);
                     break;
             }
         } catch (SQLException e) {
             sendErrorResponse(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Database error occurred.");
-            e.printStackTrace(); // Ghi lại lỗi để debug
+            e.printStackTrace();
         } catch (Exception e) {
             throw new ServletException(e);
         }
@@ -204,6 +202,8 @@ public class SupplierController extends HttpServlet {
         String address = request.getParameter("address") != null ? request.getParameter("address").trim() : "";
         boolean isActive = "true".equals(request.getParameter("isActive"));
 
+        long currentId = (idStr != null && !idStr.isEmpty() && !"null".equals(idStr)) ? Long.parseLong(idStr) : 0L;
+
         List<String> errors = new ArrayList<>();
         if (name.isEmpty()) {
             errors.add("Supplier name is required.");
@@ -216,6 +216,13 @@ public class SupplierController extends HttpServlet {
         }
         if (address.isEmpty()) {
             errors.add("Address is required.");
+        }
+
+        // ✅ KIỂM TRA SĐT TRÙNG LẶP
+        if (errors.isEmpty()) {
+            if (supplierDAO.isPhoneNumberExists(phone, currentId)) {
+                errors.add("Phone number already exists for another supplier.");
+            }
         }
 
         if (!errors.isEmpty()) {
@@ -234,12 +241,12 @@ public class SupplierController extends HttpServlet {
         supplierToSave.setAddress(address);
         supplierToSave.setIsActive(isActive);
 
-        boolean isNew = (idStr == null || idStr.isEmpty() || "null".equals(idStr));
+        boolean isNew = (currentId == 0L);
 
         if (isNew) {
             supplierDAO.addSupplier(supplierToSave);
         } else {
-            supplierToSave.setSupplierId(Long.parseLong(idStr));
+            supplierToSave.setSupplierId(currentId);
             supplierDAO.updateSupplier(supplierToSave);
         }
 
@@ -258,12 +265,7 @@ public class SupplierController extends HttpServlet {
         }
     }
 
-    /**
-     * Lớp nội tại tĩnh để giúp Gson chuyển đổi kiểu dữ liệu LocalDate. Nó chỉ
-     * được sử dụng bên trong SupplierController.
-     */
     private static class LocalDateAdapter implements JsonSerializer<LocalDate>, JsonDeserializer<LocalDate> {
-
         private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
         @Override

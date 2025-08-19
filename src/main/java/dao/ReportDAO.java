@@ -14,8 +14,8 @@ import java.util.Map;
 public class ReportDAO {
 
     /**
-     * Phương thức tổng hợp, gọi tất cả các phương thức con để lấy dữ liệu cho dashboard.
-     * @return một đối tượng CombinedReportDTO chứa tất cả dữ liệu báo cáo.
+     * PhÆ°Æ¡ng thá»©c tá»•ng há»£p, gá»�i táº¥t cáº£ cÃ¡c phÆ°Æ¡ng thá»©c con Ä‘á»ƒ láº¥y dá»¯ liá»‡u cho dashboard.
+     * @return má»™t Ä‘á»‘i tÆ°á»£ng CombinedReportDTO chá»©a táº¥t cáº£ dá»¯ liá»‡u bÃ¡o cÃ¡o.
      */
     public CombinedReportDTO getCombinedReportData(String startDate, String endDate, String reportType, String productSortBy, String productSortOrder, String orderSortBy, String orderSortOrder) throws SQLException {
         CombinedReportDTO combinedData = new CombinedReportDTO();
@@ -35,7 +35,7 @@ public class ReportDAO {
     }
     
     /**
-     * Lấy danh sách sản phẩm đầy đủ, có sắp xếp và lọc.
+     * Láº¥y danh sÃ¡ch sáº£n pháº©m Ä‘áº§y Ä‘á»§, cÃ³ sáº¯p xáº¿p vÃ  lá»�c.
      */
     public List<ProductReportDTO> getProductReport(String startDate, String endDate, long categoryId, String sortBy, String sortOrder) throws SQLException {
         List<ProductReportDTO> reportList = new ArrayList<>();
@@ -67,7 +67,7 @@ public class ReportDAO {
     }
 
     /**
-     * Lấy các chỉ số KPI cho báo cáo doanh thu theo sản phẩm.
+     * Láº¥y cÃ¡c chá»‰ sá»‘ KPI cho bÃ¡o cÃ¡o doanh thu theo sáº£n pháº©m.
      */
     public Map<String, Object> getRevenueKpis(String startDate, String endDate) throws SQLException {
         Map<String, Object> kpis = new HashMap<>();
@@ -86,7 +86,7 @@ public class ReportDAO {
     }
 
     /**
-     * Lấy các chỉ số KPI cho báo cáo sản phẩm bán chạy.
+     * Láº¥y cÃ¡c chá»‰ sá»‘ KPI cho bÃ¡o cÃ¡o sáº£n pháº©m bÃ¡n cháº¡y.
      */
     public Map<String, Object> getBestSellingKpis(String startDate, String endDate) throws SQLException {
         Map<String, Object> kpis = new HashMap<>();
@@ -105,7 +105,7 @@ public class ReportDAO {
     }
 
     /**
-     * Lấy các chỉ số KPI cho toàn hệ thống.
+     * Láº¥y cÃ¡c chá»‰ sá»‘ KPI cho toÃ n há»‡ thá»‘ng.
      */
     public Map<String, Object> getSystemRevenueKpis(String startDate, String endDate) throws SQLException {
         Map<String, Object> kpis = new HashMap<>();
@@ -125,7 +125,7 @@ public class ReportDAO {
     }
 
     /**
-     * Lấy dữ liệu doanh thu theo thời gian cho biểu đồ.
+     * Láº¥y dá»¯ liá»‡u doanh thu theo thá»�i gian cho biá»ƒu Ä‘á»“.
      */
     public Map<String, BigDecimal> getRevenueOverTime(String startDate, String endDate, String groupBy) throws SQLException {
         Map<String, BigDecimal> revenueData = new LinkedHashMap<>();
@@ -149,7 +149,7 @@ public class ReportDAO {
     }
     
     /**
-     * Lấy danh sách chi tiết các đơn hàng, có sắp xếp.
+     * Láº¥y danh sÃ¡ch chi tiáº¿t cÃ¡c Ä‘Æ¡n hÃ ng, cÃ³ sáº¯p xáº¿p.
      */
     public List<Map<String, Object>> getOrdersReport(String startDate, String endDate, String sortBy, String sortOrder) throws SQLException {
         List<Map<String, Object>> orders = new ArrayList<>();

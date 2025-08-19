@@ -1,251 +1,223 @@
 package controller.customer;
 
-import com.google.gson.Gson;
 import dao.CartItemDAO;
-import dao.CustomerDAO;
-import dao.ProductDAO;
+import model.CartItem;
+
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import model.CartItem;
-import model.Customer;
-import model.Users;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.math.BigDecimal;
-import java.util.HashMap;
+import java.sql.SQLException;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-@WebServlet(name = "CartController", urlPatterns = {"/customer/cart", "/customer/cart/count"})
+import org.json.JSONObject;
+
+@WebServlet({"/customer/cart", "/customer/cart/count"})
 public class CartController extends HttpServlet {
 
     private static final Logger LOGGER = Logger.getLogger(CartController.class.getName());
-    private final CartItemDAO cartItemDAO = new CartItemDAO();
-    private final CustomerDAO customerDAO = new CustomerDAO();
-    private final ProductDAO productDAO = new ProductDAO();
-    private final Gson gson = new Gson();
+    private CartItemDAO cartItemDAO;
 
-    private long getCustomerId(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        HttpSession session = request.getSession(false);
-        if (session == null || session.getAttribute("user") == null) {
-            response.sendRedirect(request.getContextPath() + "/Login"); // Đảm bảo "/Login" với chữ "L" viết hoa
-            return -1;
-        }
-
-        Users user = (Users) session.getAttribute("user");
-        Customer customer = customerDAO.getCustomerByUserId(user.getUserId());
-        if (customer == null) {
-            response.sendRedirect(request.getContextPath() + "/Login"); // Đảm bảo "/Login" với chữ "L" viết hoa
-            return -1;
-        }
-        return customer.getCustomerId();
+    @Override
+    public void init() throws ServletException {
+        cartItemDAO = new CartItemDAO();
     }
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        long customerId = getCustomerId(request, response);
-        if (customerId == -1) {
-            return;
-        }
 
+        HttpSession session = request.getSession();
+        Long userId = (Long) session.getAttribute("userId");
         String path = request.getServletPath();
+
+        // API đếm số lượng badge
         if ("/customer/cart/count".equals(path)) {
-            int count = cartItemDAO.getCartItemsByCustomerId(customerId).size();
-            response.setContentType("application/json");
-            response.setCharacterEncoding("UTF-8");
-            Map<String, Integer> result = new HashMap<>();
-            result.put("count", count);
-            String json = gson.toJson(result);
-            response.getWriter().write(json);
+            handleCartCount(request, response, userId);
             return;
         }
 
-        List<CartItem> cartItems = cartItemDAO.getCartItemsByCustomerId(customerId);
-        BigDecimal subtotal = BigDecimal.ZERO;
-        for (CartItem item : cartItems) {
-            BigDecimal totalPrice = item.getTotalPrice();
-            if (totalPrice != null) {
-                subtotal = subtotal.add(totalPrice);
-            }
-        }
+        // Cho phép GUEST truy cập trang giỏ hàng
+        try {
+            List<CartItem> cartItems = null;
+            BigDecimal totalAmount = BigDecimal.ZERO;
 
-        request.setAttribute("cartItems", cartItems);
-        request.setAttribute("subtotal", subtotal);
-        request.setAttribute("pageTitle", "Shopping Cart");
-        request.getRequestDispatcher("/WEB-INF/views/customer/cart/cart.jsp").forward(request, response);
+            if (userId != null) {
+                long customerId = cartItemDAO.getCustomerIdByUserId(userId);
+                cartItems = cartItemDAO.getCartItems(customerId);
+                LOGGER.log(Level.INFO, "Fetched {0} cart items for customerId={1}",
+                        new Object[]{(cartItems == null ? 0 : cartItems.size()), customerId});
+
+                if (cartItems != null) {
+                    for (CartItem item : cartItems) {
+                        if (item.getTotalPrice() != null) {
+                            totalAmount = totalAmount.add(item.getTotalPrice());
+                        }
+                    }
+                }
+            } else {
+                // Guest: để cartItems = null để JSP hiện "Your cart is empty"
+                LOGGER.log(Level.INFO, "Guest visits cart page.");
+            }
+
+            request.setAttribute("cartItems", cartItems);
+            request.setAttribute("totalAmount", totalAmount);
+            request.getRequestDispatcher("/WEB-INF/views/customer/cart/cart.jsp").forward(request, response);
+
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error fetching cart items for userId=" + userId, e);
+            throw new ServletException("Database error", e);
+        }
     }
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        long customerId = getCustomerId(request, response);
-        if (customerId == -1) {
-            return;
-        }
 
-        String action = request.getParameter("action");
-        if (action == null) {
-            sendJsonResponse(response, HttpServletResponse.SC_BAD_REQUEST, false, "Action parameter is missing.", null);
-            return;
-        }
+        HttpSession session = request.getSession();
+        Long userId = (Long) session.getAttribute("userId");
 
-        boolean success = false;
-        String message = "";
-        Map<String, Object> data = new HashMap<>();
-        try {
-            switch (action) {
-                case "add": {
-                    long variantId = Long.parseLong(getValidatedParameter(request, "variantId", "Variant ID"));
-                    int addQuantity = Integer.parseInt(getValidatedParameter(request, "quantity", "Quantity"));
-                    if (addQuantity <= 0) {
-                        message = "Quantity must be greater than 0.";
-                        break;
-                    }
-                    int availableQuantity = getAvailableQuantity(variantId, request, response);
-                    if (availableQuantity < 0) {
-                        message = "Error fetching available quantity.";
-                        break;
-                    }
-                    if (addQuantity > availableQuantity) {
-                        message = "Requested quantity exceeds available stock: " + availableQuantity;
-                        break;
-                    }
-                    cartItemDAO.addToCart(customerId, variantId, addQuantity);
-                    success = true;
-                    message = "Product added to cart!";
-                    data.put("subtotal", calculateSubtotal(customerId));
-                    break;
-                }
-                case "update": {
-                    String cartItemIdStr = getValidatedParameter(request, "cartItemId", "Cart Item ID");
-                    LOGGER.info("Received cartItemId: " + cartItemIdStr); // Debug
-                    long cartItemId = Long.parseLong(cartItemIdStr);
-                    int newQuantity = Integer.parseInt(getValidatedParameter(request, "quantity", "Quantity"));
-                    if (newQuantity <= 0) {
-                        cartItemDAO.removeFromCart(cartItemId);
-                        success = true;
-                        message = "Item removed from cart.";
-                        break;
-                    }
-                    CartItem item = cartItemDAO.findCartItem(customerId, cartItemId);
-                    if (item == null) {
-                        message = "Cart item not found.";
-                        break;
-                    }
-                    Long variantIdObj = item.getVariantId();
-                    if (variantIdObj == null) {
-                        LOGGER.warning("variantId is null for cartItemId: " + cartItemId);
-                        message = "Invalid variant ID (null) for cart item.";
-                        break;
-                    }
-                    long variantId = variantIdObj;
-                    if (variantId <= 0) {
-                        LOGGER.warning("Invalid variantId: " + variantId + " for cartItemId: " + cartItemId);
-                        message = "Invalid variant ID for cart item.";
-                        break;
-                    }
-                    int availableQuantity = getAvailableQuantity(variantId, request, response);
-                    if (availableQuantity < 0) {
-                        message = "Error fetching available quantity.";
-                        break;
-                    }
-                    if (newQuantity > availableQuantity) {
-                        message = "Requested quantity exceeds available stock: " + availableQuantity;
-                        break;
-                    }
-                    cartItemDAO.updateQuantity(cartItemId, newQuantity);
-                    success = true;
-                    message = "Quantity updated successfully.";
-                    data.put("cartItemId", cartItemId);
-                    data.put("newQuantity", newQuantity);
-                    data.put("unitPrice", item.getUnitPrice() != null ? item.getUnitPrice().doubleValue() : 0.0); // Đảm bảo trả về số
-                    data.put("subtotal", calculateSubtotal(customerId).doubleValue()); // Đảm bảo trả về số
-                    break;
-                }
-                case "remove": {
-                    String cartItemIdStr = getValidatedParameter(request, "cartItemId", "Cart Item ID");
-                    LOGGER.info("Received cartItemId for remove: " + cartItemIdStr); // Debug
-                    long cartItemId = Long.parseLong(cartItemIdStr);
-                    cartItemDAO.removeFromCart(cartItemId);
-                    success = true;
-                    message = "Item removed from cart.";
-                    data.put("cartItemId", cartItemId);
-                    data.put("subtotal", calculateSubtotal(customerId).doubleValue()); // Đảm bảo trả về số
-                    break;
-                }
-                default:
-                    message = "Invalid action.";
-                    break;
-            }
-        } catch (NumberFormatException e) {
-            message = "Invalid input data for " + e.getMessage().split(":")[0] + ". Received value: " + request.getParameter(e.getMessage().split(":")[0]);
-            LOGGER.log(Level.WARNING, "NumberFormatException in CartController: {0}", e.getMessage());
-        } catch (IllegalArgumentException e) {
-            message = e.getMessage() + ". Received value: " + request.getParameter(e.getMessage().split(":")[0]);
-            LOGGER.log(Level.WARNING, "IllegalArgumentException in CartController: {0}", e.getMessage());
-        } catch (Exception e) {
-            message = "An unexpected error occurred: " + e.getMessage();
-            LOGGER.log(Level.SEVERE, "Unexpected error in CartController: {0}", e.getMessage());
-        }
-
-        sendJsonResponse(response, success ? HttpServletResponse.SC_OK : HttpServletResponse.SC_BAD_REQUEST, success, message, data);
-    }
-
-    private BigDecimal calculateSubtotal(long customerId) {
-        List<CartItem> cartItems = cartItemDAO.getCartItemsByCustomerId(customerId);
-        BigDecimal subtotal = BigDecimal.ZERO;
-        for (CartItem item : cartItems) {
-            BigDecimal totalPrice = item.getTotalPrice();
-            if (totalPrice != null) {
-                subtotal = subtotal.add(totalPrice);
-            }
-        }
-        return subtotal;
-    }
-
-    private String getValidatedParameter(HttpServletRequest request, String paramName, String paramDescription) {
-        String value = request.getParameter(paramName);
-        if (value == null || value.trim().isEmpty()) {
-            throw new IllegalArgumentException(paramDescription + " is required.");
-        }
-        return value;
-    }
-
-    private int getAvailableQuantity(long variantId, HttpServletRequest request, HttpServletResponse response) throws IOException {
-        try {
-            int available = productDAO.getAvailableQuantityByVariantId(variantId);
-            if (available < 0) {
-                sendJsonResponse(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, false, "Invalid available quantity for variant ID: " + variantId, null);
-                return -1;
-            }
-            return available;
-        } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Error fetching available quantity for variantId: " + variantId, e);
-            sendJsonResponse(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, false, "Error fetching available quantity: " + e.getMessage(), null);
-            return -1;
-        }
-    }
-
-    private void sendJsonResponse(HttpServletResponse response, int statusCode, boolean success, String message, Object data) throws IOException {
-        response.setStatus(statusCode);
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
         response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
         response.setHeader("Pragma", "no-cache");
         response.setHeader("Expires", "0");
-        Map<String, Object> result = new HashMap<>();
-        result.put("success", success);
-        result.put("message", message);
-        result.put("data", data);
-        String json = gson.toJson(result);
-        LOGGER.log(Level.INFO, "JSON response: {0}", json);
-        response.getWriter().write(json);
+
+        PrintWriter out = response.getWriter();
+        JSONObject json = new JSONObject();
+
+        // Các thao tác POST vẫn yêu cầu đăng nhập
+        if (userId == null) {
+            json.put("success", false);
+            json.put("message", "Please log in to perform this action.");
+            out.print(json);
+            out.flush();
+            return;
+        }
+
+        String action = request.getParameter("action");
+        String csrfToken = request.getParameter("csrfToken");
+        String sessionCsrfToken = (String) session.getAttribute("csrfToken");
+        if (csrfToken == null || !csrfToken.equals(sessionCsrfToken)) {
+            LOGGER.log(Level.WARNING, "Invalid CSRF token for userId {0}. Received={1}, Expected={2}",
+                    new Object[]{userId, csrfToken, sessionCsrfToken});
+            json.put("success", false);
+            json.put("message", "Invalid CSRF token.");
+            out.print(json);
+            out.flush();
+            return;
+        }
+
+        try {
+            long customerId = cartItemDAO.getCustomerIdByUserId(userId);
+
+            if ("add".equals(action)) {
+                long variantId = Long.parseLong(request.getParameter("variantId"));
+                int quantity = Integer.parseInt(request.getParameter("quantity"));
+                if (quantity < 1) {
+                    json.put("success", false);
+                    json.put("message", "Invalid quantity.");
+                } else {
+                    boolean success = cartItemDAO.addToCart(customerId, variantId, quantity);
+                    if (success) {
+                        int newCount = cartItemDAO.getCartItemCount(customerId);
+                        json.put("success", true);
+                        json.put("message", "Product added to cart successfully.");
+                        json.put("cartCount", newCount);
+                    } else {
+                        json.put("success", false);
+                        json.put("message", "Failed to add to cart: Out of stock or invalid request.");
+                    }
+                }
+
+            } else if ("update".equals(action)) {
+                long cartItemId = Long.parseLong(request.getParameter("cartItemId"));
+                int quantity = Integer.parseInt(request.getParameter("quantity"));
+                if (quantity < 1) {
+                    json.put("success", false);
+                    json.put("message", "Invalid quantity.");
+                } else {
+                    // Truyền customerId theo DAO đã update (cartItemId, customerId, quantity)
+                    boolean success = cartItemDAO.updateCartItem(cartItemId, customerId, quantity);
+                    if (success) {
+                        int newCount = cartItemDAO.getCartItemCount(customerId);
+                        json.put("success", true);
+                        json.put("message", "Cart updated successfully.");
+                        json.put("cartCount", newCount);
+                    } else {
+                        json.put("success", false);
+                        json.put("message", "Failed to update cart: Out of stock or invalid request.");
+                    }
+                }
+
+            } else if ("remove".equals(action)) {
+                long cartItemId = Long.parseLong(request.getParameter("cartItemId"));
+                // Truyền customerId theo DAO đã update (cartItemId, customerId)
+                boolean success = cartItemDAO.removeCartItem(cartItemId, customerId);
+                if (success) {
+                    int newCount = cartItemDAO.getCartItemCount(customerId);
+                    json.put("success", true);
+                    json.put("message", "Item removed from cart successfully.");
+                    json.put("cartCount", newCount);
+                } else {
+                    json.put("success", false);
+                    json.put("message", "Failed to remove item.");
+                }
+
+            } else {
+                json.put("success", false);
+                json.put("message", "Invalid action.");
+            }
+
+            out.print(json);
+            out.flush();
+
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error processing cart action for userId=" + userId, e);
+            json.put("success", false);
+            json.put("message", "Database error: " + e.getMessage());
+            out.print(json);
+            out.flush();
+        } catch (NumberFormatException e) {
+            LOGGER.log(Level.WARNING, "Invalid input data for userId=" + userId, e);
+            json.put("success", false);
+            json.put("message", "Invalid input data.");
+            out.print(json);
+            out.flush();
+        }
+    }
+
+    private void handleCartCount(HttpServletRequest request, HttpServletResponse response, Long userId)
+            throws IOException {
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+        JSONObject json = new JSONObject();
+        try ( PrintWriter out = response.getWriter()) {
+            if (userId == null) {
+                // Guest -> 0
+                json.put("count", 0);
+            } else {
+                long customerId = cartItemDAO.getCustomerIdByUserId(userId);
+                int count = cartItemDAO.getCartItemCount(customerId);
+                json.put("count", count);
+            }
+            out.print(json);
+            out.flush();
+        } catch (SQLException e) {
+            Logger.getLogger(CartController.class.getName()).log(Level.SEVERE, "Error counting cart items", e);
+            try ( PrintWriter out = response.getWriter()) {
+                json.put("count", 0);
+                out.print(json);
+                out.flush();
+            }
+        }
     }
 }

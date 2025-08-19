@@ -180,4 +180,38 @@ public class UserDAO extends DBContext {
         }
         return null;
     }
+
+    public Users checkStaffLogin(String email, String password) {
+        String sql = "SELECT * FROM users WHERE email = ? AND password = ? AND role = 'Staff' AND status = 'Active'";
+        try ( Connection conn = getConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, email);
+            ps.setString(2, password); // KHÔNG mã hóa password
+            ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) {
+                return map(rs); // Sử dụng phương thức map có sẵn
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public Long getStaffIdByUserId(long userId) {
+        String sql = "SELECT staff_id FROM staff WHERE user_id = ?";
+        try ( Connection conn = new DBContext().getConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setLong(1, userId);
+
+            try ( ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getLong("staff_id");
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null; // Trả về null nếu không tìm thấy
+    }
+
 }

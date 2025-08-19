@@ -22,19 +22,17 @@ public class ProductDAO {
 
     public List<Product> getAll() {
         List<Product> list = new ArrayList<>();
-        String sql = "SELECT p.product_id, p.name, p.description, p.price, p.category_id, p.brand_id, p.material, p.status, " +
-                     "p.created_at, p.updated_at, c.category_id, c.name AS category_name, c.description AS category_description, " +
-                     "c.parent_category_id, c.is_active AS category_active, c.created_at AS category_created_at, " +
-                     "b.brand_id, b.name AS brand_name, b.description AS brand_description, b.logo_url, b.is_active AS brand_active, " +
-                     "b.created_at AS brand_created_at, " +
-                     "(SELECT TOP 1 image_url FROM product_images WHERE product_id = p.product_id AND is_main = 1) AS main_image_url " +
-                     "FROM products p " +
-                     "LEFT JOIN categories c ON p.category_id = c.category_id " +
-                     "LEFT JOIN brands b ON p.brand_id = b.brand_id";
+        String sql = "SELECT p.product_id, p.name, p.description, p.price, p.category_id, p.brand_id, p.material, p.status, "
+                + "p.created_at, p.updated_at, c.category_id, c.name AS category_name, c.description AS category_description, "
+                + "c.parent_category_id, c.is_active AS category_active, c.created_at AS category_created_at, "
+                + "b.brand_id, b.name AS brand_name, b.description AS brand_description, b.logo_url, b.is_active AS brand_active, "
+                + "b.created_at AS brand_created_at, "
+                + "(SELECT TOP 1 image_url FROM product_images WHERE product_id = p.product_id AND is_main = 1) AS main_image_url "
+                + "FROM products p "
+                + "LEFT JOIN categories c ON p.category_id = c.category_id "
+                + "LEFT JOIN brands b ON p.brand_id = b.brand_id";
 
-        try (Connection conn = DBContext.getNewConnection();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql);  ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
                 Product product = mapProduct(rs);
                 product.setVariants(getVariantsByProductId(product.getProductId()));
@@ -50,21 +48,20 @@ public class ProductDAO {
     }
 
     public Product getProductById(long productId) {
-        String sql = "SELECT p.product_id, p.name, p.description, p.price, p.category_id, p.brand_id, p.material, p.status, " +
-                     "p.created_at, p.updated_at, c.category_id, c.name AS category_name, c.description AS category_description, " +
-                     "c.parent_category_id, c.is_active AS category_active, c.created_at AS category_created_at, " +
-                     "b.brand_id, b.name AS brand_name, b.description AS brand_description, b.logo_url, b.is_active AS brand_active, " +
-                     "b.created_at AS brand_created_at, " +
-                     "(SELECT TOP 1 image_url FROM product_images WHERE product_id = p.product_id AND is_main = 1) AS main_image_url " +
-                     "FROM products p " +
-                     "LEFT JOIN categories c ON p.category_id = c.category_id " +
-                     "LEFT JOIN brands b ON p.brand_id = b.brand_id " +
-                     "WHERE p.product_id = ?";
+        String sql = "SELECT p.product_id, p.name, p.description, p.price, p.category_id, p.brand_id, p.material, p.status, "
+                + "p.created_at, p.updated_at, c.category_id, c.name AS category_name, c.description AS category_description, "
+                + "c.parent_category_id, c.is_active AS category_active, c.created_at AS category_created_at, "
+                + "b.brand_id, b.name AS brand_name, b.description AS brand_description, b.logo_url, b.is_active AS brand_active, "
+                + "b.created_at AS brand_created_at, "
+                + "(SELECT TOP 1 image_url FROM product_images WHERE product_id = p.product_id AND is_main = 1) AS main_image_url "
+                + "FROM products p "
+                + "LEFT JOIN categories c ON p.category_id = c.category_id "
+                + "LEFT JOIN brands b ON p.brand_id = b.brand_id "
+                + "WHERE p.product_id = ?";
 
-        try (Connection conn = DBContext.getNewConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setLong(1, productId);
-            try (ResultSet rs = ps.executeQuery()) {
+            try ( ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     Product product = mapProduct(rs);
                     product.setVariants(getVariantsByProductId(productId));
@@ -80,19 +77,19 @@ public class ProductDAO {
         }
     }
 
-    public List<Product> filterProductsForShopWithSort(List<String> colors, List<String> sizes, BigDecimal maxPrice, 
+    public List<Product> filterProductsForShopWithSort(List<String> colors, List<String> sizes, BigDecimal maxPrice,
             List<Long> brandIds, Long parentCategoryId, Long categoryId, int page, int pageSize, String sort) {
         List<Product> list = new ArrayList<>();
         StringBuilder sql = new StringBuilder(
-                "SELECT p.product_id, p.name, p.price, p.created_at, p.category_id, p.brand_id, p.status, " +
-                "c.name AS category_name, c.parent_category_id, c.is_active AS category_active, " +
-                "b.name AS brand_name, b.is_active AS brand_active, " +
-                "(SELECT TOP 1 image_url FROM product_images WHERE product_id = p.product_id AND is_main = 1) AS main_image_url, " +
-                "(SELECT TOP 1 variant_id FROM product_variants WHERE product_id = p.product_id) AS default_variant_id " +
-                "FROM products p " +
-                "JOIN categories c ON p.category_id = c.category_id " +
-                "LEFT JOIN brands b ON p.brand_id = b.brand_id " +
-                "WHERE p.status = 'Active' AND c.is_active = 1"
+                "SELECT p.product_id, p.name, p.price, p.created_at, p.category_id, p.brand_id, p.status, "
+                + "c.name AS category_name, c.parent_category_id, c.is_active AS category_active, "
+                + "b.name AS brand_name, b.is_active AS brand_active, "
+                + "(SELECT TOP 1 image_url FROM product_images WHERE product_id = p.product_id AND is_main = 1) AS main_image_url, "
+                + "(SELECT TOP 1 variant_id FROM product_variants WHERE product_id = p.product_id) AS default_variant_id "
+                + "FROM products p "
+                + "JOIN categories c ON p.category_id = c.category_id "
+                + "LEFT JOIN brands b ON p.brand_id = b.brand_id "
+                + "WHERE p.status = 'Active' AND c.is_active = 1"
         );
 
         List<Object> params = new ArrayList<>();
@@ -117,7 +114,9 @@ public class ProductDAO {
         if (colors != null && !colors.isEmpty()) {
             sql.append(" AND EXISTS (SELECT 1 FROM product_variants pv WHERE pv.product_id = p.product_id AND LOWER(pv.color) IN (");
             for (int i = 0; i < colors.size(); i++) {
-                if (i > 0) sql.append(", ");
+                if (i > 0) {
+                    sql.append(", ");
+                }
                 sql.append("?");
                 params.add(colors.get(i).toLowerCase());
             }
@@ -128,7 +127,9 @@ public class ProductDAO {
         if (sizes != null && !sizes.isEmpty()) {
             sql.append(" AND EXISTS (SELECT 1 FROM product_variants pv WHERE pv.product_id = p.product_id AND LOWER(pv.size) IN (");
             for (int i = 0; i < sizes.size(); i++) {
-                if (i > 0) sql.append(", ");
+                if (i > 0) {
+                    sql.append(", ");
+                }
                 sql.append("?");
                 params.add(sizes.get(i).toLowerCase());
             }
@@ -145,7 +146,9 @@ public class ProductDAO {
         if (brandIds != null && !brandIds.isEmpty()) {
             sql.append(" AND p.brand_id IN (");
             for (int i = 0; i < brandIds.size(); i++) {
-                if (i > 0) sql.append(", ");
+                if (i > 0) {
+                    sql.append(", ");
+                }
                 sql.append("?");
                 params.add(brandIds.get(i));
             }
@@ -180,12 +183,11 @@ public class ProductDAO {
         System.out.println("filterProductsForShopWithSort - SQL Query: " + sql.toString());
         System.out.println("filterProductsForShopWithSort - Parameters: " + params);
 
-        try (Connection conn = DBContext.getNewConnection();
-             PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql.toString())) {
             for (int i = 0; i < params.size(); i++) {
                 ps.setObject(i + 1, params.get(i));
             }
-            try (ResultSet rs = ps.executeQuery()) {
+            try ( ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     Product product = new Product();
                     product.setProductId(rs.getLong("product_id"));
@@ -213,10 +215,10 @@ public class ProductDAO {
                     product.setImages(getImagesByProductId(product.getProductId()));
                     list.add(product);
 
-                    System.out.println("filterProductsForShopWithSort - Product ID: " + product.getProductId() +
-                            ", Name: " + product.getName() +
-                            ", Price: " + product.getPrice() +
-                            ", Created At: " + product.getCreatedAt());
+                    System.out.println("filterProductsForShopWithSort - Product ID: " + product.getProductId()
+                            + ", Name: " + product.getName()
+                            + ", Price: " + product.getPrice()
+                            + ", Created At: " + product.getCreatedAt());
                 }
             }
             System.out.println("filterProductsForShopWithSort - Returned " + list.size() + " products for sort: " + sort);
@@ -230,26 +232,25 @@ public class ProductDAO {
 
     public List<Product> getNewArrivals(int limit) {
         List<Product> list = new ArrayList<>();
-        String sql = "SELECT TOP (?) p.product_id, p.name, p.price, p.created_at, " +
-                     "(SELECT TOP 1 image_url FROM product_images WHERE product_id = p.product_id AND is_main = 1) AS main_image_url, " +
-                     "(SELECT TOP 1 pv.variant_id FROM product_variants pv " +
-                     " WHERE pv.product_id = p.product_id " +
-                     " AND (SELECT SUM(CASE WHEN movement_type = 'In' THEN quantity_changed " +
-                     "                     WHEN movement_type = 'Out' THEN -quantity_changed " +
-                     "                     WHEN movement_type = 'Adjustment' THEN quantity_changed " +
-                     "                     WHEN movement_type = 'Reserved' THEN -quantity_changed " +
-                     "                     WHEN movement_type = 'Released' THEN quantity_changed " +
-                     "                     ELSE 0 END) " +
-                     "      FROM stock_movements WHERE variant_id = pv.variant_id) > 0 " +
-                     " ORDER BY pv.variant_id) AS default_variant_id " +
-                     "FROM products p " +
-                     "WHERE p.status = 'Active' " +
-                     "ORDER BY p.created_at DESC";
+        String sql = "SELECT TOP (?) p.product_id, p.name, p.price, p.created_at, "
+                + "(SELECT TOP 1 image_url FROM product_images WHERE product_id = p.product_id AND is_main = 1) AS main_image_url, "
+                + "(SELECT TOP 1 pv.variant_id FROM product_variants pv "
+                + " WHERE pv.product_id = p.product_id "
+                + " AND (SELECT SUM(CASE WHEN movement_type = 'In' THEN quantity_changed "
+                + "                     WHEN movement_type = 'Out' THEN -quantity_changed "
+                + "                     WHEN movement_type = 'Adjustment' THEN quantity_changed "
+                + "                     WHEN movement_type = 'Reserved' THEN -quantity_changed "
+                + "                     WHEN movement_type = 'Released' THEN quantity_changed "
+                + "                     ELSE 0 END) "
+                + "      FROM stock_movements WHERE variant_id = pv.variant_id) > 0 "
+                + " ORDER BY pv.variant_id) AS default_variant_id "
+                + "FROM products p "
+                + "WHERE p.status = 'Active' "
+                + "ORDER BY p.created_at DESC";
 
-        try (Connection conn = DBContext.getNewConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, limit);
-            try (ResultSet rs = ps.executeQuery()) {
+            try ( ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     Product product = new Product();
                     product.setProductId(rs.getLong("product_id"));
@@ -273,15 +274,14 @@ public class ProductDAO {
 
     public List<Product> searchProducts(String keyword) {
         List<Product> list = new ArrayList<>();
-        String sql = "SELECT TOP 5 p.product_id, p.name, p.price, " +
-                     "(SELECT TOP 1 image_url FROM product_images WHERE product_id = p.product_id AND is_main = 1) AS main_image_url " +
-                     "FROM products p " +
-                     "WHERE p.status = 'Active' AND LOWER(p.name) LIKE LOWER(?)";
+        String sql = "SELECT TOP 5 p.product_id, p.name, p.price, "
+                + "(SELECT TOP 1 image_url FROM product_images WHERE product_id = p.product_id AND is_main = 1) AS main_image_url "
+                + "FROM products p "
+                + "WHERE p.status = 'Active' AND LOWER(p.name) LIKE LOWER(?)";
 
-        try (Connection conn = DBContext.getNewConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, "%" + keyword + "%");
-            try (ResultSet rs = ps.executeQuery()) {
+            try ( ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     Product product = new Product();
                     product.setProductId(rs.getLong("product_id"));
@@ -302,15 +302,15 @@ public class ProductDAO {
 
     public long insert(String name, String description, BigDecimal price, long categoryId, long brandId,
             String material, String status, List<ProductVariant> variants, List<ProductImage> images) {
-        String sql = "INSERT INTO products (name, description, price, category_id, brand_id, material, status, created_at) " +
-                     "OUTPUT INSERTED.product_id VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO products (name, description, price, category_id, brand_id, material, status, created_at) "
+                + "OUTPUT INSERTED.product_id VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         String checkSkuSql = "SELECT sku FROM product_variants WHERE sku = ?";
-        String variantSql = "INSERT INTO product_variants (product_id, size, color, price_modifier, sku) " +
-                           "OUTPUT INSERTED.variant_id VALUES (?, ?, ?, ?, ?)";
+        String variantSql = "INSERT INTO product_variants (product_id, size, color, price_modifier, sku) "
+                + "OUTPUT INSERTED.variant_id VALUES (?, ?, ?, ?, ?)";
 
-        try (Connection conn = DBContext.getNewConnection()) {
+        try ( Connection conn = DBContext.getNewConnection()) {
             conn.setAutoCommit(false);
-            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            try ( PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setString(1, name);
                 ps.setString(2, description);
                 ps.setBigDecimal(3, price);
@@ -319,11 +319,10 @@ public class ProductDAO {
                 ps.setString(6, material);
                 ps.setString(7, status);
                 ps.setTimestamp(8, new java.sql.Timestamp(new Date().getTime()));
-                try (ResultSet rs = ps.executeQuery()) {
+                try ( ResultSet rs = ps.executeQuery()) {
                     if (rs.next()) {
                         long productId = rs.getLong("product_id");
-                        try (PreparedStatement psCheckSku = conn.prepareStatement(checkSkuSql);
-                             PreparedStatement psVariant = conn.prepareStatement(variantSql)) {
+                        try ( PreparedStatement psCheckSku = conn.prepareStatement(checkSkuSql);  PreparedStatement psVariant = conn.prepareStatement(variantSql)) {
                             for (int i = 0; i < variants.size(); i++) {
                                 ProductVariant variant = variants.get(i);
                                 String sku = variant.getSku();
@@ -347,7 +346,7 @@ public class ProductDAO {
                                 }
 
                                 psCheckSku.setString(1, sku);
-                                try (ResultSet rsSku = psCheckSku.executeQuery()) {
+                                try ( ResultSet rsSku = psCheckSku.executeQuery()) {
                                     if (rsSku.next()) {
                                         conn.rollback();
                                         System.out.println("Duplicate SKU: " + sku);
@@ -360,11 +359,11 @@ public class ProductDAO {
                                 psVariant.setString(3, variant.getColor());
                                 psVariant.setBigDecimal(4, priceModifier);
                                 psVariant.setString(5, sku);
-                                try (ResultSet rsVariant = psVariant.executeQuery()) {
+                                try ( ResultSet rsVariant = psVariant.executeQuery()) {
                                     if (rsVariant.next()) {
                                         long variantId = rsVariant.getLong("variant_id");
                                         String inventorySql = "INSERT INTO inventory (variant_id, quantity, reserved_quantity) VALUES (?, 0, 0)";
-                                        try (PreparedStatement psInventory = conn.prepareStatement(inventorySql)) {
+                                        try ( PreparedStatement psInventory = conn.prepareStatement(inventorySql)) {
                                             psInventory.setLong(1, variantId);
                                             psInventory.executeUpdate();
                                         }
@@ -400,9 +399,9 @@ public class ProductDAO {
     }
 
     private void insertProductImage(long productId, ProductImage image, Connection conn) throws SQLException {
-        String sql = "INSERT INTO product_images (product_id, variant_id, image_url, display_order, is_main, created_at) " +
-                     "VALUES (?, ?, ?, ?, ?, ?)";
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        String sql = "INSERT INTO product_images (product_id, variant_id, image_url, display_order, is_main, created_at) "
+                + "VALUES (?, ?, ?, ?, ?, ?)";
+        try ( PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setLong(1, productId);
             if (image.getVariantId() == null) {
                 ps.setNull(2, java.sql.Types.BIGINT);
@@ -419,11 +418,11 @@ public class ProductDAO {
 
     public boolean update(long id, String name, String description, BigDecimal price, long categoryId, long brandId,
             String material, String status, List<ProductVariant> variants, List<ProductImage> images) {
-        try (Connection conn = DBContext.getNewConnection()) {
+        try ( Connection conn = DBContext.getNewConnection()) {
             conn.setAutoCommit(false);
-            String productSql = "UPDATE products SET name = ?, description = ?, price = ?, category_id = ?, brand_id = ?, " +
-                               "material = ?, status = ?, updated_at = ? WHERE product_id = ?";
-            try (PreparedStatement psProduct = conn.prepareStatement(productSql)) {
+            String productSql = "UPDATE products SET name = ?, description = ?, price = ?, category_id = ?, brand_id = ?, "
+                    + "material = ?, status = ?, updated_at = ? WHERE product_id = ?";
+            try ( PreparedStatement psProduct = conn.prepareStatement(productSql)) {
                 psProduct.setString(1, name);
                 psProduct.setString(2, description);
                 psProduct.setBigDecimal(3, price);
@@ -444,9 +443,9 @@ public class ProductDAO {
 
             List<Long> existingVariantIds = new ArrayList<>();
             String selectVariantsSql = "SELECT variant_id FROM product_variants WHERE product_id = ?";
-            try (PreparedStatement psSelectVariants = conn.prepareStatement(selectVariantsSql)) {
+            try ( PreparedStatement psSelectVariants = conn.prepareStatement(selectVariantsSql)) {
                 psSelectVariants.setLong(1, id);
-                try (ResultSet rs = psSelectVariants.executeQuery()) {
+                try ( ResultSet rs = psSelectVariants.executeQuery()) {
                     while (rs.next()) {
                         existingVariantIds.add(rs.getLong("variant_id"));
                     }
@@ -454,13 +453,11 @@ public class ProductDAO {
             }
 
             String checkSkuSql = "SELECT sku FROM product_variants WHERE sku = ? AND variant_id != ?";
-            String updateVariantSql = "UPDATE product_variants SET size = ?, color = ?, price_modifier = ?, sku = ? " +
-                                     "WHERE variant_id = ? AND product_id = ?";
-            String insertVariantSql = "INSERT INTO product_variants (product_id, size, color, price_modifier, sku) " +
-                                     "VALUES (?, ?, ?, ?, ?); SELECT SCOPE_IDENTITY() AS variant_id;";
-            try (PreparedStatement psCheckSku = conn.prepareStatement(checkSkuSql);
-                 PreparedStatement psUpdateVariant = conn.prepareStatement(updateVariantSql);
-                 PreparedStatement psInsertVariant = conn.prepareStatement(insertVariantSql)) {
+            String updateVariantSql = "UPDATE product_variants SET size = ?, color = ?, price_modifier = ?, sku = ? "
+                    + "WHERE variant_id = ? AND product_id = ?";
+            String insertVariantSql = "INSERT INTO product_variants (product_id, size, color, price_modifier, sku) "
+                    + "VALUES (?, ?, ?, ?, ?); SELECT SCOPE_IDENTITY() AS variant_id;";
+            try ( PreparedStatement psCheckSku = conn.prepareStatement(checkSkuSql);  PreparedStatement psUpdateVariant = conn.prepareStatement(updateVariantSql);  PreparedStatement psInsertVariant = conn.prepareStatement(insertVariantSql)) {
                 List<Long> submittedVariantIds = new ArrayList<>();
                 for (ProductVariant variant : variants) {
                     String sku = variant.getSku();
@@ -473,7 +470,7 @@ public class ProductDAO {
                     Long variantId = variant.getVariantId();
                     psCheckSku.setString(1, sku);
                     psCheckSku.setLong(2, variantId != null ? variantId : 0);
-                    try (ResultSet rsSku = psCheckSku.executeQuery()) {
+                    try ( ResultSet rsSku = psCheckSku.executeQuery()) {
                         if (rsSku.next()) {
                             conn.rollback();
                             System.out.println("Duplicate SKU: " + sku);
@@ -496,11 +493,11 @@ public class ProductDAO {
                         psInsertVariant.setString(3, variant.getColor());
                         psInsertVariant.setBigDecimal(4, variant.getPriceModifier());
                         psInsertVariant.setString(5, sku);
-                        try (ResultSet rsVariant = psInsertVariant.executeQuery()) {
+                        try ( ResultSet rsVariant = psInsertVariant.executeQuery()) {
                             if (rsVariant.next()) {
                                 long newVariantId = rsVariant.getLong("variant_id");
                                 String inventorySql = "INSERT INTO inventory (variant_id, quantity, reserved_quantity) VALUES (?, 0, 0)";
-                                try (PreparedStatement psInventory = conn.prepareStatement(inventorySql)) {
+                                try ( PreparedStatement psInventory = conn.prepareStatement(inventorySql)) {
                                     psInventory.setLong(1, newVariantId);
                                     psInventory.executeUpdate();
                                 }
@@ -514,7 +511,7 @@ public class ProductDAO {
                 }
 
                 String deleteVariantSql = "DELETE FROM product_variants WHERE variant_id = ? AND product_id = ?";
-                try (PreparedStatement psDeleteVariant = conn.prepareStatement(deleteVariantSql)) {
+                try ( PreparedStatement psDeleteVariant = conn.prepareStatement(deleteVariantSql)) {
                     for (Long existingId : existingVariantIds) {
                         if (!submittedVariantIds.contains(existingId)) {
                             psDeleteVariant.setLong(1, existingId);
@@ -525,7 +522,7 @@ public class ProductDAO {
                 }
 
                 String deleteImageSql = "DELETE FROM product_images WHERE product_id = ?";
-                try (PreparedStatement psDeleteImage = conn.prepareStatement(deleteImageSql)) {
+                try ( PreparedStatement psDeleteImage = conn.prepareStatement(deleteImageSql)) {
                     psDeleteImage.setLong(1, id);
                     psDeleteImage.executeUpdate();
                 }
@@ -548,8 +545,7 @@ public class ProductDAO {
 
     public void clearMainImageFlags(long productId) {
         String sql = "UPDATE product_images SET is_main = false WHERE product_id = ?";
-        try (Connection conn = DBContext.getNewConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setLong(1, productId);
             ps.executeUpdate();
         } catch (SQLException e) {
@@ -560,10 +556,9 @@ public class ProductDAO {
 
     public String getBrandNameById(long brandId) {
         String sql = "SELECT name FROM brands WHERE brand_id = ?";
-        try (Connection conn = DBContext.getNewConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setLong(1, brandId);
-            try (ResultSet rs = ps.executeQuery()) {
+            try ( ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     return rs.getString("name");
                 }
@@ -585,47 +580,47 @@ public class ProductDAO {
         String sqlProductVariants = "DELETE FROM product_variants WHERE product_id = ?";
         String sqlProduct = "DELETE FROM products WHERE product_id = ?";
 
-        try (Connection conn = DBContext.getNewConnection()) {
+        try ( Connection conn = DBContext.getNewConnection()) {
             conn.setAutoCommit(false);
             System.out.println("Bắt đầu xóa sản phẩm ID: " + productId);
 
-            try (PreparedStatement ps = conn.prepareStatement(sqlFavorites)) {
+            try ( PreparedStatement ps = conn.prepareStatement(sqlFavorites)) {
                 ps.setLong(1, productId);
                 int rowsAffected = ps.executeUpdate();
                 System.out.println("Đã xóa " + rowsAffected + " bản ghi từ product_favorites");
             }
 
-            try (PreparedStatement ps = conn.prepareStatement(sqlViewHistory)) {
+            try ( PreparedStatement ps = conn.prepareStatement(sqlViewHistory)) {
                 ps.setLong(1, productId);
                 int rowsAffected = ps.executeUpdate();
                 System.out.println("Đã xóa " + rowsAffected + " bản ghi từ product_view_history");
             }
 
-            try (PreparedStatement ps = conn.prepareStatement(sqlFeedbacks)) {
+            try ( PreparedStatement ps = conn.prepareStatement(sqlFeedbacks)) {
                 ps.setLong(1, productId);
                 int rowsAffected = ps.executeUpdate();
                 System.out.println("Đã xóa " + rowsAffected + " bản ghi từ feedbacks");
             }
 
-            try (PreparedStatement ps = conn.prepareStatement(sqlCartItems)) {
+            try ( PreparedStatement ps = conn.prepareStatement(sqlCartItems)) {
                 ps.setLong(1, productId);
                 int rowsAffected = ps.executeUpdate();
                 System.out.println("Đã xóa " + rowsAffected + " bản ghi từ cart_items");
             }
 
-            try (PreparedStatement ps = conn.prepareStatement(sqlPurchaseOrderDetails)) {
+            try ( PreparedStatement ps = conn.prepareStatement(sqlPurchaseOrderDetails)) {
                 ps.setLong(1, productId);
                 int rowsAffected = ps.executeUpdate();
                 System.out.println("Đã xóa " + rowsAffected + " bản ghi từ purchase_order_details");
             }
 
-            try (PreparedStatement ps = conn.prepareStatement(sqlProductVariants)) {
+            try ( PreparedStatement ps = conn.prepareStatement(sqlProductVariants)) {
                 ps.setLong(1, productId);
                 int rowsAffected = ps.executeUpdate();
                 System.out.println("Đã xóa " + rowsAffected + " bản ghi từ product_variants");
             }
 
-            try (PreparedStatement ps = conn.prepareStatement(sqlProduct)) {
+            try ( PreparedStatement ps = conn.prepareStatement(sqlProduct)) {
                 ps.setLong(1, productId);
                 int num = ps.executeUpdate();
                 System.out.println("Đã xóa " + num + " bản ghi từ products");
@@ -647,12 +642,10 @@ public class ProductDAO {
 
     public List<Category> getAllCategories() {
         List<Category> list = new ArrayList<>();
-        String sql = "SELECT category_id, name, description, parent_category_id, is_active, created_at " +
-                     "FROM categories WHERE is_active = 1";
+        String sql = "SELECT category_id, name, description, parent_category_id, is_active, created_at "
+                + "FROM categories WHERE is_active = 1";
 
-        try (Connection conn = DBContext.getNewConnection();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql);  ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
                 Long parentCategoryId = rs.getLong("parent_category_id");
                 if (rs.wasNull()) {
@@ -678,12 +671,10 @@ public class ProductDAO {
 
     public List<Brand> getAllBrands() {
         List<Brand> list = new ArrayList<>();
-        String sql = "SELECT brand_id, name, description, logo_url, is_active, created_at " +
-                     "FROM brands WHERE is_active = 1";
+        String sql = "SELECT brand_id, name, description, logo_url, is_active, created_at "
+                + "FROM brands WHERE is_active = 1";
 
-        try (Connection conn = DBContext.getNewConnection();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql);  ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
                 Brand brand = new Brand(
                         rs.getLong("brand_id"),
@@ -705,10 +696,9 @@ public class ProductDAO {
 
     public boolean categoryExists(long categoryId) {
         String sql = "SELECT COUNT(*) AS count FROM categories WHERE category_id = ? AND is_active = 1";
-        try (Connection conn = DBContext.getNewConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setLong(1, categoryId);
-            try (ResultSet rs = ps.executeQuery()) {
+            try ( ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     return rs.getInt("count") > 0;
                 }
@@ -723,10 +713,9 @@ public class ProductDAO {
 
     public boolean brandExists(long brandId) {
         String sql = "SELECT COUNT(*) AS count FROM brands WHERE brand_id = ? AND is_active = 1";
-        try (Connection conn = DBContext.getNewConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setLong(1, brandId);
-            try (ResultSet rs = ps.executeQuery()) {
+            try ( ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     return rs.getInt("count") > 0;
                 }
@@ -741,17 +730,16 @@ public class ProductDAO {
 
     private List<ProductVariant> getVariantsByProductId(long productId) {
         List<ProductVariant> variants = new ArrayList<>();
-        String sql = "SELECT pv.variant_id, pv.product_id, pv.size, pv.color, pv.price_modifier, pv.sku, " +
-                     "b.name AS brand_name, p.name AS product_name " +
-                     "FROM product_variants pv " +
-                     "JOIN products p ON pv.product_id = p.product_id " +
-                     "JOIN brands b ON p.brand_id = b.brand_id " +
-                     "WHERE pv.product_id = ?";
+        String sql = "SELECT pv.variant_id, pv.product_id, pv.size, pv.color, pv.price_modifier, pv.sku, "
+                + "b.name AS brand_name, p.name AS product_name "
+                + "FROM product_variants pv "
+                + "JOIN products p ON pv.product_id = p.product_id "
+                + "JOIN brands b ON p.brand_id = b.brand_id "
+                + "WHERE pv.product_id = ?";
 
-        try (Connection conn = DBContext.getNewConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setLong(1, productId);
-            try (ResultSet rs = ps.executeQuery()) {
+            try ( ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     BigDecimal priceModifier = rs.getBigDecimal("price_modifier");
                     if (rs.wasNull()) {
@@ -780,13 +768,12 @@ public class ProductDAO {
 
     private List<ProductImage> getImagesByProductId(long productId) {
         List<ProductImage> images = new ArrayList<>();
-        String sql = "SELECT image_id, product_id, variant_id, image_url, display_order, created_at, is_main " +
-                     "FROM product_images WHERE product_id = ?";
+        String sql = "SELECT image_id, product_id, variant_id, image_url, display_order, created_at, is_main "
+                + "FROM product_images WHERE product_id = ?";
 
-        try (Connection conn = DBContext.getNewConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setLong(1, productId);
-            try (ResultSet rs = ps.executeQuery()) {
+            try ( ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     Long variantId = rs.getLong("variant_id");
                     if (rs.wasNull()) {
@@ -879,8 +866,7 @@ public class ProductDAO {
 
     public boolean updateProductStatusByCategoryId(long categoryId, String status) {
         String sql = "UPDATE products SET status = ? WHERE category_id = ? AND status != ?";
-        try (Connection conn = DBContext.getNewConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, status);
             ps.setLong(2, categoryId);
             ps.setString(3, status);
@@ -896,8 +882,7 @@ public class ProductDAO {
 
     public boolean updateProductStatusByBrandId(long brandId, String status) {
         String sql = "UPDATE products SET status = ? WHERE brand_id = ?";
-        try (Connection conn = DBContext.getNewConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, status);
             ps.setLong(2, brandId);
             int rowsAffected = ps.executeUpdate();
@@ -912,43 +897,42 @@ public class ProductDAO {
 
     public List<Product> getBestSellers(int limit) {
         List<Product> products = new ArrayList<>();
-        String sql = "WITH StockLevels AS (" +
-                     "    SELECT variant_id, SUM(CASE " +
-                     "        WHEN movement_type = 'In' THEN quantity_changed " +
-                     "        WHEN movement_type = 'Out' THEN -quantity_changed " +
-                     "        WHEN movement_type = 'Adjustment' THEN quantity_changed " +
-                     "        WHEN movement_type = 'Reserved' THEN -quantity_changed " +
-                     "        WHEN movement_type = 'Released' THEN quantity_changed " +
-                     "        ELSE 0 END) AS current_stock " +
-                     "    FROM stock_movements " +
-                     "    GROUP BY variant_id " +
-                     "), ProductStock AS (" +
-                     "    SELECT pv.product_id, SUM(COALESCE(sl.current_stock, 0)) AS total_stock " +
-                     "    FROM product_variants pv " +
-                     "    LEFT JOIN StockLevels sl ON pv.variant_id = sl.variant_id " +
-                     "    GROUP BY pv.product_id " +
-                     "    HAVING SUM(COALESCE(sl.current_stock, 0)) > 0 " +
-                     "), DefaultVariants AS (" +
-                     "    SELECT pv.product_id, MIN(pv.variant_id) AS variant_id " +
-                     "    FROM product_variants pv " +
-                     "    JOIN StockLevels sl ON pv.variant_id = sl.variant_id " +
-                     "    WHERE sl.current_stock > 0 " +
-                     "    GROUP BY pv.product_id " +
-                     ") " +
-                     "SELECT TOP (?) p.product_id, p.name, p.price, p.created_at, " +
-                     "(SELECT TOP 1 image_url FROM product_images WHERE product_id = p.product_id AND is_main = 1) AS main_image_url, " +
-                     "dv.variant_id AS default_variant_id, ps.total_stock " +
-                     "FROM products p " +
-                     "INNER JOIN ProductStock ps ON p.product_id = ps.product_id " +
-                     "LEFT JOIN DefaultVariants dv ON p.product_id = dv.product_id " +
-                     "WHERE p.status = 'active' " +
-                     "ORDER BY ps.total_stock ASC, p.product_id DESC";
+        String sql = "WITH StockLevels AS ("
+                + "    SELECT variant_id, SUM(CASE "
+                + "        WHEN movement_type = 'In' THEN quantity_changed "
+                + "        WHEN movement_type = 'Out' THEN -quantity_changed "
+                + "        WHEN movement_type = 'Adjustment' THEN quantity_changed "
+                + "        WHEN movement_type = 'Reserved' THEN -quantity_changed "
+                + "        WHEN movement_type = 'Released' THEN quantity_changed "
+                + "        ELSE 0 END) AS current_stock "
+                + "    FROM stock_movements "
+                + "    GROUP BY variant_id "
+                + "), ProductStock AS ("
+                + "    SELECT pv.product_id, SUM(COALESCE(sl.current_stock, 0)) AS total_stock "
+                + "    FROM product_variants pv "
+                + "    LEFT JOIN StockLevels sl ON pv.variant_id = sl.variant_id "
+                + "    GROUP BY pv.product_id "
+                + "    HAVING SUM(COALESCE(sl.current_stock, 0)) > 0 "
+                + "), DefaultVariants AS ("
+                + "    SELECT pv.product_id, MIN(pv.variant_id) AS variant_id "
+                + "    FROM product_variants pv "
+                + "    JOIN StockLevels sl ON pv.variant_id = sl.variant_id "
+                + "    WHERE sl.current_stock > 0 "
+                + "    GROUP BY pv.product_id "
+                + ") "
+                + "SELECT TOP (?) p.product_id, p.name, p.price, p.created_at, "
+                + "(SELECT TOP 1 image_url FROM product_images WHERE product_id = p.product_id AND is_main = 1) AS main_image_url, "
+                + "dv.variant_id AS default_variant_id, ps.total_stock "
+                + "FROM products p "
+                + "INNER JOIN ProductStock ps ON p.product_id = ps.product_id "
+                + "LEFT JOIN DefaultVariants dv ON p.product_id = dv.product_id "
+                + "WHERE p.status = 'active' "
+                + "ORDER BY ps.total_stock ASC, p.product_id DESC";
 
-        try (Connection conn = DBContext.getNewConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
             System.out.println("Executing getBestSellers with limit: " + limit);
             ps.setInt(1, limit);
-            try (ResultSet rs = ps.executeQuery()) {
+            try ( ResultSet rs = ps.executeQuery()) {
                 int rowCount = 0;
                 while (rs.next()) {
                     Product product = new Product();
@@ -974,15 +958,15 @@ public class ProductDAO {
         }
     }
 
-    public int countProductsForShop(List<String> colors, List<String> sizes, BigDecimal maxPrice, 
+    public int countProductsForShop(List<String> colors, List<String> sizes, BigDecimal maxPrice,
             List<Long> brandIds, Long parentCategoryId, Long categoryId) {
         StringBuilder sql = new StringBuilder(
-                "SELECT COUNT(DISTINCT p.product_id) AS total " +
-                "FROM products p " +
-                "JOIN categories c ON p.category_id = c.category_id " +
-                "LEFT JOIN brands b ON p.brand_id = b.brand_id " +
-                "LEFT JOIN product_variants pv ON p.product_id = pv.product_id " +
-                "WHERE p.status = 'Active' AND c.is_active = 1"
+                "SELECT COUNT(DISTINCT p.product_id) AS total "
+                + "FROM products p "
+                + "JOIN categories c ON p.category_id = c.category_id "
+                + "LEFT JOIN brands b ON p.brand_id = b.brand_id "
+                + "LEFT JOIN product_variants pv ON p.product_id = pv.product_id "
+                + "WHERE p.status = 'Active' AND c.is_active = 1"
         );
 
         List<Object> params = new ArrayList<>();
@@ -1002,7 +986,9 @@ public class ProductDAO {
         if (colors != null && !colors.isEmpty()) {
             sql.append(" AND (pv.color IS NULL OR LOWER(pv.color) IN (");
             for (int i = 0; i < colors.size(); i++) {
-                if (i > 0) sql.append(", ");
+                if (i > 0) {
+                    sql.append(", ");
+                }
                 sql.append("?");
                 params.add(colors.get(i).toLowerCase());
             }
@@ -1012,7 +998,9 @@ public class ProductDAO {
         if (sizes != null && !sizes.isEmpty()) {
             sql.append(" AND (pv.size IS NULL OR LOWER(pv.size) IN (");
             for (int i = 0; i < sizes.size(); i++) {
-                if (i > 0) sql.append(", ");
+                if (i > 0) {
+                    sql.append(", ");
+                }
                 sql.append("?");
                 params.add(sizes.get(i).toLowerCase());
             }
@@ -1028,7 +1016,9 @@ public class ProductDAO {
             sql.append(" AND p.brand_id IN (");
             for (int i = 0; i < brandIds.size(); i++) {
                 if (brandIds.get(i) != null) {
-                    if (i > 0) sql.append(", ");
+                    if (i > 0) {
+                        sql.append(", ");
+                    }
                     sql.append("?");
                     params.add(brandIds.get(i));
                 }
@@ -1039,12 +1029,11 @@ public class ProductDAO {
         System.out.println("countProductsForShop SQL: " + sql.toString());
         System.out.println("countProductsForShop Params: " + params);
 
-        try (Connection conn = DBContext.getNewConnection();
-             PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql.toString())) {
             for (int i = 0; i < params.size(); i++) {
                 ps.setObject(i + 1, params.get(i));
             }
-            try (ResultSet rs = ps.executeQuery()) {
+            try ( ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     int total = rs.getInt("total");
                     System.out.println("countProductsForShop returned: " + total);
@@ -1062,13 +1051,12 @@ public class ProductDAO {
 
     public boolean isProductExists(String name, long brandId) {
         String sql = "SELECT COUNT(*) FROM Products WHERE TRIM(LOWER(name)) = TRIM(LOWER(?)) AND brand_id = ?";
-        try (Connection conn = DBContext.getNewConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
             String normalizedName = name != null ? name.trim().toLowerCase().replaceAll("\\s+", " ") : "";
             System.out.println("isProductExists: Input - Original Name=" + name + ", Normalized Name=" + normalizedName + ", BrandId=" + brandId);
             ps.setString(1, normalizedName);
             ps.setLong(2, brandId);
-            try (ResultSet rs = ps.executeQuery()) {
+            try ( ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     int count = rs.getInt(1);
                     System.out.println("isProductExists: Query Result - Name=" + normalizedName + ", BrandId=" + brandId + ", Exists=" + (count > 0));
@@ -1086,11 +1074,10 @@ public class ProductDAO {
 
     public boolean isSKUExists(String sku) {
         String sql = "SELECT COUNT(*) FROM ProductVariants WHERE sku = ?";
-        try (Connection conn = DBContext.getNewConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
             System.out.println("isSKUExists: Input - SKU=" + sku);
             ps.setString(1, sku);
-            try (ResultSet rs = ps.executeQuery()) {
+            try ( ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     int count = rs.getInt(1);
                     System.out.println("isSKUExists: Query Result - SKU=" + sku + ", Exists=" + (count > 0));
@@ -1108,15 +1095,14 @@ public class ProductDAO {
 
     public boolean isVariantExists(long productId, String size, String color) {
         String sql = "SELECT COUNT(*) FROM ProductVariants WHERE product_id = ? AND TRIM(LOWER(size)) = TRIM(LOWER(?)) AND TRIM(LOWER(color)) = TRIM(LOWER(?))";
-        try (Connection conn = DBContext.getNewConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
             String normalizedSize = size != null ? size.trim().toLowerCase() : "";
             String normalizedColor = color != null ? color.trim().toLowerCase() : "";
             System.out.println("isVariantExists: Input - ProductId=" + productId + ", Size=" + normalizedSize + ", Color=" + normalizedColor);
             ps.setLong(1, productId);
             ps.setString(2, normalizedSize);
             ps.setString(3, normalizedColor);
-            try (ResultSet rs = ps.executeQuery()) {
+            try ( ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     int count = rs.getInt(1);
                     System.out.println("isVariantExists: Query Result - ProductId=" + productId + ", Size=" + normalizedSize + ", Color=" + normalizedColor + ", Exists=" + (count > 0));
@@ -1134,14 +1120,13 @@ public class ProductDAO {
 
     public boolean isProductExistsExcludingId(String name, long brandId, long excludeProductId) {
         String sql = "SELECT COUNT(*) FROM Products WHERE TRIM(LOWER(name)) = TRIM(LOWER(?)) AND brand_id = ? AND product_id != ?";
-        try (Connection conn = DBContext.getNewConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
             String normalizedName = name != null ? name.trim().toLowerCase().replaceAll("\\s+", " ") : "";
             System.out.println("isProductExistsExcludingId: Input - Original Name=" + name + ", Normalized Name=" + normalizedName + ", BrandId=" + brandId + ", ExcludeProductId=" + excludeProductId);
             ps.setString(1, normalizedName);
             ps.setLong(2, brandId);
             ps.setLong(3, excludeProductId);
-            try (ResultSet rs = ps.executeQuery()) {
+            try ( ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     int count = rs.getInt(1);
                     System.out.println("isProductExistsExcludingId: Query Result - Name=" + normalizedName + ", BrandId=" + brandId + ", ExcludeProductId=" + excludeProductId + ", Exists=" + (count > 0));
@@ -1159,14 +1144,13 @@ public class ProductDAO {
 
     public boolean isProductExistsForUpdate(String name, long brandId, long excludeProductId) {
         String sql = "SELECT COUNT(*) FROM Products WHERE TRIM(LOWER(name)) = TRIM(LOWER(?)) AND brand_id = ? AND product_id != ?";
-        try (Connection conn = DBContext.getNewConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
             String normalizedName = name != null ? name.trim().toLowerCase().replaceAll("\\s+", " ") : "";
             System.out.println("isProductExistsForUpdate: Input - Original Name=" + name + ", Normalized Name=" + normalizedName + ", BrandId=" + brandId + ", ExcludeProductId=" + excludeProductId);
             ps.setString(1, normalizedName);
             ps.setLong(2, brandId);
             ps.setLong(3, excludeProductId);
-            try (ResultSet rs = ps.executeQuery()) {
+            try ( ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     int count = rs.getInt(1);
                     System.out.println("isProductExistsForUpdate: Query Result - Name=" + normalizedName + ", BrandId=" + brandId + ", ExcludeProductId=" + excludeProductId + ", Exists=" + (count > 0));
@@ -1184,12 +1168,11 @@ public class ProductDAO {
 
     public boolean isSKUExistsForUpdate(String sku, long excludeVariantId) {
         String sql = "SELECT COUNT(*) FROM ProductVariants WHERE sku = ? AND variant_id != ?";
-        try (Connection conn = DBContext.getNewConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
             System.out.println("isSKUExistsForUpdate: Input - SKU=" + sku + ", ExcludeVariantId=" + excludeVariantId);
             ps.setString(1, sku);
             ps.setLong(2, excludeVariantId);
-            try (ResultSet rs = ps.executeQuery()) {
+            try ( ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     int count = rs.getInt(1);
                     System.out.println("isSKUExistsForUpdate: Query Result - SKU=" + sku + ", ExcludeVariantId=" + excludeVariantId + ", Exists=" + (count > 0));
@@ -1209,19 +1192,18 @@ public class ProductDAO {
         if (variantId == null || variantId == 0) {
             return 0;
         }
-        String sql = "SELECT SUM(CASE " +
-                     "    WHEN movement_type = 'In' THEN quantity_changed " +
-                     "    WHEN movement_type = 'Out' THEN -quantity_changed " +
-                     "    WHEN movement_type = 'Adjustment' THEN quantity_changed " +
-                     "    WHEN movement_type = 'Reserved' THEN -quantity_changed " +
-                     "    WHEN movement_type = 'Released' THEN quantity_changed " +
-                     "    ELSE 0 END) AS available " +
-                     "FROM stock_movements WHERE variant_id = ? " +
-                     "GROUP BY variant_id";
-        try (Connection conn = DBContext.getNewConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        String sql = "SELECT SUM(CASE "
+                + "    WHEN movement_type = 'In' THEN quantity_changed "
+                + "    WHEN movement_type = 'Out' THEN -quantity_changed "
+                + "    WHEN movement_type = 'Adjustment' THEN quantity_changed "
+                + "    WHEN movement_type = 'Reserved' THEN -quantity_changed "
+                + "    WHEN movement_type = 'Released' THEN quantity_changed "
+                + "    ELSE 0 END) AS available "
+                + "FROM stock_movements WHERE variant_id = ? "
+                + "GROUP BY variant_id";
+        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setLong(1, variantId);
-            try (ResultSet rs = ps.executeQuery()) {
+            try ( ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     int available = rs.getInt("available");
                     System.out.println("getAvailableQuantityByVariantId - Variant ID: " + variantId + ", Available: " + available);
@@ -1239,15 +1221,15 @@ public class ProductDAO {
     public List<Product> getAllPaginated(int offset, int pageSize, String sort) {
         List<Product> list = new ArrayList<>();
         StringBuilder sql = new StringBuilder(
-                "SELECT p.product_id, p.name, p.description, p.price, p.category_id, p.brand_id, p.material, p.status, " +
-                "p.created_at, p.updated_at, c.category_id, c.name AS category_name, c.description AS category_description, " +
-                "c.parent_category_id, c.is_active AS category_active, c.created_at AS category_created_at, " +
-                "b.brand_id, b.name AS brand_name, b.description AS brand_description, b.logo_url, b.is_active AS brand_active, " +
-                "b.created_at AS brand_created_at, " +
-                "(SELECT TOP 1 image_url FROM product_images WHERE product_id = p.product_id AND is_main = 1) AS main_image_url " +
-                "FROM products p " +
-                "LEFT JOIN categories c ON p.category_id = c.category_id " +
-                "LEFT JOIN brands b ON p.brand_id = b.brand_id"
+                "SELECT p.product_id, p.name, p.description, p.price, p.category_id, p.brand_id, p.material, p.status, "
+                + "p.created_at, p.updated_at, c.category_id, c.name AS category_name, c.description AS category_description, "
+                + "c.parent_category_id, c.is_active AS category_active, c.created_at AS category_created_at, "
+                + "b.brand_id, b.name AS brand_name, b.description AS brand_description, b.logo_url, b.is_active AS brand_active, "
+                + "b.created_at AS brand_created_at, "
+                + "(SELECT TOP 1 image_url FROM product_images WHERE product_id = p.product_id AND is_main = 1) AS main_image_url "
+                + "FROM products p "
+                + "LEFT JOIN categories c ON p.category_id = c.category_id "
+                + "LEFT JOIN brands b ON p.brand_id = b.brand_id"
         );
 
         switch (sort != null ? sort.toLowerCase() : "created_at_desc") {
@@ -1270,11 +1252,10 @@ public class ProductDAO {
         }
         sql.append(" OFFSET ? ROWS FETCH NEXT ? ROWS ONLY");
 
-        try (Connection conn = DBContext.getNewConnection();
-             PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql.toString())) {
             ps.setInt(1, offset);
             ps.setInt(2, pageSize);
-            try (ResultSet rs = ps.executeQuery()) {
+            try ( ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     Product product = mapProduct(rs);
                     product.setVariants(getVariantsByProductId(product.getProductId()));
@@ -1292,9 +1273,7 @@ public class ProductDAO {
 
     public int getTotalProductCount() {
         String sql = "SELECT COUNT(*) AS total FROM products";
-        try (Connection conn = DBContext.getNewConnection();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql);  ResultSet rs = ps.executeQuery()) {
             if (rs.next()) {
                 return rs.getInt("total");
             }
@@ -1310,16 +1289,16 @@ public class ProductDAO {
             String status, int offset, int pageSize, String sort) {
         List<Product> list = new ArrayList<>();
         StringBuilder sql = new StringBuilder(
-                "SELECT p.product_id, p.name, p.description, p.price, p.category_id, p.brand_id, p.material, p.status, " +
-                "p.created_at, p.updated_at, c.category_id, c.name AS category_name, c.description AS category_description, " +
-                "c.parent_category_id, c.is_active AS category_active, c.created_at AS category_created_at, " +
-                "b.brand_id, b.name AS brand_name, b.description AS brand_description, b.logo_url, b.is_active AS brand_active, " +
-                "b.created_at AS brand_created_at, " +
-                "(SELECT TOP 1 image_url FROM product_images WHERE product_id = p.product_id AND is_main = 1) AS main_image_url " +
-                "FROM products p " +
-                "JOIN categories c ON p.category_id = c.category_id " +
-                "LEFT JOIN brands b ON p.brand_id = b.brand_id " +
-                "WHERE c.is_active = 1 AND p.status = ?"
+                "SELECT p.product_id, p.name, p.description, p.price, p.category_id, p.brand_id, p.material, p.status, "
+                + "p.created_at, p.updated_at, c.category_id, c.name AS category_name, c.description AS category_description, "
+                + "c.parent_category_id, c.is_active AS category_active, c.created_at AS category_created_at, "
+                + "b.brand_id, b.name AS brand_name, b.description AS brand_description, b.logo_url, b.is_active AS brand_active, "
+                + "b.created_at AS brand_created_at, "
+                + "(SELECT TOP 1 image_url FROM product_images WHERE product_id = p.product_id AND is_main = 1) AS main_image_url "
+                + "FROM products p "
+                + "JOIN categories c ON p.category_id = c.category_id "
+                + "LEFT JOIN brands b ON p.brand_id = b.brand_id "
+                + "WHERE c.is_active = 1 AND p.status = ?"
         );
 
         List<Object> params = new ArrayList<>();
@@ -1375,12 +1354,11 @@ public class ProductDAO {
         System.out.println("filterProductsPaginated SQL: " + sql.toString());
         System.out.println("filterProductsPaginated Params: " + params);
 
-        try (Connection conn = DBContext.getNewConnection();
-             PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql.toString())) {
             for (int i = 0; i < params.size(); i++) {
                 ps.setObject(i + 1, params.get(i));
             }
-            try (ResultSet rs = ps.executeQuery()) {
+            try ( ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     Product product = mapProduct(rs);
                     product.setVariants(getVariantsByProductId(product.getProductId()));
@@ -1400,11 +1378,11 @@ public class ProductDAO {
     public int getFilteredProductCount(Long parentCategoryId, Long categoryId, Long brandId, String size, String color,
             String status) {
         StringBuilder sql = new StringBuilder(
-                "SELECT COUNT(*) AS total " +
-                "FROM products p " +
-                "JOIN categories c ON p.category_id = c.category_id " +
-                "LEFT JOIN brands b ON p.brand_id = b.brand_id " +
-                "WHERE c.is_active = 1 AND p.status = ?"
+                "SELECT COUNT(*) AS total "
+                + "FROM products p "
+                + "JOIN categories c ON p.category_id = c.category_id "
+                + "LEFT JOIN brands b ON p.brand_id = b.brand_id "
+                + "WHERE c.is_active = 1 AND p.status = ?"
         );
 
         List<Object> params = new ArrayList<>();
@@ -1438,12 +1416,11 @@ public class ProductDAO {
         System.out.println("getFilteredProductCount SQL: " + sql.toString());
         System.out.println("getFilteredProductCount Params: " + params);
 
-        try (Connection conn = DBContext.getNewConnection();
-             PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql.toString())) {
             for (int i = 0; i < params.size(); i++) {
                 ps.setObject(i + 1, params.get(i));
             }
-            try (ResultSet rs = ps.executeQuery()) {
+            try ( ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     int total = rs.getInt("total");
                     System.out.println("getFilteredProductCount returned: " + total);
@@ -1507,6 +1484,27 @@ public class ProductDAO {
             System.out.println("-------------------");
         } else {
             System.out.println("No products found or database connection failed!");
+        }
+    }
+
+    public BigDecimal getUnitPriceByVariantId(long variantId) {
+        String sql = "SELECT COALESCE(p.price + ISNULL(pv.price_modifier, 0), p.price) AS unit_price "
+                + "FROM product_variants pv "
+                + "JOIN products p ON pv.product_id = p.product_id "
+                + "WHERE pv.variant_id = ?";
+        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, variantId);
+            try ( ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    BigDecimal unitPrice = rs.getBigDecimal("unit_price");
+                    return unitPrice != null ? unitPrice : BigDecimal.ZERO;
+                }
+            }
+            return BigDecimal.ZERO;
+        } catch (SQLException e) {
+            System.out.println("Error in getUnitPriceByVariantId: " + e.getMessage());
+            e.printStackTrace();
+            return BigDecimal.ZERO;
         }
     }
 }
