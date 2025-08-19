@@ -491,4 +491,18 @@ public class PurchaseOrderDAO {
         }
         return result;
     }
+    public Long getStaffIdByUserId(Long userId) throws SQLException {
+    String sql = "SELECT staff_id FROM staff WHERE user_id = ?";
+    try (Connection conn = new DBContext().getConnection();
+         PreparedStatement ps = conn.prepareStatement(sql)) {
+        ps.setLong(1, userId);
+        try (ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) {
+                return rs.getLong("staff_id");
+            }
+        }
+    }
+    return null; // Trả null nếu user_id không có trong staff
+}
+
 }

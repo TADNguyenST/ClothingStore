@@ -446,7 +446,7 @@ public class StockMovementDAO extends DBContext {
                 break;
 
             case "sale_order":
-                groupColumn = "CAST(ISNULL(so.order_id, 0) AS VARCHAR(20))";
+                groupColumn = "CAST(ISNULL(so.notes, CONCAT('Sale Order #', sm.reference_id)) AS NVARCHAR(4000))";
                 saleOrderJoin = "LEFT JOIN orders so ON sm.reference_id = so.order_id AND sm.reference_type = 'Sale Order'";
                 additionalWhere = "sm.reference_type = 'Sale Order'";
                 break;

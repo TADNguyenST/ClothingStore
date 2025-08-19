@@ -265,7 +265,7 @@ public class PurchaseOrderController extends HttpServlet {
     private ApiResponse<Object> handleAjaxReceiveDelivery(HttpServletRequest request, Users currentUser) throws SQLException, IOException {
         long poId = Long.parseLong(request.getParameter("poId"));
         UserDAO userDAO = new UserDAO();
-        Long staffId = userDAO.getStaffIdByUserId(currentUser.getUserId());
+        Long staffId = purchaseDAO.getStaffIdByUserId(currentUser.getUserId());
         Connection conn = null;
         try {
             conn = new DBContext().getConnection();
@@ -386,7 +386,7 @@ public class PurchaseOrderController extends HttpServlet {
 
     private void handleStartNewPO(HttpServletRequest request, HttpServletResponse response, Users currentUser) throws SQLException, IOException {
         UserDAO userDAO = new UserDAO();
-        Long staffId = userDAO.getStaffIdByUserId(currentUser.getUserId());
+        Long staffId = purchaseDAO.getStaffIdByUserId(currentUser.getUserId());
         String poName = "Purchase Order " + new SimpleDateFormat("dd/MM/yyyy HH:mm").format(new Date());
         long newPoId = purchaseDAO.createDraftPO(poName, staffId);
         response.sendRedirect("PurchaseOrder?action=edit&poId=" + newPoId);
