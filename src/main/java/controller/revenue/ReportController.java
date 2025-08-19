@@ -32,7 +32,9 @@ public class ReportController extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         HttpSession session = request.getSession(false);
         Users currentUser = (session != null) ? (Users) session.getAttribute("admin") : null;
-        if (currentUser == null) currentUser = (session != null) ? (Users) session.getAttribute("staff") : null;
+        if (currentUser == null) {
+            currentUser = (session != null) ? (Users) session.getAttribute("staff") : null;
+        }
         if (currentUser == null) {
             response.sendRedirect(request.getContextPath() + "/AdminLogin");
             return;
@@ -48,18 +50,28 @@ public class ReportController extends HttpServlet {
             String orderSortBy = request.getParameter("orderSortBy");
             String orderSortOrder = request.getParameter("orderSortOrder");
 
-            if (reportType == null || reportType.isEmpty()) reportType = "revenue";
-            if (startDate == null || startDate.isEmpty()) {
+            if (reportType == null || reportType.isEmpty()) {
+                reportType = "revenue";
+            }
+            if (startDate == null || startDate.isEmpty() || endDate == null || endDate.isEmpty()) {
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
                 Calendar cal = Calendar.getInstance();
                 cal.set(Calendar.DAY_OF_WEEK, cal.getFirstDayOfWeek());
                 startDate = sdf.format(cal.getTime());
                 endDate = sdf.format(new Date());
             }
-            if (productSortBy == null || productSortBy.isEmpty()) productSortBy = "revenue";
-            if (productSortOrder == null || productSortOrder.isEmpty()) productSortOrder = "DESC";
-            if (orderSortBy == null || orderSortBy.isEmpty()) orderSortBy = "date";
-            if (orderSortOrder == null || orderSortOrder.isEmpty()) orderSortOrder = "DESC";
+            if (productSortBy == null || productSortBy.isEmpty()) {
+                productSortBy = "revenue";
+            }
+            if (productSortOrder == null || productSortOrder.isEmpty()) {
+                productSortOrder = "DESC";
+            }
+            if (orderSortBy == null || orderSortBy.isEmpty()) {
+                orderSortBy = "date";
+            }
+            if (orderSortOrder == null || orderSortOrder.isEmpty()) {
+                orderSortOrder = "DESC";
+            }
 
             CombinedReportDTO combinedReport = reportDAO.getCombinedReportData(startDate, endDate, reportType, productSortBy, productSortOrder, orderSortBy, orderSortOrder);
 
@@ -77,7 +89,7 @@ public class ReportController extends HttpServlet {
                 request.setAttribute("orderSortBy", orderSortBy);
                 request.setAttribute("orderSortOrder", orderSortOrder);
                 request.setAttribute("pageTitle", "Overall Dashboard Report");
-                request.getRequestDispatcher("/WEB-INF/views/staff/revenue/product-report.jsp").forward(request, response);
+                request.getRequestDispatcher("/WEB-INF/views/staff/revenue/combined-report.jsp").forward(request, response);
             }
         } catch (SQLException e) {
             throw new ServletException("Database error in ReportController", e);
