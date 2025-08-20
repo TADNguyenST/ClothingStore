@@ -5,275 +5,317 @@
 <jsp:include page="/WEB-INF/views/common/header.jsp" />
 
 <style>
-    /* ===== BLUE THEME ===== */
     :root{
-        --primary:#1e3a8a;      /* navy blue */
-        --primary-2:#3b82f6;    /* blue accent */
-        --bg:#f0f6ff;           /* very light blue background */
+        --primary:#1e3a8a;
+        --primary-2:#3b82f6;
+        --bg:#f0f6ff;
         --card:#ffffff;
         --border:#d8e4ff;
         --shadow:0 10px 30px rgba(30,58,138,.08);
-        --danger:#dc2626;
     }
     body{
         font-family:'Poppins',sans-serif;
         background:var(--bg)
     }
-    .cart-wrap{
+    .cart-section{
         padding:32px 0
     }
-    .title-bar{
+    .cart-title{
+        font-size:2rem;
         font-weight:800;
-        font-size:28px;
-        color:#fff;
-        background:var(--primary);
-        border-radius:12px;
-        padding:14px 18px;
-        margin-bottom:18px;
-        box-shadow:var(--shadow)
+        color:var(--primary);
+        margin-bottom:14px
     }
-    .card{
-        background:var(--card);
+
+    .cart-wrap{
+        display:grid;
+        grid-template-columns:1fr 360px;
+        gap:20px
+    }
+    @media (max-width: 992px){
+        .cart-wrap{
+            grid-template-columns:1fr
+        }
+    }
+
+    .card-like{
+        background:#fff;
         border:1px solid var(--border);
         border-radius:16px;
         box-shadow:var(--shadow)
     }
-    .select-all{
+    .cart-toolbar{
         display:flex;
         align-items:center;
         gap:12px;
-        background:#f3f8ff;
-        border:1px solid var(--border);
         padding:14px 16px;
-        border-radius:12px
+        border-bottom:1px solid #eef2ff
     }
-    .cart-item{
-        border:1px solid var(--border);
-        border-radius:16px;
-        padding:16px;
-        margin-top:14px;
-        display:flex;
-        gap:16px;
-        align-items:center;
-        background:var(--card);
-        position:relative;
-        transition:box-shadow .2s ease
+
+    table.cart-table{
+        width:100%;
+        border-collapse:separate;
+        border-spacing:0
     }
-    .cart-item.selected{
-        box-shadow:0 0 0 3px rgba(59,130,246,.2)
-    }
-    .thumb{
-        width:110px;
-        height:110px;
-        border-radius:12px;
-        object-fit:cover;
-        flex:0 0 110px
-    }
-    .item-main{
-        flex:1
-    }
-    .name{
+    table.cart-table thead th{
+        background:#1e3a8a;
+        color:#fff;
         font-weight:700;
-        color:var(--primary);
-        margin:3px 0;
+        text-transform:uppercase;
+        padding:12px;
+        font-size:.9rem
+    }
+    table.cart-table tbody td{
+        background:#fff;
+        border-bottom:1px solid #e5e7eb;
+        padding:12px;
+        vertical-align:middle
+    }
+    tr.is-selected td{
+        background:#f0f5ff
+    }
+
+    .product-img{
+        width:80px;
+        height:80px;
+        object-fit:cover;
+        border-radius:8px;
+        display:block
+    }
+    .product-name{
+        font-weight:700;
+        color:#1e3a8a;
         text-decoration:none
     }
-    .name:hover{
-        color:var(--primary-2)
+    .product-name:hover{
+        color:#3b82f6
     }
-    .meta{
-        color:#64748b;
-        font-size:13px
+
+    .quantity-input{
+        width:80px;
+        border-radius:8px
     }
-    .price{
-        font-weight:800;
-        color:var(--primary)
+    .quantity-input:focus{
+        border-color:#3b82f6;
+        box-shadow:0 0 5px rgba(59,130,246,.4)
     }
-    .remove-btn{
-        background:#eef4ff;
-        border:1px solid var(--border);
-        border-radius:12px;
-        padding:10px 16px;
-        color:var(--primary);
+
+    .stock-info{
+        color:#1e3a8a;
+        font-size:.9rem
+    }
+    .stock-info.low{
+        color:#dc2626;
         font-weight:700
     }
-    .remove-btn:hover{
-        background:#e2edff
+
+    .btn-pill{
+        padding:.45rem 1rem;
+        border-radius:999px;
+        font-size:.9rem
     }
-    .qty{
-        width:90px
+    .empty-box{
+        text-align:center;
+        border:2px dashed #e5e7eb;
+        background:#fff;
+        border-radius:12px;
+        padding:2.25rem 1rem;
+        color:#6b7280
     }
 
     /* Summary */
-    .summary{
-        position:sticky;
-        top:18px
+    .summary-card{
+        padding:16px
     }
-    .summary .card{
-        padding:18px
-    }
-    .summary h5{
+    .summary-title{
         font-weight:800;
-        color:var(--primary)
+        color:#1e3a8a;
+        font-size:1.1rem;
+        margin:.25rem 0 12px
     }
-    .row-line{
+    .summary-row{
         display:flex;
         justify-content:space-between;
-        margin:8px 0;
-        color:#334155
+        align-items:center;
+        margin:.35rem 0
     }
-    .total{
-        font-size:20px;
-        font-weight:900;
-        color:var(--primary)
+    .summary-row .label{
+        color:#334155;
+        font-size:.95rem
     }
-    .checkout-btn{
-        width:100%;
-        background:linear-gradient(90deg,var(--primary),var(--primary-2));
-        border:0;
-        color:#fff;
+    .summary-row .value{
         font-weight:800;
-        padding:12px 18px;
-        border-radius:12px
+        color:#0f172a
     }
-    .toolbar{
+    .selected-list{
+        max-height:220px;
+        overflow:auto;
+        border:1px solid #e5e7eb;
+        border-radius:10px;
+        padding:.5rem .75rem;
+        background:#fff
+    }
+    .selected-item{
         display:flex;
-        gap:10px;
-        margin-top:16px
+        align-items:flex-start;
+        gap:.5rem;
+        padding:.35rem 0;
+        border-bottom:1px dashed #eef2f7
     }
-
-    /* Remove/Clear animation */
-    .removing{
-        opacity:.2;
-        transform:translateY(-6px);
-        transition:opacity .25s ease, transform .25s ease
+    .selected-item:last-child{
+        border-bottom:none
     }
-
-    @media (max-width: 991px){
-        .summary{
-            position:static;
-            margin-top:18px
-        }
+    .selected-item .badge{
+        background:#e2e8f0;
+        color:#0f172a
     }
 </style>
 
-<div class="container cart-wrap">
-    <div class="title-bar">
-        Cart Items (<span id="titleCount">0</span>)
-    </div>
+<div class="container cart-section">
+    <h1 class="cart-title">Your Cart</h1>
 
+    <!-- Empty -->
     <c:if test="${empty cartItems}">
-        <div class="text-center p-5 border rounded bg-light" style="border-style: dashed!important; color:#1e3a8a;">
+        <div class="empty-box card-like" id="emptyStateCard">
             <i class="fas fa-shopping-bag fa-2x mb-3"></i>
-            <p class="mb-3">Your cart is empty.</p>
-            <a href="${pageContext.request.contextPath}/home" class="btn btn-outline-primary">Continue Shopping</a>
+            <p>Your cart is empty.</p>
+            <a href="${pageContext.request.contextPath}/home" class="btn btn-outline-primary btn-pill">Continue Shopping</a>
         </div>
     </c:if>
 
+    <!-- Have items -->
     <c:if test="${not empty cartItems}">
-        <div class="row g-4">
-            <!-- LEFT: Items -->
-            <div class="col-lg-8">
-                <div class="card p-3">
-                    <div class="select-all">
-                        <input type="checkbox" id="checkAll">
-                        <label for="checkAll" class="m-0">Select All</label>
+        <div class="cart-wrap" id="cartGrid">
+            <div class="card-like">
+                <div class="cart-toolbar">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="selectAll">
+                        <label class="form-check-label" for="selectAll">
+                            Select all (<span id="selectedCount">0</span>/<span id="totalCount">${cartItems.size()}</span>)
+                        </label>
                     </div>
+                    <div class="ms-auto">
+                        <a href="${pageContext.request.contextPath}/ProductList" class="btn btn-outline-secondary btn-pill">← Continue Shopping</a>
+                        <button id="clearCartBtn" type="button" class="btn btn-outline-danger btn-pill">Clear Cart</button>
+                    </div>
+                </div>
 
-                    <div id="itemsBox">
+                <table class="cart-table">
+                    <thead>
+                        <tr>
+                            <th style="width:54px;"></th>
+                            <th>Image</th>
+                            <th>Product</th>
+                            <th>Size</th>
+                            <th>Color</th>
+                            <th>Qty</th>
+                            <th>Stock</th>
+                            <th>Unit Price</th>
+                            <th>Total</th>
+                            <th style="width:120px;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cartTbody">
                         <c:forEach var="item" items="${cartItems}">
-                            <div class="cart-item" data-row="cart-item"
-                                 data-cart-item-id="${item.cartItemId}"
-                                 data-unit-price="${item.unitPrice}"
-                                 data-quantity="${item.quantity}">
-                                <div>
-                                    <input type="checkbox" class="item-check">
-                                </div>
-
-                                <img class="thumb"
-                                     src="${item.imageUrl}"
-                                     alt="${item.productName}"
-                                     onerror="this.src='https://placehold.co/110x110/eee/333?text=No+Image'">
-
-                                <div class="item-main">
-                                    <a class="name" href="${pageContext.request.contextPath}/ProductList/detail?productId=${item.productId}">
+                            <tr data-row="cart-item"
+                                data-cart-item-id="${item.cartItemId}"
+                                data-unit-price="${item.unitPrice}"
+                                data-quantity="${item.quantity}">
+                                <td>
+                                    <input type="checkbox"
+                                           class="form-check-input row-check"
+                                           data-id="${item.cartItemId}"
+                                           data-name="${item.productName}"
+                                           data-size="${item.size}"
+                                           data-color="${item.color}"
+                                           data-qty="${item.quantity}">
+                                </td>
+                                <td>
+                                    <img class="product-img"
+                                         src="${item.imageUrl}"
+                                         alt="${item.productName}"
+                                         onerror="this.src='https://placehold.co/100x100/eee/333?text=No+Image';">
+                                </td>
+                                <td>
+                                    <a class="product-name"
+                                       href="${pageContext.request.contextPath}/ProductList/detail?productId=${item.productId}">
                                         ${item.productName}
                                     </a>
-                                    <div class="meta">
-                                        Size: <strong>${item.size}</strong> &nbsp;|&nbsp; Color: <strong>${item.color}</strong>
-                                    </div>
-                                    <div class="meta">
-                                        Stock: <span class="${item.availableStock <= 5 ? 'text-danger' : ''}">
-                                            ${item.availableStock}
-                                        </span>
-                                    </div>
-
-                                    <div class="d-flex align-items-center gap-3 mt-2">
-                                        <div class="price">
-                                            <span class="unit-price" data-raw="${item.unitPrice}">${item.unitPrice}</span>
-                                        </div>
-
-                                        <div>
-                                            <input type="number"
-                                                   min="1" max="${item.availableStock}" value="${item.quantity}"
-                                                   class="form-control qty quantity-input"
-                                                   data-cart-item-id="${item.cartItemId}"
-                                                   data-max-stock="${item.availableStock}"
-                                                   data-csrf-token="${sessionScope.csrfToken}">
-                                        </div>
-
-                                        <div class="ms-auto fw-bold">
-                                            <span class="line-total" data-line-total="0">0</span>
-                                        </div>
-
-                                        <form class="remove-form ms-2"
-                                              action="${pageContext.request.contextPath}/customer/cart"
-                                              method="post"
-                                              data-csrf-token="${sessionScope.csrfToken}">
-                                            <input type="hidden" name="action" value="remove">
-                                            <input type="hidden" name="cartItemId" value="${item.cartItemId}">
-                                            <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
-                                            <button type="submit" class="remove-btn">REMOVE</button>
-                                        </form>
-                                    </div>
-                                </div>
-                            </div>
+                                </td>
+                                <td>${item.size}</td>
+                                <td>${item.color}</td>
+                                <td>
+                                    <input type="number"
+                                           class="form-control quantity-input"
+                                           value="${item.quantity}"
+                                           min="1"
+                                           max="${item.availableStock}"
+                                           data-cart-item-id="${item.cartItemId}"
+                                           data-csrf-token="${sessionScope.csrfToken}"
+                                           data-max-stock="${item.availableStock}">
+                                </td>
+                                <td>
+                                    <span class="stock-info ${item.availableStock <= 5 ? 'low' : ''}">
+                                        ${item.availableStock} in stock
+                                    </span>
+                                </td>
+                                <td class="unit-price-cell">
+                                    <span class="money" data-raw="${item.unitPrice}">₫</span>
+                                </td>
+                                <td class="line-total-cell">
+                                    <span class="money line-total" data-line-total="${item.totalPrice}">₫</span>
+                                </td>
+                                <td>
+                                    <form class="remove-form"
+                                          action="${pageContext.request.contextPath}/customer/cart"
+                                          method="post"
+                                          data-csrf-token="${sessionScope.csrfToken}">
+                                        <input type="hidden" name="action" value="remove">
+                                        <input type="hidden" name="cartItemId" value="${item.cartItemId}">
+                                        <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
+                                        <button type="submit" class="btn btn-outline-danger btn-pill">Remove</button>
+                                    </form>
+                                </td>
+                            </tr>
                         </c:forEach>
-                    </div>
-
-                    <div class="toolbar">
-                        <a href="${pageContext.request.contextPath}/home" class="btn btn-outline-secondary">
-                            ← Continue Shopping
-                        </a>
-                        <button id="clearCartBtn" type="button" class="btn btn-outline-danger">
-                            Clear Cart
-                        </button>
-                    </div>
-                </div>
+                    </tbody>
+                </table>
             </div>
 
-            <!-- RIGHT: Summary -->
-            <div class="col-lg-4">
-                <div class="summary">
-                    <div class="card">
-                        <h5 class="mb-3">Order Summary</h5>
-
-                        <div class="row-line"><span>Total Items</span><span id="sumTotalItems">0</span></div>
-                        <div class="row-line"><span>Selected Items</span><span id="sumSelectedItems">0</span></div>
-                        <div class="row-line"><span>Subtotal</span><span id="sumSubtotal">0đ</span></div>
-
-                        <hr>
-                        <div class="row-line total">
-                            <span>Selected Total</span>
-                            <span id="sumSelectedTotal">0đ</span>
-                        </div>
-
-                        <button class="checkout-btn mt-3" onclick="location.href = '${pageContext.request.contextPath}/customer/checkout'">
-                            PROCEED TO CHECKOUT
-                        </button>
-
-                    </div>
+            <!-- Summary -->
+            <div class="card-like summary-card" id="summaryCard">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-receipt me-2 text-primary"></i>
+                    <div class="summary-title mb-0">Order Summary</div>
                 </div>
+                <div class="summary-row mt-2">
+                    <div class="label">Items selected</div>
+                    <div class="value" id="sumItems">0</div>
+                </div>
+                <div class="summary-row">
+                    <div class="label">Selected subtotal</div>
+                    <div class="value" id="sumSelected">0đ</div>
+                </div>
+                <hr/>
+                <div class="mb-2 fw-semibold" style="color:#1e293b;">Selected items</div>
+                <div class="selected-list" id="selectedList">
+                    <div class="text-muted small">No items selected.</div>
+                </div>
+
+                <!-- Checkout form: chỉ enable khi có hàng được chọn -->
+                <form id="checkoutForm" class="d-grid gap-2 mt-3"
+                      action="${pageContext.request.contextPath}/customer/checkout"
+                      method="post">
+                    <input type="hidden" name="action" value="checkoutSelected">
+                    <input type="hidden" name="cartItemIds" id="checkoutIds" value="">
+                    <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
+                    <button id="checkoutBtn" type="submit" class="btn btn-primary btn-pill" disabled>
+                        Proceed to Checkout
+                    </button>
+                    <a href="${pageContext.request.contextPath}/home" class="btn btn-outline-primary btn-pill">
+                        Continue Shopping
+                    </a>
+                </form>
             </div>
         </div>
     </c:if>
@@ -282,340 +324,410 @@
 <!-- Toast -->
 <div class="toast-container position-fixed bottom-0 end-0 p-3"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-                            (function () {
-                                /* ===== Helpers ===== */
-                                function showToast(message, isSuccess) {
-                                    if (typeof isSuccess === 'undefined')
-                                        isSuccess = true;
-                                    var c = document.querySelector('.toast-container');
-                                    var html = '<div class="toast align-items-center text-white ' + (isSuccess ? 'bg-success' : 'bg-danger') + ' border-0" role="alert" aria-live="assertive" aria-atomic="true">'
-                                            + '<div class="d-flex"><div class="toast-body">' + (message || '') + '</div>'
-                                            + '<button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div></div>';
-                                    c.insertAdjacentHTML('beforeend', html);
-                                    new bootstrap.Toast(c.lastElementChild, {delay: 3000}).show();
+    (function () {
+        /* ===== Helpers ===== */
+        function showToast(msg, ok) {
+            if (typeof ok === 'undefined')
+                ok = true;
+            var c = document.querySelector('.toast-container');
+            var html = '<div class="toast align-items-center text-white ' + (ok ? 'bg-success' : 'bg-danger') + ' border-0" role="alert" aria-live="assertive" aria-atomic="true">'
+                    + ' <div class="d-flex"><div class="toast-body">' + (msg || '') + '</div>'
+                    + ' <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>'
+                    + ' </div></div>';
+            c.insertAdjacentHTML('beforeend', html);
+            new bootstrap.Toast(c.lastElementChild, {delay: 3000}).show();
+        }
+        function formatVNDdot(v) {
+            var n = Math.round(Number(v) || 0).toString();
+            return n.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + 'đ';
+        }
+        function updateBadge(n) {
+            if (typeof window.updateCartCount === 'function') {
+                (typeof n === 'number') ? window.updateCartCount(n) : window.updateCartCount();
+            }
+        }
+
+        function showEmptyState() {
+            var grid = document.getElementById('cartGrid');
+            if (grid)
+                grid.style.display = 'none';
+            var sum = document.getElementById('summaryCard');
+            if (sum)
+                sum.style.display = 'none';
+            var empty = document.getElementById('emptyStateCard');
+            if (!empty) {
+                var container = document.querySelector('.cart-section .container') || document.querySelector('.cart-section');
+                var div = document.createElement('div');
+                div.id = 'emptyStateCard';
+                div.className = 'empty-box card-like mt-3';
+                div.innerHTML = '<i class="fas fa-shopping-bag fa-2x mb-3"></i><p>Your cart is empty.</p>'
+                        + '<a href="${pageContext.request.contextPath}/ProductList" class="btn btn-outline-primary btn-pill">Continue Shopping</a>';
+                container.appendChild(div);
+            }
+            // reset counters
+            ['selectedCount', 'totalCount', 'sumItems'].forEach(function (id) {
+                var el = document.getElementById(id);
+                if (el)
+                    el.textContent = '0';
+            });
+            var ss = document.getElementById('sumSelected');
+            if (ss)
+                ss.textContent = '0đ';
+            var list = document.getElementById('selectedList');
+            if (list)
+                list.innerHTML = '<div class="text-muted small">No items selected.</div>';
+            // disable checkout
+            var cb = document.getElementById('checkoutBtn');
+            if (cb)
+                cb.disabled = true;
+            var ci = document.getElementById('checkoutIds');
+            if (ci)
+                ci.value = '';
+        }
+
+        /* ===== Row total & selection ===== */
+        function recalcRowTotal(row) {
+            var unit = Number(row.getAttribute('data-unit-price')) || 0;
+            var qtyEl = row.querySelector('.quantity-input');
+            var qty = qtyEl ? Number(qtyEl.value) || 0 : Number(row.getAttribute('data-quantity')) || 0;
+            var line = unit * qty;
+            var lt = row.querySelector('.line-total');
+            if (lt) {
+                lt.setAttribute('data-line-total', String(line));
+                lt.textContent = formatVNDdot(line);
+            }
+            row.setAttribute('data-quantity', String(qty));
+            return line;
+        }
+        function refreshRowHighlight() {
+            var checks = document.querySelectorAll('.row-check');
+            for (var i = 0; i < checks.length; i++) {
+                var id = checks[i].getAttribute('data-id');
+                var row = document.querySelector('tr[data-cart-item-id="' + id + '"]');
+                if (row)
+                    row.classList.toggle('is-selected', checks[i].checked);
+            }
+        }
+        function refreshSelectAllState() {
+            var all = document.getElementById('selectAll');
+            if (!all)
+                return;
+            var checks = document.querySelectorAll('.row-check');
+            var total = checks.length, checked = 0;
+            for (var i = 0; i < checks.length; i++)
+                if (checks[i].checked)
+                    checked++;
+            all.checked = (checked === total && total > 0);
+            all.indeterminate = (checked > 0 && checked < total);
+        }
+        function refreshSelectionSummary() {
+            var checks = document.querySelectorAll('.row-check');
+            var sel = [], i;
+            for (i = 0; i < checks.length; i++)
+                if (checks[i].checked)
+                    sel.push(checks[i]);
+
+            var selCount = sel.length;
+            var el;
+            (el = document.getElementById('selectedCount')) && (el.textContent = String(selCount));
+            (el = document.getElementById('sumItems')) && (el.textContent = String(selCount));
+
+            var subtotal = 0, ids = [];
+            for (i = 0; i < sel.length; i++) {
+                var id = sel[i].getAttribute('data-id');
+                ids.push(id);
+                var row = document.querySelector('tr[data-cart-item-id="' + id + '"]');
+                if (!row)
+                    continue;
+                var lt = row.querySelector('.line-total');
+                var line = lt ? Number(lt.getAttribute('data-line-total') || 0) : recalcRowTotal(row);
+                subtotal += line;
+            }
+            (el = document.getElementById('sumSelected')) && (el.textContent = formatVNDdot(subtotal));
+
+            // cập nhật hidden field cho checkout + enable/disable nút
+            var hid = document.getElementById('checkoutIds');
+            if (hid)
+                hid.value = ids.join(',');
+            var btn = document.getElementById('checkoutBtn');
+            if (btn)
+                btn.disabled = (selCount === 0);
+
+            // render danh sách selected
+            var list = document.getElementById('selectedList');
+            if (list) {
+                list.innerHTML = '';
+                if (selCount === 0) {
+                    list.innerHTML = '<div class="text-muted small">No items selected.</div>';
+                } else {
+                    for (i = 0; i < sel.length; i++) {
+                        var s = sel[i],
+                                name = s.getAttribute('data-name') || 'Product',
+                                size = s.getAttribute('data-size') || '',
+                                color = s.getAttribute('data-color') || '',
+                                qty = s.getAttribute('data-qty') || '1',
+                                meta = [];
+                        if (size)
+                            meta.push('Size: ' + size);
+                        if (color)
+                            meta.push('Color: ' + color);
+                        var line = document.createElement('div');
+                        line.className = 'selected-item';
+                        line.innerHTML = '<span class="badge me-2">x' + qty + '</span>'
+                                + '<div><div class="fw-semibold">' + name + '</div>'
+                                + '<div class="text-muted small">' + meta.join(' • ') + '</div></div>';
+                        list.appendChild(line);
+                    }
+                }
+            }
+        }
+
+        function formatAllMoney() {
+            var cells = document.querySelectorAll('.money');
+            for (var i = 0; i < cells.length; i++) {
+                var raw = cells[i].getAttribute('data-raw');
+                var lt = cells[i].getAttribute('data-line-total');
+                if (raw != null)
+                    cells[i].textContent = formatVNDdot(raw);
+                else if (lt != null)
+                    cells[i].textContent = formatVNDdot(lt);
+            }
+        }
+
+        /* ===== Binds ===== */
+        function bindChecks() {
+            var selectAll = document.getElementById('selectAll');
+            var checks = document.querySelectorAll('.row-check');
+
+            for (var i = 0; i < checks.length; i++) {
+                checks[i].addEventListener('change', function () {
+                    refreshRowHighlight();
+                    refreshSelectionSummary();
+                    refreshSelectAllState();
+                });
+            }
+            if (selectAll) {
+                selectAll.addEventListener('change', function () {
+                    var checked = this.checked;
+                    for (var i = 0; i < checks.length; i++)
+                        checks[i].checked = checked;
+                    refreshRowHighlight();
+                    refreshSelectionSummary();
+                    refreshSelectAllState();
+                });
+                // mặc định chọn hết để user thấy tổng
+                selectAll.checked = true;
+                selectAll.dispatchEvent(new Event('change'));
+            }
+        }
+
+        function bindQtyHandlers() {
+            var inputs = document.querySelectorAll('.quantity-input');
+            for (var i = 0; i < inputs.length; i++) {
+                (function (input) {
+                    input.addEventListener('change', function () {
+                        var cartItemId = input.getAttribute('data-cart-item-id');
+                        var quantity = parseInt(input.value, 10);
+                        var maxStock = parseInt(input.getAttribute('data-max-stock'), 10);
+                        var csrfToken = input.getAttribute('data-csrf-token');
+
+                        if (!csrfToken) {
+                            showToast('CSRF token is missing.', false);
+                            return;
+                        }
+                        if (isNaN(quantity) || quantity < 1) {
+                            quantity = 1;
+                            input.value = 1;
+                        }
+                        if (!isNaN(maxStock) && quantity > maxStock) {
+                            quantity = maxStock;
+                            input.value = maxStock;
+                            showToast('Quantity exceeds available stock.', false);
+                        }
+
+                        var body = new URLSearchParams();
+                        body.append('action', 'update');
+                        body.append('cartItemId', cartItemId);
+                        body.append('quantity', String(quantity));
+                        body.append('csrfToken', csrfToken);
+
+                        fetch('${pageContext.request.contextPath}/customer/cart', {
+                            method: 'POST',
+                            body: body,
+                            headers: {'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json', 'Cache-Control': 'no-cache'}
+                        }).then(function (res) {
+                            if (!res.ok)
+                                throw new Error('HTTP ' + res.status);
+                            return res.json();
+                        }).then(function (result) {
+                            if (result.message)
+                                showToast(result.message, !!result.success);
+                            if (result.success) {
+                                var row = input.closest('tr[data-row="cart-item"]');
+                                if (row) {
+                                    var chk = row.querySelector('.row-check');
+                                    if (chk)
+                                        chk.setAttribute('data-qty', String(quantity));
+                                    recalcRowTotal(row);
                                 }
-                                function formatVND(n) {
-                                    var x = Math.round(Number(n) || 0).toString();
-                                    return x.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + 'đ';
+                                refreshSelectionSummary();
+                                refreshSelectAllState();
+                                updateBadge(result.cartCount);
+                            } else {
+                                input.value = input.defaultValue || '1';
+                            }
+                        }).catch(function (err) {
+                            console.error(err);
+                            showToast('Network error. Please try again.', false);
+                            input.value = input.defaultValue || '1';
+                        });
+                    });
+                })(inputs[i]);
+            }
+        }
+
+        function bindRemoveSingle() {
+            var forms = document.querySelectorAll('form.remove-form');
+            for (var i = 0; i < forms.length; i++) {
+                (function (form) {
+                    form.addEventListener('submit', function (e) {
+                        e.preventDefault();
+                        var fd = new FormData(form);
+                        var csrf = fd.get('csrfToken');
+                        if (!csrf) {
+                            showToast('CSRF token is missing.', false);
+                            return;
+                        }
+                        if (!confirm('Are you sure you want to remove this item from your cart?'))
+                            return;
+
+                        fetch('${pageContext.request.contextPath}/customer/cart', {
+                            method: 'POST',
+                            body: new URLSearchParams(fd),
+                            headers: {'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json', 'Cache-Control': 'no-cache'}
+                        }).then(function (res) {
+                            if (!res.ok)
+                                throw new Error('HTTP ' + res.status);
+                            return res.json();
+                        }).then(function (result) {
+                            if (result.message)
+                                showToast(result.message, !!result.success);
+                            if (result.success) {
+                                var row = form.closest('tr[data-row="cart-item"]');
+                                if (row && row.parentNode)
+                                    row.parentNode.removeChild(row);
+
+                                var remain = document.querySelectorAll('tr[data-row="cart-item"]').length;
+                                var tc = document.getElementById('totalCount');
+                                if (tc)
+                                    tc.textContent = String(remain);
+
+                                if (remain === 0) {
+                                    showEmptyState();
+                                } else {
+                                    refreshSelectionSummary();
+                                    refreshSelectAllState();
+                                    refreshRowHighlight();
                                 }
-                                function closestRow(el) {
-                                    while (el && el.nodeType === 1) {
-                                        if (el.getAttribute('data-row') === 'cart-item')
-                                            return el;
-                                        el = el.parentNode;
-                                    }
-                                    return null;
-                                }
-                                function updateCartBadgeIfPresent(n) {
-                                    if (typeof window.updateCartCount === 'function' && typeof n !== 'undefined') {
-                                        window.updateCartCount(n);
-                                    }
-                                }
-                                function fetchCartCountAndUpdateBadge() {
-                                    return fetch('${pageContext.request.contextPath}/customer/cart/count', {headers: {'Cache-Control': 'no-cache'}})
-                                            .then(function (r) {
-                                                return r.json();
-                                            })
-                                            .then(function (d) {
-                                                updateCartBadgeIfPresent(d.count);
-                                                return d.count;
-                                            })
-                                            .catch(function () {
-                                                updateCartBadgeIfPresent(0);
-                                                return 0;
-                                            });
-                                }
+                                updateBadge(typeof result.cartCount !== 'undefined' ? result.cartCount : undefined);
+                            }
+                        }).catch(function (err) {
+                            console.error(err);
+                            showToast('Network error. Please try again.', false);
+                        });
+                    });
+                })(forms[i]);
+            }
+        }
 
-                                /* ===== Totals ===== */
-                                function recalcRow(row) {
-                                    var unit = Number(row.getAttribute('data-unit-price')) || 0;
-                                    var qtyInput = row.querySelector('.quantity-input');
-                                    var qty = qtyInput ? Number(qtyInput.value) || 0 : Number(row.getAttribute('data-quantity')) || 0;
-                                    var total = unit * qty;
-                                    row.setAttribute('data-quantity', String(qty));
-                                    var span = row.querySelector('.line-total');
-                                    if (span) {
-                                        span.setAttribute('data-line-total', String(total));
-                                        span.textContent = formatVND(total);
-                                    }
-                                    return total;
-                                }
-                                function recalcSummary() {
-                                    var rows = document.querySelectorAll('div[data-row="cart-item"]');
-                                    var subtotal = 0, selectedTotal = 0, selectedCount = 0;
-                                    for (var i = 0; i < rows.length; i++) {
-                                        var row = rows[i];
-                                        var lt = row.querySelector('.line-total');
-                                        var line = lt ? Number(lt.getAttribute('data-line-total')) || 0 : recalcRow(row);
-                                        subtotal += line;
-                                        var chk = row.querySelector('.item-check');
-                                        if (chk && chk.checked) {
-                                            selectedTotal += line;
-                                            selectedCount++;
-                                        }
-                                    }
-                                    var totalItems = rows.length;
-                                    document.getElementById('titleCount').textContent = totalItems;
-                                    document.getElementById('sumTotalItems').textContent = totalItems;
-                                    document.getElementById('sumSelectedItems').textContent = selectedCount;
-                                    document.getElementById('sumSubtotal').textContent = formatVND(subtotal);
-                                    document.getElementById('sumSelectedTotal').textContent = formatVND(selectedTotal);
+        function bindClearCart() {
+            var btn = document.getElementById('clearCartBtn');
+            if (!btn)
+                return;
+            btn.addEventListener('click', function () {
+                var rows = document.querySelectorAll('tr[data-row="cart-item"]');
+                if (rows.length === 0)
+                    return;
+                if (!confirm('Clear all items from your cart?'))
+                    return;
 
-                                    var checkAll = document.getElementById('checkAll');
-                                    if (totalItems === 0) {
-                                        checkAll.checked = false;
-                                        checkAll.indeterminate = false;
-                                    } else {
-                                        if (selectedCount === 0) {
-                                            checkAll.checked = false;
-                                            checkAll.indeterminate = false;
-                                        } else if (selectedCount === totalItems) {
-                                            checkAll.checked = true;
-                                            checkAll.indeterminate = false;
-                                        } else {
-                                            checkAll.indeterminate = true;
-                                        }
-                                    }
-                                }
+                var anyForm = document.querySelector('form.remove-form');
+                var csrf = anyForm ? (new FormData(anyForm)).get('csrfToken') : '';
+                if (!csrf) {
+                    showToast('CSRF token is missing.', false);
+                    return;
+                }
 
-                                /* ===== Bindings ===== */
-                                function bindFormatting() {
-                                    var ups = document.querySelectorAll('.unit-price');
-                                    for (var i = 0; i < ups.length; i++) {
-                                        var raw = ups[i].getAttribute('data-raw');
-                                        ups[i].textContent = formatVND(raw);
-                                        var row = closestRow(ups[i]);
-                                        if (row)
-                                            row.setAttribute('data-unit-price', String(Number(raw) || 0));
-                                    }
-                                    var rows = document.querySelectorAll('div[data-row="cart-item"]');
-                                    for (var j = 0; j < rows.length; j++) {
-                                        recalcRow(rows[j]);
-                                    }
-                                    recalcSummary();
-                                }
+                btn.disabled = true;
+                var old = btn.textContent;
+                btn.textContent = 'Clearing...';
 
-                                function bindQtyChange() {
-                                    var inputs = document.querySelectorAll('.quantity-input');
-                                    for (var i = 0; i < inputs.length; i++) {
-                                        (function (input) {
-                                            input.addEventListener('change', function () {
-                                                var qty = parseInt(input.value, 10);
-                                                var max = parseInt(input.getAttribute('data-max-stock'), 10);
-                                                var token = input.getAttribute('data-csrf-token');
-                                                var id = input.getAttribute('data-cart-item-id');
+                // xoá tuần tự cho chắc
+                var ids = [];
+                for (var i = 0; i < rows.length; i++)
+                    ids.push(rows[i].getAttribute('data-cart-item-id'));
+                var idx = 0;
+                function next() {
+                    if (idx >= ids.length) {
+                        btn.disabled = false;
+                        btn.textContent = old;
+                        showToast('Cart has been cleared.', true);
+                        updateBadge(); // refetch count
+                        showEmptyState();
+                        return;
+                    }
+                    var body = new URLSearchParams();
+                    body.append('action', 'remove');
+                    body.append('cartItemId', ids[idx]);
+                    body.append('csrfToken', csrf);
+                    fetch('${pageContext.request.contextPath}/customer/cart', {
+                        method: 'POST', body: body, headers: {'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json', 'Cache-Control': 'no-cache'}
+                    }).then(function () {
+                        idx++;
+                        next();
+                    }).catch(function () {
+                        idx++;
+                        next();
+                    });
+                }
+                next();
+            });
+        }
 
-                                                if (!token) {
-                                                    showToast('CSRF token is missing.', false);
-                                                    return;
-                                                }
-                                                if (isNaN(qty) || qty < 1) {
-                                                    qty = 1;
-                                                    input.value = 1;
-                                                }
-                                                if (!isNaN(max) && qty > max) {
-                                                    qty = max;
-                                                    input.value = max;
-                                                    showToast('Quantity exceeds available stock.', false);
-                                                }
+        // Bảo vệ: không gửi form nếu không có item được chọn (phòng khi browser bỏ qua disabled)
+        function bindCheckoutGuard() {
+            var form = document.getElementById('checkoutForm');
+            if (!form)
+                return;
+            form.addEventListener('submit', function (e) {
+                var ids = document.getElementById('checkoutIds')?.value || '';
+                if (!ids) {
+                    e.preventDefault();
+                    showToast('Please select at least one item to checkout.', false);
+                }
+            });
+        }
 
-                                                var body = new URLSearchParams();
-                                                body.append('action', 'update');
-                                                body.append('cartItemId', id);
-                                                body.append('quantity', String(qty));
-                                                body.append('csrfToken', token);
+        /* ===== Init ===== */
+        document.addEventListener('DOMContentLoaded', function () {
+            formatAllMoney();
+            // set line totals once
+            var rows = document.querySelectorAll('tr[data-row="cart-item"]');
+            for (var i = 0; i < rows.length; i++)
+                recalcRowTotal(rows[i]);
 
-                                                fetch('${pageContext.request.contextPath}/customer/cart', {
-                                                    method: 'POST', body: body,
-                                                    headers: {'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json', 'Cache-Control': 'no-cache'}
-                                                })
-                                                        .then(function (res) {
-                                                            if (!res.ok)
-                                                                throw new Error('HTTP ' + res.status);
-                                                            return res.json();
-                                                        })
-                                                        .then(function (result) {
-                                                            if (result.message)
-                                                                showToast(result.message, !!result.success);
-                                                            if (result.success) {
-                                                                input.defaultValue = String(qty);
-                                                                var row = closestRow(input);
-                                                                if (row)
-                                                                    recalcRow(row);
-                                                                recalcSummary();
-                                                                updateCartBadgeIfPresent(result.cartCount);
-                                                            } else {
-                                                                input.value = input.defaultValue || '1';
-                                                            }
-                                                        })
-                                                        .catch(function (err) {
-                                                            console.error(err);
-                                                            showToast('Network error. Please try again.', false);
-                                                            input.value = input.defaultValue || '1';
-                                                        });
-                                            });
-                                        })(inputs[i]);
-                                    }
-                                }
+            bindChecks();
+            bindQtyHandlers();
+            bindRemoveSingle();
+            bindClearCart();
+            bindCheckoutGuard();
 
-                                function bindChecks() {
-                                    var checkAll = document.getElementById('checkAll');
-                                    var itemsBox = document.getElementById('itemsBox');
-
-                                    checkAll.addEventListener('change', function () {
-                                        var checks = itemsBox.querySelectorAll('.item-check');
-                                        for (var i = 0; i < checks.length; i++) {
-                                            checks[i].checked = checkAll.checked;
-                                            var row = closestRow(checks[i]);
-                                            if (row) {
-                                                checks[i].checked ? row.classList.add('selected') : row.classList.remove('selected');
-                                            }
-                                        }
-                                        recalcSummary();
-                                    });
-
-                                    itemsBox.addEventListener('change', function (e) {
-                                        if (e.target && e.target.classList.contains('item-check')) {
-                                            var row = closestRow(e.target);
-                                            if (row) {
-                                                row.classList.toggle('selected', e.target.checked);
-                                            }
-                                            recalcSummary();
-                                        }
-                                    });
-                                }
-
-                                function bindRemove() {
-                                    var forms = document.querySelectorAll('form.remove-form');
-                                    for (var i = 0; i < forms.length; i++) {
-                                        (function (form) {
-                                            form.addEventListener('submit', function (e) {
-                                                e.preventDefault();
-                                                var fd = new FormData(form);
-                                                if (!fd.get('csrfToken')) {
-                                                    showToast('CSRF token is missing.', false);
-                                                    return;
-                                                }
-                                                if (!confirm('Are you sure you want to remove this item from your cart?'))
-                                                    return;
-
-                                                var row = closestRow(form);
-                                                if (row)
-                                                    row.classList.add('removing');
-
-                                                fetch('${pageContext.request.contextPath}/customer/cart', {
-                                                    method: 'POST', body: new URLSearchParams(fd),
-                                                    headers: {'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json', 'Cache-Control': 'no-cache'}
-                                                })
-                                                        .then(function (res) {
-                                                            if (!res.ok)
-                                                                throw new Error('HTTP ' + res.status);
-                                                            return res.json();
-                                                        })
-                                                        .then(function (result) {
-                                                            if (result.message)
-                                                                showToast(result.message, !!result.success);
-                                                            if (result.success) {
-                                                                if (row && row.parentNode)
-                                                                    row.parentNode.removeChild(row);
-                                                                recalcSummary();
-                                                                return fetchCartCountAndUpdateBadge();
-                                                            }
-                                                        })
-                                                        .catch(function (err) {
-                                                            console.error(err);
-                                                            showToast('Network error. Please try again.', false);
-                                                        });
-                                            });
-                                        })(forms[i]);
-                                    }
-                                }
-
-                                function bindClearCart() {
-                                    var btn = document.getElementById('clearCartBtn');
-                                    if (!btn)
-                                        return;
-
-                                    btn.addEventListener('click', function () {
-                                        var rows = document.querySelectorAll('div[data-row="cart-item"]');
-                                        if (rows.length === 0)
-                                            return;
-                                        if (!confirm('Clear all items from your cart?'))
-                                            return;
-
-                                        var tokenEl = document.querySelector('form.remove-form input[name="csrfToken"]');
-                                        var token = tokenEl ? tokenEl.value : null;
-                                        if (!token) {
-                                            showToast('CSRF token is missing.', false);
-                                            return;
-                                        }
-
-                                        // UI state
-                                        btn.disabled = true;
-                                        var oldText = btn.textContent;
-                                        btn.textContent = 'Clearing...';
-
-                                        var ids = [];
-                                        for (var i = 0; i < rows.length; i++) {
-                                            ids.push(rows[i].getAttribute('data-cart-item-id'));
-                                            rows[i].classList.add('removing');
-                                        }
-
-                                        // Remove all (parallel), then update UI once
-                                        var promises = ids.map(function (id) {
-                                            var body = new URLSearchParams();
-                                            body.append('action', 'remove');
-                                            body.append('cartItemId', id);
-                                            body.append('csrfToken', token);
-                                            return fetch('${pageContext.request.contextPath}/customer/cart', {
-                                                method: 'POST', body: body,
-                                                headers: {'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json', 'Cache-Control': 'no-cache'}
-                                            }).then(function (r) {
-                                                return r.json();
-                                            }).catch(function () {
-                                                return {success: false};
-                                            });
-                                        });
-
-                                        Promise.all(promises).then(function () {
-                                            // Remove DOM rows
-                                            for (var i = 0; i < ids.length; i++) {
-                                                var row = document.querySelector('div[data-row="cart-item"][data-cart-item-id="' + ids[i] + '"]');
-                                                if (row && row.parentNode)
-                                                    row.parentNode.removeChild(row);
-                                            }
-                                            recalcSummary();
-
-                                            // Empty placeholder
-                                            if (document.querySelectorAll('div[data-row="cart-item"]').length === 0) {
-                                                var listCard = document.querySelector('.col-lg-8 .card');
-                                                var empty = document.createElement('div');
-                                                empty.className = 'card p-4 text-center mt-3';
-                                                empty.innerHTML = '<p class="mb-0">Your cart is empty.</p>';
-                                                listCard.appendChild(empty);
-                                            }
-
-                                            // Update badge accurately
-                                            return fetchCartCountAndUpdateBadge();
-                                        }).finally(function () {
-                                            btn.disabled = false;
-                                            btn.textContent = oldText;
-                                            showToast('Cart has been cleared.', true);
-                                        });
-                                    });
-                                }
-
-                                /* ===== Init ===== */
-                                document.addEventListener('DOMContentLoaded', function () {
-                                    bindFormatting();
-                                    bindQtyChange();
-                                    bindChecks();
-                                    bindRemove();
-                                    bindClearCart();
-                                });
-                            })();
+            if (typeof window.updateCartCount === 'function') {
+                window.updateCartCount();
+            }
+        });
+    })();
 </script>
 
 <jsp:include page="/WEB-INF/views/common/footer.jsp" />

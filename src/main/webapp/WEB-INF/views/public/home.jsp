@@ -6,6 +6,7 @@
 <%@ page import="dao.CategoryDAO" %>
 <%@ page import="model.Category" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+
 <%
     String pageTitle = (String) request.getAttribute("pageTitle");
     if (pageTitle == null) {
@@ -17,26 +18,20 @@
     Set<Integer> wishlistProductIds = (Set<Integer>) request.getAttribute("wishlistProductIds");
     NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(new Locale("vi", "VN"));
     request.setAttribute("pageTitle", pageTitle);
+
     Long menCategoryId = null;
     Long womenCategoryId = null;
     boolean showMenCategory = false;
     boolean showWomenCategory = false;
     String categoryError = null;
+
     try {
         CategoryDAO categoryDAO = new CategoryDAO();
         List<Category> parentCategories = categoryDAO.getParentCategories();
         if (parentCategories == null || parentCategories.isEmpty()) {
-            System.out.println("Warning: parentCategories is null or empty from CategoryDAO.getParentCategories() in home.jsp");
             categoryError = "No categories available. Please contact the administrator.";
             parentCategories = new ArrayList<>();
         } else {
-            System.out.println("Parent Categories (home.jsp): " + parentCategories.size() + " found");
-            for (Category c : parentCategories) {
-                System.out.println("Parent Category [id=" + (c != null ? c.getCategoryId() : "null")
-                        + ", name=" + (c != null && c.getName() != null ? c.getName() : "null")
-                        + ", parentCategoryId=" + (c != null ? c.getParentCategoryId() : "null")
-                        + ", isActive=" + (c != null ? c.isActive() : "null") + "]");
-            }
             List<Category> parentCats = parentCategories;
             if (!parentCats.isEmpty()) {
                 menCategoryId = parentCats.get(0).getCategoryId();
@@ -45,25 +40,21 @@
                     womenCategoryId = parentCats.get(1).getCategoryId();
                     showWomenCategory = true;
                 } else {
-                    System.out.println("Warning: Only one parent category found, hiding Women section");
                     categoryError = "Only one category available.";
                 }
             } else {
-                System.out.println("Warning: No parent categories found, hiding Men and Women sections");
                 categoryError = "No categories available. Please contact the administrator.";
             }
-            System.out.println("Men Category ID: " + menCategoryId);
-            System.out.println("Women Category ID: " + womenCategoryId);
         }
     } catch (Exception e) {
-        System.err.println("Error fetching categories in home.jsp: " + e.getMessage());
-        e.printStackTrace();
         showMenCategory = false;
         showWomenCategory = false;
         categoryError = "Error loading categories: " + e.getMessage();
     }
 %>
+
 <jsp:include page="/WEB-INF/views/common/header.jsp" />
+
 <style>
     body {
         font-family: 'Poppins', sans-serif;
@@ -106,8 +97,9 @@
     }
     .hero-section .btn:hover {
         transform: translateY(-2px);
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
     }
+
     .category-section {
         padding: 4rem 0;
         background-color: #fff;
@@ -116,7 +108,7 @@
         position: relative;
         overflow: hidden;
         border-radius: 10px;
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         transition: transform 0.3s ease;
     }
     .category-card:hover {
@@ -138,7 +130,7 @@
         transform: translate(-50%, -50%);
         text-align: center;
         color: white;
-        text-shadow: 1px 1px 5px rgba(0, 0, 0, 0.7);
+        text-shadow: 1px 1px 5px rgba(0,0,0,0.7);
     }
     .category-card h3 {
         font-size: 2rem;
@@ -149,6 +141,7 @@
         padding: 0.5rem 1.5rem;
         font-weight: 500;
     }
+
     .section-title {
         font-size: 2rem;
         font-weight: 700;
@@ -156,6 +149,7 @@
         margin-bottom: 3rem;
         color: #1e3a8a;
     }
+
     .product-section {
         padding: 4rem 0;
         background-color: #f1f5f9;
@@ -164,12 +158,12 @@
         background: white;
         border-radius: 10px;
         overflow: hidden;
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         transition: transform 0.3s ease, box-shadow 0.3s ease;
     }
     .product-card:hover {
         transform: translateY(-5px);
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.15);
     }
     .product-card img {
         width: 100%;
@@ -217,6 +211,7 @@
         background-color: #10b981 !important;
         transform: scale(1.1);
     }
+
     .promo-section {
         padding: 4rem 0;
         background: linear-gradient(135deg, #60a5fa, #3b82f6);
@@ -239,6 +234,7 @@
         font-size: 1rem;
         border-radius: 30px;
     }
+
     .error-message {
         color: #dc2626;
         font-weight: 500;
@@ -269,9 +265,7 @@
         border-color: #ef4444;
         color: #ef4444;
     }
-    .toast-container {
-        z-index: 1055;
-    }
+
     @media (max-width: 992px) {
         .hero-section h1 {
             font-size: 2.5rem;
@@ -298,6 +292,7 @@
         }
     }
 </style>
+
 <div class="hero-section">
     <div class="content">
         <h1>Discover Your Style</h1>
@@ -305,6 +300,7 @@
         <a href="${pageContext.request.contextPath}/ProductList" class="btn btn-light">Shop Now</a>
     </div>
 </div>
+
 <div class="category-section">
     <div class="container">
         <h2 class="section-title">Shop by Category</h2>
@@ -339,6 +335,7 @@
         </div>
     </div>
 </div>
+
 <div class="product-section">
     <div class="container">
         <h2 class="section-title">New Arrivals</h2>
@@ -352,7 +349,6 @@
                         Long variantId = product.getDefaultVariantId();
                         boolean hasVariant = variantId != null && variantId != 0;
                         int available = (availableMap != null) ? availableMap.getOrDefault(product.getProductId(), 0) : 0;
-                        System.out.println("home.jsp - New Arrival Product ID: " + product.getProductId() + ", variantId: " + variantId + ", available: " + available);
                         boolean hasStock = hasVariant && (available > 0);
                         String buttonTextCart = hasStock ? "Add to Cart" : "Out of Stock";
                         String buttonTextBuy = hasStock ? "Buy Now" : "Out of Stock";
@@ -373,7 +369,10 @@
                         <a href="<%= request.getContextPath()%>/ProductList/detail?productId=<%= product.getProductId()%>" class="product-title"><%= name%></a>
                         <p class="product-price"><%= price%></p>
                         <div class="btn-container">
-                            <form id="addToCartForm-<%= product.getProductId()%>" data-product-id="<%= product.getProductId()%>" data-variant-id="<%= hasVariant ? variantId : 0%>" data-has-stock="<%= hasStock%>">
+                            <form id="addToCartForm-<%= product.getProductId()%>"
+                                  data-product-id="<%= product.getProductId()%>"
+                                  data-variant-id="<%= hasVariant ? variantId : 0%>"
+                                  data-has-stock="<%= hasStock%>">
                                 <input type="hidden" name="action" value="add">
                                 <input type="hidden" name="variantId" value="<%= hasVariant ? variantId : 0%>">
                                 <input type="hidden" name="quantity" value="1" min="1" max="<%= available %>">
@@ -403,6 +402,7 @@
         </div>
     </div>
 </div>
+
 <div class="promo-section">
     <div class="container">
         <h2>Exclusive Offers Await</h2>
@@ -410,6 +410,7 @@
         <a href="${pageContext.request.contextPath}/ProductList/sale" class="btn btn-light">Explore Deals</a>
     </div>
 </div>
+
 <div class="product-section">
     <div class="container">
         <h2 class="section-title">Best Sellers</h2>
@@ -423,7 +424,6 @@
                         Long variantId = product.getDefaultVariantId();
                         boolean hasVariant = variantId != null && variantId != 0;
                         int available = (availableMap != null) ? availableMap.getOrDefault(product.getProductId(), 0) : 0;
-                        System.out.println("home.jsp - Best Seller Product ID: " + product.getProductId() + ", variantId: " + variantId + ", available: " + available);
                         boolean hasStock = hasVariant && (available > 0);
                         String buttonTextCart = hasStock ? "Add to Cart" : "Out of Stock";
                         String buttonTextBuy = hasStock ? "Buy Now" : "Out of Stock";
@@ -444,7 +444,10 @@
                         <a href="<%= request.getContextPath()%>/ProductList/detail?productId=<%= product.getProductId()%>" class="product-title"><%= name%></a>
                         <p class="product-price"><%= price%></p>
                         <div class="btn-container">
-                            <form id="addToCartForm-<%= product.getProductId()%>" data-product-id="<%= product.getProductId()%>" data-variant-id="<%= hasVariant ? variantId : 0%>" data-has-stock="<%= hasStock%>">
+                            <form id="addToCartForm-<%= product.getProductId()%>"
+                                  data-product-id="<%= product.getProductId()%>"
+                                  data-variant-id="<%= hasVariant ? variantId : 0%>"
+                                  data-has-stock="<%= hasStock%>">
                                 <input type="hidden" name="action" value="add">
                                 <input type="hidden" name="variantId" value="<%= hasVariant ? variantId : 0%>">
                                 <input type="hidden" name="quantity" value="1" min="1" max="<%= available %>">
@@ -474,124 +477,99 @@
         </div>
     </div>
 </div>
-<div class="toast-container position-fixed bottom-0 end-0 p-3">
-    <div id="successToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
-        <div class="toast-header bg-success text-white">
-            <strong class="me-auto">Success</strong>
-            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
-        </div>
-        <div class="toast-body" id="successToastBody"></div>
-    </div>
-    <div id="errorToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
-        <div class="toast-header bg-danger text-white">
-            <strong class="me-auto">Error</strong>
-            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
-        </div>
-        <div class="toast-body" id="errorToastBody"></div>
-    </div>
-</div>
+
 <jsp:include page="/WEB-INF/views/common/footer.jsp" />
+
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        var toastSuccess = new bootstrap.Toast(document.getElementById('successToast'), {delay: 3000});
-        var toastError = new bootstrap.Toast(document.getElementById('errorToast'), {delay: 3000});
+    (function () {
+        // Chỉ giữ phần Add-to-Cart và cập nhật badge. Các tiện ích (dropdown, toast, updateCartCount)
+        // đã có global trong header.jsp.
 
-        function showToast(message, isSuccess) {
-            var toast = isSuccess ? toastSuccess : toastError;
-            var toastBody = document.getElementById(isSuccess ? 'successToastBody' : 'errorToastBody');
-            toastBody.textContent = message;
-            toast.show();
-        }
+        document.addEventListener('DOMContentLoaded', function () {
+            // Gắn event Add to Cart (AJAX)
+            var buttons = document.querySelectorAll('.add-to-cart-btn');
+            for (var i = 0; i < buttons.length; i++) {
+                (function (btn) {
+                    btn.addEventListener('click', function (e) {
+                        e.preventDefault();
 
-        function updateCartCount() {
-            fetch('${pageContext.request.contextPath}/customer/cart/count', {
-                method: 'GET',
-                headers: {'Accept': 'application/json'}
-            })
-                    .then(response => {
-                        if (!response.ok)
-                            throw new Error('Network response was not ok: ' + response.statusText);
-                        return response.json();
-                    })
-                    .then(data => {
-                        const cartCountElement = document.getElementById('cartCount');
-                        if (cartCountElement) {
-                            cartCountElement.textContent = data.count || 0;
-                            console.log('Cart count updated:', data.count);
+                        var form = btn.closest('form');
+                        if (!form)
+                            return;
+
+                        var hasStock = (form.getAttribute('data-has-stock') === 'true');
+                        var variantId = form.getAttribute('data-variant-id');
+                        var qtyInput = form.querySelector('input[name="quantity"]');
+                        var quantity = qtyInput ? parseInt(qtyInput.value, 10) : 1;
+                        var csrfEl = form.querySelector('input[name="csrfToken"]');
+                        var csrfToken = csrfEl ? csrfEl.value : '';
+
+                        if (!hasStock) {
+                            if (window.showToast)
+                                window.showToast('Product is out of stock.', false);
+                            return;
                         }
-                    })
-                    .catch(error => {
-                        console.error('Error updating cart count:', error);
-                        const cartCountElement = document.getElementById('cartCount');
-                        if (cartCountElement)
-                            cartCountElement.textContent = '0';
-                    });
-        }
+                        if (isNaN(quantity) || quantity < 1) {
+                            if (window.showToast)
+                                window.showToast('Invalid quantity.', false);
+                            return;
+                        }
 
-        document.querySelectorAll('.add-to-cart-btn').forEach(button => {
-            button.addEventListener('click', function (e) {
-                e.preventDefault();
-                const form = this.closest('form');
-                const productId = form.getAttribute('data-product-id');
-                const variantId = form.getAttribute('data-variant-id');
-                const hasStock = form.getAttribute('data-has-stock') === 'true';
-                const quantity = parseInt(form.querySelector('input[name="quantity"]').value);
-                const csrfToken = form.querySelector('input[name="csrfToken"]').value;
-                console.log('Sending add to cart request:', {productId, variantId, quantity, csrfToken});
+                        btn.classList.add('added');
+                        btn.textContent = 'Adding...';
 
-                if (!hasStock) {
-                    showToast('Product is out of stock.', false);
-                    return;
-                }
-                if (isNaN(quantity) || quantity < 1) {
-                    showToast('Invalid quantity.', false);
-                    return;
-                }
-                if (!csrfToken) {
-                    showToast('CSRF token is missing.', false);
-                    return;
-                }
+                        var body = new URLSearchParams();
+                        body.append('action', 'add');
+                        body.append('variantId', String(variantId || 0));
+                        body.append('quantity', String(quantity));
+                        if (csrfToken)
+                            body.append('csrfToken', csrfToken);
 
-                this.classList.add('added');
-                this.textContent = 'Adding...';
-                fetch('${pageContext.request.contextPath}/customer/cart', {
-                    method: 'POST',
-                    body: new URLSearchParams({
-                        action: 'add',
-                        variantId: variantId,
-                        quantity: quantity,
-                        csrfToken: csrfToken
-                    }),
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                        'Accept': 'application/json'
-                    }
-                })
-                        .then(response => {
-                            if (!response.ok)
-                                throw new Error('Network response was not ok: ' + response.statusText);
-                            return response.json();
-                        })
-                        .then(result => {
-                            console.log('Add to Cart response:', result);
-                            if (result.success) {
-                                showToast(result.message, true);
-                                updateCartCount();
-                            } else {
-                                showToast(result.message || 'Failed to add to cart.', false);
+                        fetch('${pageContext.request.contextPath}/customer/cart', {
+                            method: 'POST',
+                            body: body,
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded',
+                                'Accept': 'application/json'
                             }
-                            this.classList.remove('added');
-                            this.textContent = 'Add to Cart';
                         })
-                        .catch(error => {
-                            console.error('Error adding to cart:', error);
-                            showToast('Error adding to cart: ' + error.message, false);
-                            this.classList.remove('added');
-                            this.textContent = 'Add to Cart';
-                        });
-            });
-        });
+                                .then(function (res) {
+                                    if (!res.ok)
+                                        throw new Error('HTTP ' + res.status);
+                                    return res.json();
+                                })
+                                .then(function (result) {
+                                    if (window.showToast) {
+                                        window.showToast(result.message || (result.success ? 'Added to cart.' : 'Failed to add to cart.'), !!result.success);
+                                    }
 
-        updateCartCount();
-    });
+                                    // Cập nhật badge NGAY LẬP TỨC
+                                    if (typeof window.handleAddToCartResult === 'function') {
+                                        window.handleAddToCartResult(result);
+                                    } else if (typeof window.updateCartCount === 'function') {
+                                        if (typeof result.cartCount !== 'undefined')
+                                            window.updateCartCount(result.cartCount);
+                                        else
+                                            window.updateCartCount(); // fallback GET /customer/cart/count
+                                    }
+                                })
+                                .catch(function (err) {
+                                    console.error(err);
+                                    if (window.showToast)
+                                        window.showToast('Error adding to cart. Please try again.', false);
+                                })
+                                .finally(function () {
+                                    btn.classList.remove('added');
+                                    btn.textContent = 'Add to Cart';
+                                });
+                    });
+                })(buttons[i]);
+            }
+
+            // Lần đầu vào trang: đồng bộ badge từ server (global trong header)
+            if (typeof window.updateCartCount === 'function') {
+                window.updateCartCount();
+            }
+        });
+    })();
 </script>
