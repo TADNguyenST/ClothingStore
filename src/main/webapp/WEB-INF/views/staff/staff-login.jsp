@@ -14,7 +14,6 @@
     <title>Staff Login - ClothingStore</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        /* --- TOÀN BỘ CSS GIỐNG admin-login.jsp (ĐÃ ĐƯỢC TÍCH HỢP) --- */
         * {
             margin: 0;
             padding: 0;

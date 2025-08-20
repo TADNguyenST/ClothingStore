@@ -11,6 +11,7 @@ import util.DBContext;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import util.PasswordUtil;
 
 /**
@@ -115,56 +116,8 @@ public class StaffDAO extends DBContext {
         }
         return null;
     }
+
     // Create Account
-
-    public boolean createStaffAccount(Users user, Staff staff) {
-        String userSql = "INSERT INTO users (email, password, full_name, phone_number, role, status, created_at) "
-                + "VALUES (?, ?, ?, ?, 'Staff', 'Active', GETDATE())";
-        String staffSql = "INSERT INTO staff (user_id, position, notes, created_at) VALUES (?, ?, ?, GETDATE())";
-
-        try ( Connection conn = getConnection()) {
-            conn.setAutoCommit(false);
-
-            try ( PreparedStatement psUser = conn.prepareStatement(userSql, Statement.RETURN_GENERATED_KEYS)) {
-                String hashedPassword = PasswordUtil.hashPassword(user.getPassword());
-
-                psUser.setString(1, user.getEmail());
-                psUser.setString(2, hashedPassword);
-                psUser.setString(3, user.getFullName());
-                psUser.setString(4, user.getPhoneNumber());
-
-                int rows = psUser.executeUpdate();
-                if (rows == 0) {
-                    conn.rollback();
-                    return false;
-                }
-
-                ResultSet generatedKeys = psUser.getGeneratedKeys();
-                if (generatedKeys.next()) {
-                    long userId = generatedKeys.getLong(1);
-                    try ( PreparedStatement psStaff = conn.prepareStatement(staffSql)) {
-                        psStaff.setLong(1, userId);
-                        psStaff.setString(2, staff.getPosition());
-                        psStaff.setString(3, staff.getNotes());
-
-                        if (psStaff.executeUpdate() > 0) {
-                            conn.commit();
-                            return true;
-                        }
-                    }
-                }
-                conn.rollback();
-            } catch (SQLException ex) {
-                conn.rollback();
-                ex.printStackTrace();
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-
-        return false;
-    }
-
     // Check if email already exists
     public boolean isEmailExists(String email) {
         String sql = "SELECT COUNT(*) FROM users WHERE email = ?";
@@ -173,6 +126,51 @@ public class StaffDAO extends DBContext {
             ResultSet rs = ps.executeQuery();
             if (rs.next()) {
                 return rs.getInt(1) > 0;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    // Create Staff Account (with temp password)
+    public boolean createStaffAccount(Users user, Staff staff) {
+        String userSql = "INSERT INTO users (email, password, full_name, phone_number, role, status, created_at) "
+                + "VALUES (?, ?, ?, ?, 'Staff', 'Active', GETDATE())";
+        String staffSql = "INSERT INTO staff (user_id, position, notes, created_at) VALUES (?, ?, ?, GETDATE())";
+
+        try ( Connection conn = getConnection();  PreparedStatement userPs = conn.prepareStatement(userSql, Statement.RETURN_GENERATED_KEYS);  PreparedStatement staffPs = conn.prepareStatement(staffSql)) {
+
+            // 1. Check email tồn tại
+            if (isEmailExists(user.getEmail())) {
+                return false; // báo fail nếu email đã tồn tại
+            }
+
+            // 2. Sinh password tạm (random 8 ký tự)
+            String tempPassword = UUID.randomUUID().toString().substring(0, 8);
+
+            userPs.setString(1, user.getEmail());
+            userPs.setString(2, tempPassword); // password tạm
+            userPs.setString(3, user.getFullName());
+            userPs.setString(4, user.getPhoneNumber());
+
+            int userRows = userPs.executeUpdate();
+            if (userRows == 0) {
+                return false;
+            }
+
+            // 3. Lấy user_id mới tạo
+            try ( ResultSet generatedKeys = userPs.getGeneratedKeys()) {
+                if (generatedKeys.next()) {
+                    int userId = generatedKeys.getInt(1);
+
+                    staffPs.setInt(1, userId);
+                    staffPs.setString(2, staff.getPosition());
+                    staffPs.setString(3, staff.getNotes());
+
+                    int staffRows = staffPs.executeUpdate();
+                    return staffRows > 0;
+                }
             }
         } catch (SQLException e) {
             e.printStackTrace();
