@@ -6,6 +6,8 @@
 <%@ page import="dao.CategoryDAO" %>
 <%@ page import="model.Category" %>
 <%@ page import="java.sql.SQLException" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
 <%
     String pageTitle = (String) request.getAttribute("pageTitle");
     if (pageTitle == null) {
@@ -13,11 +15,9 @@
     }
     List<Product> newProducts = (List<Product>) request.getAttribute("newProducts");
     List<Product> bestSellers = (List<Product>) request.getAttribute("bestSellers");
-    Map<Long, Integer> availableMap = (Map<Long, Integer>) request.getAttribute("availableMap");
     Set<Integer> wishlistProductIds = (Set<Integer>) request.getAttribute("wishlistProductIds");
     NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(new Locale("vi", "VN"));
     request.setAttribute("pageTitle", pageTitle);
-
     Long menCategoryId = null;
     Long womenCategoryId = null;
     boolean showMenCategory = false;
@@ -38,9 +38,7 @@
                         + ", parentCategoryId=" + (c != null ? c.getParentCategoryId() : "null")
                         + ", isActive=" + (c != null ? c.isActive() : "null") + "]");
             }
-
             List<Category> parentCats = parentCategories;
-
             if (!parentCats.isEmpty()) {
                 menCategoryId = parentCats.get(0).getCategoryId();
                 showMenCategory = true;
@@ -55,7 +53,6 @@
                 System.out.println("Warning: No parent categories found, hiding Men and Women sections");
                 categoryError = "No categories available. Please contact the administrator.";
             }
-
             System.out.println("Men Category ID: " + menCategoryId);
             System.out.println("Women Category ID: " + womenCategoryId);
         }
@@ -67,9 +64,7 @@
         categoryError = "Error loading categories: " + e.getMessage();
     }
 %>
-
 <jsp:include page="/WEB-INF/views/common/header.jsp" />
-
 <style>
     .hero-banner {
         height: 85vh;
@@ -246,6 +241,11 @@
         border-color: #ff4d4f;
         color: #ff4d4f;
     }
+    .alert {
+        border-radius: 6px;
+        margin-bottom: 1rem;
+        font-size: 0.9rem;
+    }
     @media (max-width: 1200px) {
         .col-lg-3 {
             flex: 0 0 33.333333%;
@@ -271,46 +271,46 @@
         }
     }
 </style>
-
 <div class="hero-banner" style="background-image: url('https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?q=80&w=2070&auto=format&fit=crop');">
     <div>
         <h1>New Season Styles</h1>
         <p class="lead">Explore our curated collection of contemporary fashion for the modern individual.</p>
-        <a href="#" class="btn btn-light btn-lg mt-3">Discover Now</a>
+        <a href="<%= request.getContextPath()%>/ProductList" class="btn btn-light btn-lg mt-3">Discover Now</a>
     </div>
 </div>
-
 <div class="container my-5 py-5">
+    <c:if test="${not empty categoryError}">
+        <div class="alert alert-danger">${categoryError}</div>
+    </c:if>
     <div class="row g-4">
-        <% if (showMenCategory) {%>
+        <% if (showMenCategory) { %>
         <div class="col-md-6">
             <div class="category-showcase-card">
                 <img src="https://images.unsplash.com/photo-1552374196-1ab2a1c593e8?q=80&w=1974&auto=format&fit=crop" alt="Men's Fashion">
                 <div class="content">
                     <h2>Men</h2>
-                    <a href="<%= request.getContextPath()%>/ProductList/men" class="btn btn-outline-light mt-2">Shop Collection</a>
+                    <a href="<%= request.getContextPath()%>/ProductList?parentCategoryId=<%= menCategoryId%>" class="btn btn-outline-light mt-2">Shop Collection</a>
                 </div>
             </div>
         </div>
         <% } %>
-        <% if (showWomenCategory) {%>
+        <% if (showWomenCategory) { %>
         <div class="col-md-6">
             <div class="category-showcase-card">
                 <img src="https://images.unsplash.com/photo-1581338834647-b0fb40704e21?q=80&w=1974&auto=format&fit=crop" alt="Women's Fashion">
                 <div class="content">
                     <h2>Women</h2>
-                    <a href="<%= request.getContextPath()%>/ProductList/women" class="btn btn-outline-light mt-2">Shop Collection</a>
+                    <a href="<%= request.getContextPath()%>/ProductList?parentCategoryId=<%= womenCategoryId%>" class="btn btn-outline-light mt-2">Shop Collection</a>
                 </div>
             </div>
         </div>
         <% } %>
-        <% if (!showMenCategory && !showWomenCategory && categoryError != null) {%>
+        <% if (!showMenCategory && !showWomenCategory && categoryError != null) { %>
         <div class="col-12 text-center">
             <p class="error-message"><%= categoryError%></p>
         </div>
         <% } %>
     </div>
-
     <div class="text-center mt-5 pt-5">
         <h2 class="section-title">New Arrivals</h2>
     </div>
@@ -321,13 +321,9 @@
                     String imageUrl = product.getImageUrl() != null ? product.getImageUrl() : "https://placehold.co/400x500/f0f0f0/333?text=No+Image";
                     String name = product.getName() != null ? product.getName() : "Unknown Product";
                     String price = product.getPrice() != null ? currencyFormat.format(product.getPrice()) : "N/A";
-                    Long variantId = product.getDefaultVariantId();
-                    boolean hasVariant = variantId != null && variantId != 0;
-                    int available = (availableMap != null) ? availableMap.getOrDefault(product.getProductId(), 0) : 0;
-                    System.out.println("home.jsp - New Arrival Product ID: " + product.getProductId() + ", variantId: " + variantId + ", available: " + available);
-                    boolean hasStock = hasVariant && (available > 0);
-                    String buttonTextCart = hasStock ? "Add to Cart" : "Out Stock";
-                    String buttonTextBuy = hasStock ? "Buy Now" : "Out Stock";
+                    boolean hasStock = product.getQuantity() > 0;
+                    String buttonTextCart = hasStock ? "Add to Cart" : "Out of Stock";
+                    String buttonTextBuy = hasStock ? "Buy Now" : "Out of Stock";
         %>
         <div class="col-lg-3 col-md-6 col-sm-6 col-12">
             <div class="product-card">
@@ -341,22 +337,20 @@
                     </form>
                 </div>
                 <div class="product-image">
-                    <a href="<%= request.getContextPath()%>/ProductList/detail?productId=<%= product.getProductId()%>">
+                    <a href="<%= request.getContextPath()%>/ProductDetail?productId=<%= product.getProductId()%>">
                         <img src="<%= imageUrl%>" alt="<%= name%>">
                     </a>
                 </div>
-                <a href="<%= request.getContextPath()%>/ProductList/detail?productId=<%= product.getProductId()%>" class="product-title"><%= name%></a>
+                <a href="<%= request.getContextPath()%>/ProductDetail?productId=<%= product.getProductId()%>" class="product-title"><%= name%></a>
                 <p class="product-price"><%= price%></p>
                 <div class="btn-container" id="cartButtons-<%= product.getProductId()%>">
-                    <form id="addToCartForm-<%= product.getProductId()%>" data-product-id="<%= product.getProductId()%>" data-variant-id="<%= hasVariant ? variantId : 0%>" data-has-stock="<%= hasStock%>">
+                    <form id="addToCartForm-<%= product.getProductId()%>" data-product-id="<%= product.getProductId()%>" data-has-stock="<%= hasStock%>">
                         <input type="hidden" name="action" value="add">
-                        <input type="hidden" name="variantId" value="<%= hasVariant ? variantId : 0%>">
                         <input type="hidden" name="quantity" value="1">
                         <button type="button" class="btn btn-dark btn-custom-sm add-to-cart-btn" <%= !hasStock ? "disabled" : ""%>><%= buttonTextCart%></button>
                     </form>
                     <form action="<%= request.getContextPath()%>/customer/checkout" method="post">
                         <input type="hidden" name="action" value="buy">
-                        <input type="hidden" name="variantId" value="<%= hasVariant ? variantId : 0%>">
                         <input type="hidden" name="quantity" value="1">
                         <button type="submit" class="btn btn-primary btn-custom-sm" <%= !hasStock ? "disabled" : ""%>><%= buttonTextBuy%></button>
                     </form>
@@ -375,15 +369,13 @@
         %>
     </div>
 </div>
-
 <div class="promo-banner my-5">
     <div class="container">
         <h2>END OF SEASON SALE</h2>
         <p class="lead">Get up to 60% off on your favorite styles. Limited time only!</p>
-        <a href="#" class="btn btn-dark btn-lg mt-3">Shop The Sale</a>
+        <a href="<%= request.getContextPath()%>/ProductList?sale=true" class="btn btn-dark btn-lg mt-3">Shop The Sale</a>
     </div>
 </div>
-
 <div class="container my-5 py-5">
     <div class="text-center">
         <h2 class="section-title">Best Sellers</h2>
@@ -395,13 +387,9 @@
                     String imageUrl = product.getImageUrl() != null ? product.getImageUrl() : "https://placehold.co/400x500/f0f0f0/333?text=No+Image";
                     String name = product.getName() != null ? product.getName() : "Unknown Product";
                     String price = product.getPrice() != null ? currencyFormat.format(product.getPrice()) : "N/A";
-                    Long variantId = product.getDefaultVariantId();
-                    boolean hasVariant = variantId != null && variantId != 0;
-                    int available = (availableMap != null) ? availableMap.getOrDefault(product.getProductId(), 0) : 0;
-                    System.out.println("home.jsp - Best Seller Product ID: " + product.getProductId() + ", variantId: " + variantId + ", available: " + available);
-                    boolean hasStock = hasVariant && (available > 0);
-                    String buttonTextCart = hasStock ? "Add to Cart" : "Out Stock";
-                    String buttonTextBuy = hasStock ? "Buy Now" : "Out Stock";
+                    boolean hasStock = product.getQuantity() > 0;
+                    String buttonTextCart = hasStock ? "Add to Cart" : "Out of Stock";
+                    String buttonTextBuy = hasStock ? "Buy Now" : "Out of Stock";
         %>
         <div class="col-lg-3 col-md-6 col-sm-6 col-12">
             <div class="product-card">
@@ -415,22 +403,20 @@
                     </form>
                 </div>
                 <div class="product-image">
-                    <a href="<%= request.getContextPath()%>/ProductList/detail?productId=<%= product.getProductId()%>">
+                    <a href="<%= request.getContextPath()%>/ProductDetail?productId=<%= product.getProductId()%>">
                         <img src="<%= imageUrl%>" alt="<%= name%>">
                     </a>
                 </div>
-                <a href="<%= request.getContextPath()%>/ProductList/detail?productId=<%= product.getProductId()%>" class="product-title"><%= name%></a>
+                <a href="<%= request.getContextPath()%>/ProductDetail?productId=<%= product.getProductId()%>" class="product-title"><%= name%></a>
                 <p class="product-price"><%= price%></p>
                 <div class="btn-container" id="cartButtons-<%= product.getProductId()%>">
-                    <form id="addToCartForm-<%= product.getProductId()%>" data-product-id="<%= product.getProductId()%>" data-variant-id="<%= hasVariant ? variantId : 0%>" data-has-stock="<%= hasStock%>">
+                    <form id="addToCartForm-<%= product.getProductId()%>" data-product-id="<%= product.getProductId()%>" data-has-stock="<%= hasStock%>">
                         <input type="hidden" name="action" value="add">
-                        <input type="hidden" name="variantId" value="<%= hasVariant ? variantId : 0%>">
                         <input type="hidden" name="quantity" value="1">
                         <button type="button" class="btn btn-dark btn-custom-sm add-to-cart-btn" <%= !hasStock ? "disabled" : ""%>><%= buttonTextCart%></button>
                     </form>
                     <form action="<%= request.getContextPath()%>/customer/checkout" method="post">
                         <input type="hidden" name="action" value="buy">
-                        <input type="hidden" name="variantId" value="<%= hasVariant ? variantId : 0%>">
                         <input type="hidden" name="quantity" value="1">
                         <button type="submit" class="btn btn-primary btn-custom-sm" <%= !hasStock ? "disabled" : ""%>><%= buttonTextBuy%></button>
                     </form>
@@ -449,9 +435,7 @@
         %>
     </div>
 </div>
-
 <jsp:include page="/WEB-INF/views/common/footer.jsp" />
-
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const showToast = function (message, isSuccess) {
@@ -469,25 +453,21 @@
             document.querySelector('.toast-container').appendChild(toast);
             new bootstrap.Toast(toast, {delay: 3000}).show();
         };
-
-        // Đảm bảo không xung đột với dropdown
         document.querySelectorAll('.add-to-cart-btn').forEach(button => {
             button.addEventListener('click', function (e) {
-                e.preventDefault(); // Ngăn chặn hành vi mặc định nếu có
+                e.preventDefault();
                 const form = this.closest('form');
                 const productId = form.getAttribute('data-product-id');
-                const variantId = form.getAttribute('data-variant-id');
                 const hasStock = form.getAttribute('data-has-stock') === 'true';
                 if (!hasStock) {
                     showToast('This product is out of stock.', false);
                     return;
                 }
-
                 fetch('${pageContext.request.contextPath}/customer/cart', {
                     method: 'POST',
                     body: new URLSearchParams({
                         action: 'add',
-                        variantId: variantId,
+                        productId: productId,
                         quantity: form.querySelector('input[name="quantity"]').value
                     }),
                     headers: {
@@ -495,54 +475,46 @@
                         'Accept': 'application/json'
                     }
                 })
-                        .then(response => {
-                            if (!response.ok)
-                                throw new Error('Network response was not ok: ' + response.statusText);
-                            return response.json();
-                        })
-                        .then(result => {
-                            console.log('Add to Cart response:', result); // Debug
-                            if (result.success) {
-                                showToast(result.message, true);
-                                setTimeout(() => {
-                                    window.location.href = '${pageContext.request.contextPath}/customer/cart';
-                                }, 1000); // Chuyển hướng sau 1 giây
-                            } else {
-                                showToast(result.message || 'Failed to add to cart.', false);
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Error adding to cart:', error);
-                            showToast('An error occurred while adding to cart: ' + error.message, false);
-                        });
+                .then(response => {
+                    if (!response.ok) throw new Error('Network response was not ok: ' + response.statusText);
+                    return response.json();
+                })
+                .then(result => {
+                    console.log('Add to Cart response:', result);
+                    if (result.success) {
+                        showToast(result.message, true);
+                        setTimeout(() => {
+                            window.location.href = '${pageContext.request.contextPath}/customer/cart';
+                        }, 1000);
+                    } else {
+                        showToast(result.message || 'Failed to add to cart.', false);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error adding to cart:', error);
+                    showToast('An error occurred while adding to cart: ' + error.message, false);
+                });
             });
         });
-
-        // Khôi phục hành vi dropdown (nếu bị ảnh hưởng)
-        const dropdownToggles = document.querySelectorAll('[data-bs-toggle="dropdown"]');
-        dropdownToggles.forEach(toggle => {
+        // Đảm bảo dropdown trong header hoạt động
+        document.querySelectorAll('[data-bs-toggle="dropdown"]').forEach(toggle => {
             toggle.addEventListener('click', function (e) {
                 const dropdown = document.getElementById(this.getAttribute('aria-controls'));
                 if (dropdown) {
                     const isOpen = dropdown.classList.contains('show');
-                    dropdownToggles.forEach(t => {
-                        document.getElementById(t.getAttribute('aria-controls')).classList.remove('show');
-                    });
+                    document.querySelectorAll('.dropdown-menu.show').forEach(d => d.classList.remove('show'));
                     if (!isOpen) {
                         dropdown.classList.add('show');
                     }
                 }
             });
         });
-
-        // Ngăn chặn sự kiện click từ các phần tử khác ảnh hưởng đến dropdown
         document.addEventListener('click', function (e) {
-            const dropdowns = document.querySelectorAll('.dropdown-menu.show');
-            dropdowns.forEach(dropdown => {
-                if (!dropdown.closest('.dropdown').contains(e.target)) {
+            if (!e.target.closest('.dropdown')) {
+                document.querySelectorAll('.dropdown-menu.show').forEach(dropdown => {
                     dropdown.classList.remove('show');
-                }
-            });
+                });
+            }
         });
     });
 </script>
