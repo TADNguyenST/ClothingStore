@@ -1,4 +1,3 @@
-
 <%--
     Document   : detailProduct
     Created on : Aug 11, 2025
@@ -9,12 +8,12 @@
 <%@taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn"%>
 <%@taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt"%>
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chi tiết sản phẩm</title>
+    <title>Product Details</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -80,7 +79,7 @@
             display: block;
             margin: 0 auto;
         }
-        /* Class mới cho ảnh chi tiết sản phẩm */
+        /* New class for product detail image */
         .product-detail-image {
             width: 150px;
             height: 150px;
@@ -131,10 +130,10 @@
 <body>
     <c:set var="currentAction" value="products" scope="request"/>
     <c:set var="currentModule" value="admin" scope="request"/>
-    <c:set var="pageTitle" value="Chi tiết sản phẩm" scope="request"/>
-    <jsp:include page="/WEB-INF/includes/sidebar.jsp" />
+    <c:set var="pageTitle" value="Product Details" scope="request"/>
+    <jsp:include page="/WEB-INF/includes/admin-sidebar.jsp" />
     <div class="content-area">
-        <h2 style="text-align: center;">Chi tiết sản phẩm</h2>
+        <h2 style="text-align: center;">Product Details</h2>
         <c:if test="${not empty errorMessage}">
             <div class="alert alert-warning"><c:out value="${errorMessage}"/></div>
         </c:if>
@@ -142,14 +141,14 @@
             <c:when test="${not empty product}">
                 <div class="card mb-4">
                     <div class="card-header">
-                        Thông tin sản phẩm
+                        Product Information
                     </div>
                     <div class="card-body">
                         <div class="row">
                             <div class="col-md-6">
                                 <p><strong>ID:</strong> <c:out value="${product.productId}"/></p>
-                                <p><strong>Tên sản phẩm:</strong> <c:out value="${product.name}"/></p>
-                                <p><strong>Giá:</strong>
+                                <p><strong>Product Name:</strong> <c:out value="${product.name}"/></p>
+                                <p><strong>Price:</strong>
                                     <c:choose>
                                         <c:when test="${not empty product.price}">
                                             <fmt:setLocale value="vi_VN"/>
@@ -158,12 +157,12 @@
                                         <c:otherwise>N/A</c:otherwise>
                                     </c:choose>
                                 </p>
-                                <p><strong>Trạng thái:</strong>
+                                <p><strong>Status:</strong>
                                     <span class="${product.status == 'Active' ? 'status-active' : 'status-inactive'}">
-                                        <c:out value="${product.status == 'Active' ? 'Hoạt động' : 'Không hoạt động'}"/>
+                                        <c:out value="${product.status == 'Active' ? 'Active' : 'Inactive'}"/>
                                     </span>
                                 </p>
-                                <p><strong>Danh mục:</strong>
+                                <p><strong>Category:</strong>
                                     <c:choose>
                                         <c:when test="${product.category != null}">
                                             <c:out value="${product.parentCategoryName != null ? product.parentCategoryName : ''}"/>
@@ -173,28 +172,28 @@
                                         <c:otherwise>N/A</c:otherwise>
                                     </c:choose>
                                 </p>
-                                <p><strong>Thương hiệu:</strong> <c:out value="${product.brand != null ? product.brand.name : 'N/A'}"/></p>
-                                <p><strong>Chất liệu:</strong> <c:out value="${product.material != null ? product.material : 'N/A'}"/></p>
-                                <p><strong>Mô tả:</strong> <c:out value="${product.description != null ? product.description : 'N/A'}"/></p>
+                                <p><strong>Brand:</strong> <c:out value="${product.brand != null ? product.brand.name : 'N/A'}"/></p>
+                                <p><strong>Material:</strong> <c:out value="${product.material != null ? product.material : 'N/A'}"/></p>
+                                <p><strong>Description:</strong> <c:out value="${product.description != null ? product.description : 'N/A'}"/></p>
                             </div>
                             <div class="col-md-6">
-                                <h5>Hình ảnh sản phẩm</h5>
+                                <h5>Product Images</h5>
                                 <c:choose>
                                     <c:when test="${not empty product.images}">
                                         <div class="d-flex flex-wrap gap-3 justify-content-center">
                                             <c:forEach var="image" items="${product.images}">
                                                 <div class="text-center">
                                                     <img src="${fn:escapeXml(image.imageUrl != null ? image.imageUrl : 'https://placehold.co/150x150?text=No+Image')}"
-                                                         alt="Hình ảnh sản phẩm" class="product-detail-image">
+                                                         alt="Product Image" class="product-detail-image">
                                                     <c:if test="${image.main}">
-                                                        <p class="text-success mt-1 mb-0"><small><strong>Ảnh chính</strong></small></p>
+                                                        <p class="text-success mt-1 mb-0"><small><strong>Main Image</strong></small></p>
                                                     </c:if>
                                                 </div>
                                             </c:forEach>
                                         </div>
                                     </c:when>
                                     <c:otherwise>
-                                        <p>Không có hình ảnh.</p>
+                                        <p>No images available.</p>
                                     </c:otherwise>
                                 </c:choose>
                             </div>
@@ -203,7 +202,7 @@
                 </div>
                 <div class="card mb-4">
                     <div class="card-header">
-                        Biến thể sản phẩm
+                        Product Variants
                     </div>
                     <div class="card-body">
                         <c:choose>
@@ -211,10 +210,10 @@
                                 <table class="table table-striped table-hover">
                                     <thead>
                                         <tr>
-                                            <th>ID biến thể</th>
-                                            <th>Kích thước</th>
-                                            <th>Màu sắc</th>
-                                            <th>Giá điều chỉnh</th>
+                                            <th>Variant ID</th>
+                                            <th>Size</th>
+                                            <th>Color</th>
+                                            <th>Price Modifier</th>
                                             <th>SKU</th>
                                         </tr>
                                     </thead>
@@ -240,24 +239,24 @@
                                 </table>
                             </c:when>
                             <c:otherwise>
-                                <p>Không có biến thể.</p>
+                                <p>No variants available.</p>
                             </c:otherwise>
                         </c:choose>
                     </div>
                 </div>
                 <div class="d-flex gap-2">
                     <a href="${pageContext.request.contextPath}/ProductEditAdmin?productId=${product.productId}" class="btn btn-primary">
-                        <i class="bi bi-tools"></i> Chỉnh sửa sản phẩm
+                        <i class="bi bi-tools"></i> Edit Product
                     </a>
                     <a href="${pageContext.request.contextPath}/ProductListAdmin?action=list" class="btn btn-secondary">
-                        <i class="bi bi-arrow-left"></i> Quay lại danh sách
+                        <i class="bi bi-arrow-left"></i> Back to List
                     </a>
                 </div>
             </c:when>
             <c:otherwise>
-                <div class="alert alert-warning">Không tìm thấy sản phẩm!</div>
+                <div class="alert alert-warning">Product not found!</div>
                 <a href="${pageContext.request.contextPath}/ProductListAdmin?action=list" class="btn btn-secondary">
-                    <i class="bi bi-arrow-left"></i> Quay lại danh sách
+                    <i class="bi bi-arrow-left"></i> Back to List
                 </a>
             </c:otherwise>
         </c:choose>
@@ -266,4 +265,3 @@
     <script src="${pageContext.request.contextPath}/admin-dashboard/js/admin-js.js"></script>
 </body>
 </html>
-
