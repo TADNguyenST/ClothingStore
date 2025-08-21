@@ -8,513 +8,308 @@
 <%@ page import="java.sql.SQLException" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
+
 <%
     String pageTitle = (String) request.getAttribute("pageTitle");
     if (pageTitle == null) {
-        pageTitle = "Homepage";
+        pageTitle = "Welcome to ClothingStore";
     }
     List<Product> newProducts = (List<Product>) request.getAttribute("newProducts");
     List<Product> bestSellers = (List<Product>) request.getAttribute("bestSellers");
     Set<Integer> wishlistProductIds = (Set<Integer>) request.getAttribute("wishlistProductIds");
     NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(new Locale("vi", "VN"));
     request.setAttribute("pageTitle", pageTitle);
+
     Long menCategoryId = null;
     Long womenCategoryId = null;
     boolean showMenCategory = false;
     boolean showWomenCategory = false;
     String categoryError = null;
+
     try {
         CategoryDAO categoryDAO = new CategoryDAO();
         List<Category> parentCategories = categoryDAO.getParentCategories();
         if (parentCategories == null || parentCategories.isEmpty()) {
-            System.out.println("Warning: parentCategories is null or empty from CategoryDAO.getParentCategories() in home.jsp");
             categoryError = "No categories available. Please contact the administrator.";
             parentCategories = new ArrayList<>();
         } else {
-            System.out.println("Parent Categories (home.jsp): " + parentCategories.size() + " found");
-            for (Category c : parentCategories) {
-                System.out.println("Parent Category [id=" + (c != null ? c.getCategoryId() : "null")
-                        + ", name=" + (c != null && c.getName() != null ? c.getName() : "null")
-                        + ", parentCategoryId=" + (c != null ? c.getParentCategoryId() : "null")
-                        + ", isActive=" + (c != null ? c.isActive() : "null") + "]");
-            }
-            List<Category> parentCats = parentCategories;
-            if (!parentCats.isEmpty()) {
-                menCategoryId = parentCats.get(0).getCategoryId();
+            if (!parentCategories.isEmpty()) {
+                menCategoryId = parentCategories.get(0).getCategoryId();
                 showMenCategory = true;
-                if (parentCats.size() > 1) {
-                    womenCategoryId = parentCats.get(1).getCategoryId();
+                if (parentCategories.size() > 1) {
+                    womenCategoryId = parentCategories.get(1).getCategoryId();
                     showWomenCategory = true;
                 } else {
-                    System.out.println("Warning: Only one parent category found, hiding Women section");
                     categoryError = "Only one category available.";
                 }
-            } else {
-                System.out.println("Warning: No parent categories found, hiding Men and Women sections");
-                categoryError = "No categories available. Please contact the administrator.";
             }
-            System.out.println("Men Category ID: " + menCategoryId);
-            System.out.println("Women Category ID: " + womenCategoryId);
         }
     } catch (Exception e) {
-        System.err.println("Error fetching categories in home.jsp: " + e.getMessage());
-        e.printStackTrace();
         showMenCategory = false;
         showWomenCategory = false;
         categoryError = "Error loading categories: " + e.getMessage();
     }
 %>
+
 <jsp:include page="/WEB-INF/views/common/header.jsp" />
+
 <style>
-    .hero-banner {
-        height: 85vh;
+    body {
+        font-family: 'Poppins', sans-serif;
+        background-color: #f8fafc;
+    }
+    .hero-section {
+        position: relative;
+        height: 80vh;
+        background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), 
+                    url('https://images.unsplash.com/photo-1511556820780-d912e42b4980?q=80&w=2070&auto=format&fit=crop');
         background-size: cover;
         background-position: center;
         display: flex;
         align-items: center;
         justify-content: center;
-        text-align: center;
         color: white;
-        text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.6);
+        text-align: center;
     }
-    .hero-banner h1 {
-        font-size: 4rem;
+    .hero-section .content {
+        max-width: 700px;
+        padding: 20px;
+    }
+    .hero-section h1 {
+        font-size: 3.5rem;
         font-weight: 700;
         text-transform: uppercase;
+        letter-spacing: 2px;
+        margin-bottom: 1rem;
     }
-    .hero-banner .lead {
-        font-size: 1.25rem;
+    .hero-section p {
+        font-size: 1.2rem;
         font-weight: 300;
-        max-width: 600px;
-        margin: 1rem auto;
+        margin-bottom: 2rem;
     }
-    .hero-banner .btn {
-        padding: 0.8rem 2.5rem;
+    .hero-section .btn {
+        padding: 0.8rem 2rem;
         font-size: 1rem;
         font-weight: 600;
-        border-radius: 50px;
-        text-transform: uppercase;
-        letter-spacing: 1px;
+        border-radius: 30px;
+        transition: all 0.3s ease;
     }
-    .section-title {
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        margin-bottom: 40px;
-        font-size: 1.8rem;
+    .hero-section .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
     }
-    .category-showcase-card {
+
+    .category-section {
+        padding: 4rem 0;
+        background-color: #fff;
+    }
+    .category-card {
         position: relative;
         overflow: hidden;
-        border-radius: 5px;
+        border-radius: 10px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        transition: transform 0.3s ease;
     }
-    .category-showcase-card img {
-        transition: transform 0.5s ease;
+    .category-card:hover { transform: translateY(-5px); }
+    .category-card img {
         width: 100%;
-        height: auto;
+        height: 300px;
+        object-fit: cover;
+        transition: transform 0.5s ease;
     }
-    .category-showcase-card:hover img {
-        transform: scale(1.05);
-    }
-    .category-showcase-card .content {
+    .category-card:hover img { transform: scale(1.1); }
+    .category-card .content {
         position: absolute;
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
         text-align: center;
         color: white;
-        text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.7);
+        text-shadow: 1px 1px 5px rgba(0,0,0,0.7);
     }
-    .category-showcase-card .content h2 {
-        font-size: 2.5rem;
+    .category-card h3 { font-size: 2rem; font-weight: 600; }
+    .category-card .btn { border-radius: 30px; padding: 0.5rem 1.5rem; }
+
+    .section-title {
+        font-size: 2rem;
         font-weight: 700;
-        text-transform: uppercase;
-    }
-    .category-showcase-card .btn-outline-light {
-        border-radius: 50px;
-        padding: 0.6rem 2rem;
-        border-width: 2px;
-        font-weight: 600;
-    }
-    .product-card {
-        border: 1px solid #eee;
         text-align: center;
-        margin-bottom: 1.5rem;
-        border-radius: 5px;
+        margin-bottom: 3rem;
+        color: #1e3a8a;
+    }
+
+    .product-section { padding: 4rem 0; background-color: #f1f5f9; }
+    .product-card {
+        background: white;
+        border-radius: 10px;
         overflow: hidden;
-        background: #fff;
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-        padding: 10px;
-        position: relative;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
     }
     .product-card:hover {
         transform: translateY(-5px);
-        box-shadow: 0 8px 20px rgba(0,0,0,0.08);
-    }
-    .product-card .product-image {
-        overflow: hidden;
-        margin-bottom: 0.8rem;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.15);
     }
     .product-card img {
-        width: 100%;
+        width: 100%; height: 280px; object-fit: cover;
         transition: transform 0.4s ease;
-        aspect-ratio: 1 / 2.2;
-        object-fit: cover;
-        max-height: 320px;
     }
-    .product-card:hover img {
-        transform: scale(1.05);
-    }
+    .product-card:hover img { transform: scale(1.05); }
+    .product-card .card-body { padding: 1.5rem; text-align: center; }
     .product-card .product-title {
-        font-size: 0.85rem;
-        font-weight: 500;
-        color: #333;
-        text-decoration: none;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-        height: 34px;
-        padding: 0 6px;
-        margin-bottom: 5px;
+        font-size: 1rem; font-weight: 500; color: #1e3a8a;
+        text-decoration: none; display: -webkit-box; -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical; overflow: hidden; height: 40px; margin-bottom: 0.5rem;
     }
-    .product-card .product-title:hover {
-        color: #000;
-    }
-    .product-card .product-price {
-        font-size: 0.95rem;
-        font-weight: 600;
-        color: #111;
-        margin-bottom: 8px;
-    }
-    .product-card .btn-container {
-        display: flex;
-        justify-content: center;
-        gap: 6px;
-        padding: 0 6px 8px 6px;
-    }
-    .product-card .btn-custom-sm {
-        padding: 0.25rem 0.7rem;
-        font-size: 0.75rem;
-        line-height: 1.5;
-    }
-    .promo-banner {
-        background-color: #e9ecef;
-        padding: 4rem 1rem;
-        text-align: center;
-    }
-    .promo-banner h2 {
-        font-weight: 700;
-        font-size: 2.5rem;
-    }
-    .error-message {
-        color: red;
-        font-weight: 500;
-        margin-top: 20px;
-    }
-    .wishlist-icon {
-        position: absolute;
-        top: 12px;
-        right: 12px;
-        z-index: 10;
-    }
+    .product-card .product-price { font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; }
+    .product-card .btn-container { display: flex; justify-content: center; gap: 10px; }
+    .wishlist-icon { position: absolute; top: 10px; right: 10px; z-index: 10; }
     .wishlist-icon-circle {
-        background-color: white;
-        border: 1px solid #ddd;
-        border-radius: 50%;
-        width: 36px;
-        height: 36px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #666;
-        font-size: 16px;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        background-color: white; border: 1px solid #ddd; border-radius: 50%;
+        width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+        color: #666; font-size: 14px; cursor: pointer; transition: all 0.3s ease;
     }
-    .wishlist-icon-circle:hover {
-        border-color: #ff4d4f;
-        color: #ff4d4f;
-    }
-    .wishlist-icon-circle.active {
-        border-color: #ff4d4f;
-        color: #ff4d4f;
-    }
-    .alert {
-        border-radius: 6px;
-        margin-bottom: 1rem;
-        font-size: 0.9rem;
-    }
-    @media (max-width: 1200px) {
-        .col-lg-3 {
-            flex: 0 0 33.333333%;
-            max-width: 33.333333%;
-        }
-    }
-    @media (max-width: 992px) {
-        .col-lg-3 {
-            flex: 0 0 50%;
-            max-width: 50%;
-        }
-    }
-    @media (max-width: 768px) {
-        .col-md-6 {
-            flex: 0 0 50%;
-            max-width: 50%;
-        }
-    }
-    @media (max-width: 576px) {
-        .col-md-6 {
-            flex: 0 0 100%;
-            max-width: 100%;
-        }
-    }
+    .wishlist-icon-circle.active { border-color: #ff4d4f; color: #ff4d4f; }
 </style>
-<div class="hero-banner" style="background-image: url('https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?q=80&w=2070&auto=format&fit=crop');">
-    <div>
-        <h1>New Season Styles</h1>
-        <p class="lead">Explore our curated collection of contemporary fashion for the modern individual.</p>
-        <a href="<%= request.getContextPath()%>/ProductList" class="btn btn-light btn-lg mt-3">Discover Now</a>
+
+<!-- Hero -->
+<div class="hero-section">
+    <div class="content">
+        <h1>Discover Your Style</h1>
+        <p>Elevate your wardrobe with our latest trends and timeless pieces.</p>
+        <a href="${pageContext.request.contextPath}/ProductList" class="btn btn-light">Shop Now</a>
     </div>
 </div>
-<div class="container my-5 py-5">
-    <c:if test="${not empty categoryError}">
-        <div class="alert alert-danger">${categoryError}</div>
-    </c:if>
-    <div class="row g-4">
-        <% if (showMenCategory) { %>
-        <div class="col-md-6">
-            <div class="category-showcase-card">
-                <img src="https://images.unsplash.com/photo-1552374196-1ab2a1c593e8?q=80&w=1974&auto=format&fit=crop" alt="Men's Fashion">
-                <div class="content">
-                    <h2>Men</h2>
-                    <a href="<%= request.getContextPath()%>/ProductList?parentCategoryId=<%= menCategoryId%>" class="btn btn-outline-light mt-2">Shop Collection</a>
-                </div>
-            </div>
-        </div>
-        <% } %>
-        <% if (showWomenCategory) { %>
-        <div class="col-md-6">
-            <div class="category-showcase-card">
-                <img src="https://images.unsplash.com/photo-1581338834647-b0fb40704e21?q=80&w=1974&auto=format&fit=crop" alt="Women's Fashion">
-                <div class="content">
-                    <h2>Women</h2>
-                    <a href="<%= request.getContextPath()%>/ProductList?parentCategoryId=<%= womenCategoryId%>" class="btn btn-outline-light mt-2">Shop Collection</a>
-                </div>
-            </div>
-        </div>
-        <% } %>
-        <% if (!showMenCategory && !showWomenCategory && categoryError != null) { %>
-        <div class="col-12 text-center">
-            <p class="error-message"><%= categoryError%></p>
-        </div>
-        <% } %>
-    </div>
-    <div class="text-center mt-5 pt-5">
-        <h2 class="section-title">New Arrivals</h2>
-    </div>
-    <div class="row">
-        <%
-            if (newProducts != null && !newProducts.isEmpty()) {
-                for (Product product : newProducts) {
-                    String imageUrl = product.getImageUrl() != null ? product.getImageUrl() : "https://placehold.co/400x500/f0f0f0/333?text=No+Image";
-                    String name = product.getName() != null ? product.getName() : "Unknown Product";
-                    String price = product.getPrice() != null ? currencyFormat.format(product.getPrice()) : "N/A";
-                    boolean hasStock = product.getQuantity() > 0;
-                    String buttonTextCart = hasStock ? "Add to Cart" : "Out of Stock";
-                    String buttonTextBuy = hasStock ? "Buy Now" : "Out of Stock";
-        %>
-        <div class="col-lg-3 col-md-6 col-sm-6 col-12">
-            <div class="product-card">
-                <div class="wishlist-icon">
-                    <form action="<%= request.getContextPath()%>/wishlist" method="post">
-                        <input type="hidden" name="action" value="add">
-                        <input type="hidden" name="productId" value="<%= product.getProductId()%>">
-                        <button type="submit" class="wishlist-icon-circle <%= (wishlistProductIds != null && wishlistProductIds.contains(product.getProductId())) ? "active" : ""%>">
-                            <i class="fas fa-heart"></i>
-                        </button>
-                    </form>
-                </div>
-                <div class="product-image">
-                    <a href="<%= request.getContextPath()%>/ProductDetail?productId=<%= product.getProductId()%>">
-                        <img src="<%= imageUrl%>" alt="<%= name%>">
-                    </a>
-                </div>
-                <a href="<%= request.getContextPath()%>/ProductDetail?productId=<%= product.getProductId()%>" class="product-title"><%= name%></a>
-                <p class="product-price"><%= price%></p>
-                <div class="btn-container" id="cartButtons-<%= product.getProductId()%>">
-                    <form id="addToCartForm-<%= product.getProductId()%>" data-product-id="<%= product.getProductId()%>" data-has-stock="<%= hasStock%>">
-                        <input type="hidden" name="action" value="add">
-                        <input type="hidden" name="quantity" value="1">
-                        <button type="button" class="btn btn-dark btn-custom-sm add-to-cart-btn" <%= !hasStock ? "disabled" : ""%>><%= buttonTextCart%></button>
-                    </form>
-                    <form action="<%= request.getContextPath()%>/customer/checkout" method="post">
-                        <input type="hidden" name="action" value="buy">
-                        <input type="hidden" name="quantity" value="1">
-                        <button type="submit" class="btn btn-primary btn-custom-sm" <%= !hasStock ? "disabled" : ""%>><%= buttonTextBuy%></button>
-                    </form>
-                </div>
-            </div>
-        </div>
-        <%
-            }
-        } else {
-        %>
-        <div class="col-12 text-center">
-            <p>No new products available.</p>
-        </div>
-        <%
-            }
-        %>
-    </div>
-</div>
-<div class="promo-banner my-5">
+
+<!-- Categories -->
+<div class="category-section">
     <div class="container">
-        <h2>END OF SEASON SALE</h2>
-        <p class="lead">Get up to 60% off on your favorite styles. Limited time only!</p>
-        <a href="<%= request.getContextPath()%>/ProductList?sale=true" class="btn btn-dark btn-lg mt-3">Shop The Sale</a>
-    </div>
-</div>
-<div class="container my-5 py-5">
-    <div class="text-center">
-        <h2 class="section-title">Best Sellers</h2>
-    </div>
-    <div class="row">
-        <%
-            if (bestSellers != null && !bestSellers.isEmpty()) {
-                for (Product product : bestSellers) {
-                    String imageUrl = product.getImageUrl() != null ? product.getImageUrl() : "https://placehold.co/400x500/f0f0f0/333?text=No+Image";
-                    String name = product.getName() != null ? product.getName() : "Unknown Product";
-                    String price = product.getPrice() != null ? currencyFormat.format(product.getPrice()) : "N/A";
-                    boolean hasStock = product.getQuantity() > 0;
-                    String buttonTextCart = hasStock ? "Add to Cart" : "Out of Stock";
-                    String buttonTextBuy = hasStock ? "Buy Now" : "Out of Stock";
-        %>
-        <div class="col-lg-3 col-md-6 col-sm-6 col-12">
-            <div class="product-card">
-                <div class="wishlist-icon">
-                    <form action="<%= request.getContextPath()%>/wishlist" method="post">
-                        <input type="hidden" name="action" value="add">
-                        <input type="hidden" name="productId" value="<%= product.getProductId()%>">
-                        <button type="submit" class="wishlist-icon-circle <%= (wishlistProductIds != null && wishlistProductIds.contains(product.getProductId())) ? "active" : ""%>">
-                            <i class="fas fa-heart"></i>
-                        </button>
-                    </form>
-                </div>
-                <div class="product-image">
-                    <a href="<%= request.getContextPath()%>/ProductDetail?productId=<%= product.getProductId()%>">
-                        <img src="<%= imageUrl%>" alt="<%= name%>">
-                    </a>
-                </div>
-                <a href="<%= request.getContextPath()%>/ProductDetail?productId=<%= product.getProductId()%>" class="product-title"><%= name%></a>
-                <p class="product-price"><%= price%></p>
-                <div class="btn-container" id="cartButtons-<%= product.getProductId()%>">
-                    <form id="addToCartForm-<%= product.getProductId()%>" data-product-id="<%= product.getProductId()%>" data-has-stock="<%= hasStock%>">
-                        <input type="hidden" name="action" value="add">
-                        <input type="hidden" name="quantity" value="1">
-                        <button type="button" class="btn btn-dark btn-custom-sm add-to-cart-btn" <%= !hasStock ? "disabled" : ""%>><%= buttonTextCart%></button>
-                    </form>
-                    <form action="<%= request.getContextPath()%>/customer/checkout" method="post">
-                        <input type="hidden" name="action" value="buy">
-                        <input type="hidden" name="quantity" value="1">
-                        <button type="submit" class="btn btn-primary btn-custom-sm" <%= !hasStock ? "disabled" : ""%>><%= buttonTextBuy%></button>
-                    </form>
+        <h2 class="section-title">Shop by Category</h2>
+        <div class="row g-4">
+            <% if (showMenCategory) { %>
+            <div class="col-md-6">
+                <div class="category-card">
+                    <img src="https://images.unsplash.com/photo-1532453288672-3a27e9be9efd?q=80&w=2070&auto=format&fit=crop" alt="Men's Collection">
+                    <div class="content">
+                        <h3>Men's Collection</h3>
+                        <a href="<%= request.getContextPath()%>/ProductList?parentCategoryId=<%= menCategoryId%>" class="btn btn-outline-light">Explore Men</a>
+                    </div>
                 </div>
             </div>
+            <% } %>
+            <% if (showWomenCategory) { %>
+            <div class="col-md-6">
+                <div class="category-card">
+                    <img src="https://images.unsplash.com/photo-1529139574466-a303027c1d8b?q=80&w=2070&auto=format&fit=crop" alt="Women's Collection">
+                    <div class="content">
+                        <h3>Women's Collection</h3>
+                        <a href="<%= request.getContextPath()%>/ProductList?parentCategoryId=<%= womenCategoryId%>" class="btn btn-outline-light">Explore Women</a>
+                    </div>
+                </div>
+            </div>
+            <% } %>
+            <% if (!showMenCategory && !showWomenCategory && categoryError != null) { %>
+            <div class="col-12 text-center">
+                <p class="error-message"><%= categoryError%></p>
+            </div>
+            <% } %>
         </div>
-        <%
-            }
-        } else {
-        %>
-        <div class="col-12 text-center">
-            <p>No best sellers available.</p>
-        </div>
-        <%
-            }
-        %>
     </div>
 </div>
-<jsp:include page="/WEB-INF/views/common/footer.jsp" />
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const showToast = function (message, isSuccess) {
-            const toast = document.createElement('div');
-            toast.className = `toast align-items-center text-white ${isSuccess ? 'bg-success' : 'bg-danger'} border-0`;
-            toast.setAttribute('role', 'alert');
-            toast.setAttribute('aria-live', 'assertive');
-            toast.setAttribute('aria-atomic', 'true');
-            toast.innerHTML = `
-                <div class="d-flex">
-                    <div class="toast-body">${message}</div>
-                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+
+<!-- New Arrivals -->
+<div class="product-section">
+    <div class="container">
+        <h2 class="section-title">New Arrivals</h2>
+        <div class="row g-4">
+            <c:forEach var="product" items="${newProducts}">
+                <div class="col-lg-3 col-md-6 col-sm-6 col-12">
+                    <div class="product-card position-relative">
+                        <div class="wishlist-icon">
+                            <form action="${pageContext.request.contextPath}/wishlist" method="post">
+                                <input type="hidden" name="action" value="add">
+                                <input type="hidden" name="productId" value="${product.productId}">
+                                <button type="submit" class="wishlist-icon-circle ${wishlistProductIds != null && wishlistProductIds.contains(product.productId) ? 'active' : ''}">
+                                    <i class="fas fa-heart"></i>
+                                </button>
+                            </form>
+                        </div>
+                        <img src="${empty product.imageUrl ? 'https://placehold.co/400x500/eee/333?text=No+Image' : product.imageUrl}" alt="${product.name}">
+                        <div class="card-body">
+                            <a href="${pageContext.request.contextPath}/ProductDetail?productId=${product.productId}" class="product-title">${product.name}</a>
+                            <p class="product-price">${product.price != null ? currencyFormat.format(product.price) : 'N/A'}</p>
+                            <div class="btn-container">
+                                <form action="${pageContext.request.contextPath}/customer/cart" method="post">
+                                    <input type="hidden" name="action" value="add">
+                                    <input type="hidden" name="productId" value="${product.productId}">
+                                    <input type="hidden" name="quantity" value="1">
+                                    <button type="submit" class="btn btn-dark">Add to Cart</button>
+                                </form>
+                                <form action="${pageContext.request.contextPath}/customer/checkout" method="post">
+                                    <input type="hidden" name="action" value="buy">
+                                    <input type="hidden" name="productId" value="${product.productId}">
+                                    <input type="hidden" name="quantity" value="1">
+                                    <button type="submit" class="btn btn-primary">Buy Now</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            `;
-            document.querySelector('.toast-container').appendChild(toast);
-            new bootstrap.Toast(toast, {delay: 3000}).show();
-        };
-        document.querySelectorAll('.add-to-cart-btn').forEach(button => {
-            button.addEventListener('click', function (e) {
-                e.preventDefault();
-                const form = this.closest('form');
-                const productId = form.getAttribute('data-product-id');
-                const hasStock = form.getAttribute('data-has-stock') === 'true';
-                if (!hasStock) {
-                    showToast('This product is out of stock.', false);
-                    return;
-                }
-                fetch('${pageContext.request.contextPath}/customer/cart', {
-                    method: 'POST',
-                    body: new URLSearchParams({
-                        action: 'add',
-                        productId: productId,
-                        quantity: form.querySelector('input[name="quantity"]').value
-                    }),
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                        'Accept': 'application/json'
-                    }
-                })
-                .then(response => {
-                    if (!response.ok) throw new Error('Network response was not ok: ' + response.statusText);
-                    return response.json();
-                })
-                .then(result => {
-                    console.log('Add to Cart response:', result);
-                    if (result.success) {
-                        showToast(result.message, true);
-                        setTimeout(() => {
-                            window.location.href = '${pageContext.request.contextPath}/customer/cart';
-                        }, 1000);
-                    } else {
-                        showToast(result.message || 'Failed to add to cart.', false);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error adding to cart:', error);
-                    showToast('An error occurred while adding to cart: ' + error.message, false);
-                });
-            });
-        });
-        // Đảm bảo dropdown trong header hoạt động
-        document.querySelectorAll('[data-bs-toggle="dropdown"]').forEach(toggle => {
-            toggle.addEventListener('click', function (e) {
-                const dropdown = document.getElementById(this.getAttribute('aria-controls'));
-                if (dropdown) {
-                    const isOpen = dropdown.classList.contains('show');
-                    document.querySelectorAll('.dropdown-menu.show').forEach(d => d.classList.remove('show'));
-                    if (!isOpen) {
-                        dropdown.classList.add('show');
-                    }
-                }
-            });
-        });
-        document.addEventListener('click', function (e) {
-            if (!e.target.closest('.dropdown')) {
-                document.querySelectorAll('.dropdown-menu.show').forEach(dropdown => {
-                    dropdown.classList.remove('show');
-                });
-            }
-        });
-    });
-</script>
+            </c:forEach>
+        </div>
+    </div>
+</div>
+
+<!-- Promo -->
+<div class="promo-section">
+    <div class="container">
+        <h2>Exclusive Offers Await</h2>
+        <p>Discover unbeatable deals on our curated collections. Shop now to save big!</p>
+        <a href="${pageContext.request.contextPath}/ProductList/sale" class="btn btn-light">Explore Deals</a>
+    </div>
+</div>
+
+<!-- Best Sellers -->
+<div class="product-section">
+    <div class="container">
+        <h2 class="section-title">Best Sellers</h2>
+        <div class="row g-4">
+            <c:forEach var="product" items="${bestSellers}">
+                <div class="col-lg-3 col-md-6 col-sm-6 col-12">
+                    <div class="product-card position-relative">
+                        <div class="wishlist-icon">
+                            <form action="${pageContext.request.contextPath}/wishlist" method="post">
+                                <input type="hidden" name="action" value="add">
+                                <input type="hidden" name="productId" value="${product.productId}">
+                                <button type="submit" class="wishlist-icon-circle ${wishlistProductIds != null && wishlistProductIds.contains(product.productId) ? 'active' : ''}">
+                                    <i class="fas fa-heart"></i>
+                                </button>
+                            </form>
+                        </div>
+                        <img src="${empty product.imageUrl ? 'https://placehold.co/400x500/eee/333?text=No+Image' : product.imageUrl}" alt="${product.name}">
+                        <div class="card-body">
+                            <a href="${pageContext.request.contextPath}/ProductDetail?productId=${product.productId}" class="product-title">${product.name}</a>
+                            <p class="product-price">${product.price != null ? currencyFormat.format(product.price) : 'N/A'}</p>
+                            <div class="btn-container">
+                                <form action="${pageContext.request.contextPath}/customer/cart" method="post">
+                                    <input type="hidden" name="action" value="add">
+                                    <input type="hidden" name="productId" value="${product.productId}">
+                                    <input type="hidden" name="quantity" value="1">
+                                    <button type="submit" class="btn btn-dark">Add to Cart</button>
+                                </form>
+                                <form action="${pageContext.request.contextPath}/customer/checkout" method="post">
+                                    <input type="hidden" name="action" value="buy">
+                                    <input type="hidden" name="productId" value="${product.productId}">
+                                    <input type="hidden" name="quantity" value="1">
+                                    <button type="submit" class="btn btn-primary">Buy Now</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </c:forEach>
+        </div>
+    </div>
+</div>
+
+<jsp:include page="/WEB-INF/views/common/footer.jsp" />

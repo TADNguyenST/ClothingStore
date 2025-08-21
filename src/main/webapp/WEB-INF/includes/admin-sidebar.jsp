@@ -2,13 +2,12 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 
 <div class="sidebar">
-    <div class="sidebar-header">Admin Panel</div>
     <ul class="sidebar-menu">
         <li class="header">MAIN NAVIGATION</li>
 
         <%-- Use requestScope.currentAction and requestScope.currentModule to activate menu items --%>
         <li class="${requestScope.currentAction eq 'home' || requestScope.currentAction == null || requestScope.currentAction eq 'dashboard' ? 'active' : ''}">
-            <a href="${pageContext.request.contextPath}/admindashboard?action=dashboard&module=admin">
+            <a href="${pageContext.request.contextPath}/Admindashboard?action=dashboard&module=admin">
                 <i class="fa fa-dashboard"></i> <span>Dashboard</span>
             </a>
         </li>
@@ -20,10 +19,10 @@
             </a>
             <ul class="treeview-menu">
                 <li class="${requestScope.currentAction eq 'categoryList' ? 'active' : ''}">
-                    <a href="${pageContext.request.contextPath}/admindashboard?action=categoryList&module=category"><i class="fa fa-circle-o"></i> Category List</a>
+                    <a href="${pageContext.request.contextPath}/Admindashboard?action=categoryList&module=category"><i class="fa fa-circle-o"></i> Category List</a>
                 </li>
                 <li class="${requestScope.currentAction eq 'categoryForm' ? 'active' : ''}">
-                    <a href="${pageContext.request.contextPath}/admindashboard?action=categoryForm&module=category"><i class="fa fa-circle-o"></i> Add New Category</a>
+                    <a href="${pageContext.request.contextPath}/Admindashboard?action=categoryForm&module=category"><i class="fa fa-circle-o"></i> Add New Category</a>
                 </li>
                 <li class="${requestScope.currentAction eq 'categoryDetails' ? 'active' : ''}">
                     <a href="${pageContext.request.contextPath}/admindashboard?action=categoryDetails&module=category"><i class="fa fa-circle-o"></i> Category Details</a>
@@ -139,13 +138,9 @@
             </a>
             <ul class="treeview-menu">
                 <li class="${requestScope.currentAction eq 'customerList' ? 'active' : ''}">
-                    <a href="${pageContext.request.contextPath}/admindashboard?action=customerList&module=customer"><i class="fa fa-circle-o"></i> Customer List</a>
-                </li>
-                <li class="${requestScope.currentAction eq 'customerDetails' ? 'active' : ''}">
-                    <a href="${pageContext.request.contextPath}/admindashboard?action=customerDetails&module=customer"><i class="fa fa-circle-o"></i> Customer Details</a>
-                </li>
-                <li class="${requestScope.currentAction eq 'customerOrderHistory' ? 'active' : ''}">
-                    <a href="${pageContext.request.contextPath}/admindashboard?action=customerOrderHistory&module=customer"><i class="fa fa-circle-o"></i> Order History</a>
+                    <a href="${pageContext.request.contextPath}/CustomerManagement">
+                        <i class="fa fa-circle-o"></i> Customer List
+                    </a>
                 </li>
             </ul>
         </li>
@@ -190,10 +185,13 @@
             </a>
             <ul class="treeview-menu">
                 <li class="${requestScope.currentAction eq 'stockList' ? 'active' : ''}">
-                    <a href="${pageContext.request.contextPath}/admindashboard?action=stockList&module=stock"><i class="fa fa-circle-o"></i> Stock List</a>
+                    <a href="${pageContext.request.contextPath}/Admindashboard?action=stockList&module=stock"><i class="fa fa-circle-o"></i> Stock List</a>
                 </li>
                 <li class="${requestScope.currentAction eq 'importStock' ? 'active' : ''}">
-                    <a href="${pageContext.request.contextPath}/admindashboard?action=importStock&module=stock"><i class="fa fa-circle-o"></i> Stock Movement</a>
+                    <a href="${pageContext.request.contextPath}/Admindashboard?action=importStock&module=stock"><i class="fa fa-circle-o"></i> Stock Movement</a>
+                <li class="${requestScope.currentAction eq 'purchaseorder' ? 'active' : ''}">
+                    <a href="${pageContext.request.contextPath}/Admindashboard?action=purchaseorder&module=stock"><i class="fa fa-circle-o"></i> Purchase Order List</a>
+                </li>
             </ul>
         </li>
         <li class="treeview ${requestScope.currentModule eq 'supplier' ? 'active menu-open' : ''}">
@@ -203,14 +201,9 @@
             </a>
             <ul class="treeview-menu">
                 <li class="${requestScope.currentAction eq 'supplierList' ? 'active' : ''}">
-                    <a href="${pageContext.request.contextPath}/admindashboard?action=supplierList&module=supplier"><i class="fa fa-circle-o"></i> Supplier List</a>
+                    <a href="${pageContext.request.contextPath}/Admindashboard?action=supplierList&module=supplier"><i class="fa fa-circle-o"></i> Supplier List</a>
                 </li>
-                <li class="${requestScope.currentAction eq 'supplierForm' ? 'active' : ''}">
-                    <a href="${pageContext.request.contextPath}/admindashboard?action=supplierForm&module=supplier"><i class="fa fa-circle-o"></i> Add New Supplier</a>
-                </li>
-                <li class="${requestScope.currentAction eq 'supplierDetails' ? 'active' : ''}">
-                    <a href="${pageContext.request.contextPath}/admindashboard?action=supplierDetails&module=supplier"><i class="fa fa-circle-o"></i> Supplier Details</a>
-                </li>
+
             </ul>
         </li>
     </ul>

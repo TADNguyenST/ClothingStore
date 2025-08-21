@@ -325,7 +325,7 @@ public class ProductDAO {
         return list;
     }
 
-    // Xóa sản phẩm
+    // XÃ³a sáº£n pháº©m
     public int deleteProduct(long productId) {
         String sqlFavorites = "DELETE FROM product_favorites WHERE product_id = ?";
         String sqlViewHistory = "DELETE FROM product_view_history WHERE product_id = ?";
@@ -376,7 +376,7 @@ public class ProductDAO {
         }
     }
 
-    // Thêm sản phẩm mới(Admin)
+    // ThÃªm sáº£n pháº©m má»›i(Admin)
     public long addProduct(Product product) throws SQLException {
         String sql = "INSERT INTO products (name, price, status, category_id, brand_id, material, description) VALUES (?, ?, ?, ?, ?, ?, ?)";
         String sqlFindCategory = "SELECT category_id FROM categories WHERE name = ? AND is_active = 1";
@@ -458,7 +458,7 @@ public class ProductDAO {
         }
     }
 
-    // Thêm biến thể sản phẩm
+    // ThÃªm biáº¿n thá»ƒ sáº£n pháº©m
     public long addProductVariant(ProductVariant variant) throws SQLException {
         String sql = "INSERT INTO product_variants (product_id, size, color, price_modifier, sku) VALUES (?, ?, ?, ?, ?)";
         try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -481,7 +481,7 @@ public class ProductDAO {
         }
     }
 
-    // Tạo SKU tự động
+    // Táº¡o SKU tá»± Ä‘á»™ng
     private String generateSKU(ProductVariant variant) {
         String brand = variant.getBrand() != null ? variant.getBrand().replaceAll("\\s+", "") : "UNKNOWN";
         String productName = variant.getProductName() != null ? variant.getProductName().replaceAll("\\s+", "") : "PRODUCT";
@@ -490,7 +490,7 @@ public class ProductDAO {
         return String.format("%s-%s-%s-%s", brand, productName, size, color).toUpperCase();
     }
 
-    // Thêm tồn kho cho biến thể
+    // ThÃªm tá»“n kho cho biáº¿n thá»ƒ
     public void addInventory(long variantId) throws SQLException {
         String sql = "INSERT INTO inventory (variant_id, quantity) VALUES (?, 0)";
         try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -499,7 +499,7 @@ public class ProductDAO {
         }
     }
 
-    // Thêm ảnh sản phẩm(Update)
+    // ThÃªm áº£nh sáº£n pháº©m(Update)
     public void insertProductImage(long productId, String url, boolean isMain) throws SQLException {
         String sql = "INSERT INTO product_images (product_id, image_url, is_main) VALUES (?, ?, ?)";
         try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -510,7 +510,7 @@ public class ProductDAO {
         }
     }
 
-    // Thêm ảnh sản phẩm(create)
+    // ThÃªm áº£nh sáº£n pháº©m(create)
     public void addProductImage(ProductImage image) throws SQLException {
         String sql = "INSERT INTO product_images (product_id, image_url, is_main, display_order) VALUES (?, ?, ?, ?)";
         try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -522,7 +522,7 @@ public class ProductDAO {
         }
     }
 
-    // Lấy danh sách thương hiệu
+    // Láº¥y danh sÃ¡ch thÆ°Æ¡ng hiá»‡u
     public List<Brand> getBrands() throws SQLException {
         List<Brand> brands = new ArrayList<>();
         String sql = "SELECT brand_id, name FROM brands WHERE is_active = 1 ORDER BY name";
@@ -537,7 +537,7 @@ public class ProductDAO {
         return brands;
     }
 
-    // Lấy danh sách danh mục
+    // Láº¥y danh sÃ¡ch danh má»¥c
     public List<Category> getCategories() throws SQLException {
         List<Category> categories = new ArrayList<>();
         String sql = "SELECT c.category_id, c.name, c.parent_category_id, p.name AS parent_category_name "
@@ -558,7 +558,7 @@ public class ProductDAO {
         return categories;
     }
 
-    // Lấy danh sách kích thước
+    // Láº¥y danh sÃ¡ch kÃ­ch thÆ°á»›c
     public List<String> getSizes() throws SQLException {
         List<String> sizes = new ArrayList<>();
         String sql = "SELECT DISTINCT CAST(size AS NVARCHAR(100)) AS size "
@@ -573,7 +573,7 @@ public class ProductDAO {
         return sizes;
     }
 
-    // Lấy danh sách màu sắc
+    // Láº¥y danh sÃ¡ch mÃ u sáº¯c
     public List<String> getColors() throws SQLException {
         List<String> colors = new ArrayList<>();
         String sql = "SELECT DISTINCT CAST(color AS NVARCHAR(100)) AS color "
@@ -588,7 +588,7 @@ public class ProductDAO {
         return colors;
     }
 
-    // Lấy tên thương hiệu theo ID
+    // Láº¥y tÃªn thÆ°Æ¡ng hiá»‡u theo ID
     public String getBrandName(long brandId) throws SQLException {
         String sql = "SELECT name FROM brands WHERE brand_id = ? AND is_active = 1";
         try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -602,7 +602,7 @@ public class ProductDAO {
         }
     }
 
-    // Lấy sản phẩm theo ID
+    // Láº¥y sáº£n pháº©m theo ID
     public Product getProductById(long productId) throws SQLException {
         String sql = "SELECT p.product_id, p.name, p.price, p.status, p.material, p.description, "
                 + "c.category_id, c.name AS category_name, c.parent_category_id, pc.name AS parent_category_name, "
@@ -654,7 +654,7 @@ public class ProductDAO {
         }
     }
 
-    // Cập nhật sản phẩm
+    // Cáº­p nháº­t sáº£n pháº©m
     public void updateProduct(Product product) throws SQLException {
         String sql = "UPDATE products SET name = ?, price = ?, status = ?, category_id = ?, brand_id = ?, material = ?, description = ? WHERE product_id = ?";
         String sqlFindBrand = "SELECT brand_id FROM brands WHERE name = ? AND is_active = 1";
@@ -706,7 +706,7 @@ public class ProductDAO {
         }
     }
 
-    // Cập nhật ảnh sản phẩm(Update)
+    // Cáº­p nháº­t áº£nh sáº£n pháº©m(Update)
     public void updateImageMainFlag(long imageId, boolean isMain) throws SQLException {
         String sql = "UPDATE product_images SET is_main = ? WHERE image_id = ?";
         try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -716,7 +716,7 @@ public class ProductDAO {
         }
     }
 
-    // Lấy danh sách biến thể theo productId
+    // Láº¥y danh sÃ¡ch biáº¿n thá»ƒ theo productId
     public List<ProductVariant> getProductVariantsByProductId(long productId) throws SQLException {
         List<ProductVariant> variants = new ArrayList<>();
         String sql = "SELECT pv.variant_id, pv.product_id, pv.size, pv.color, pv.price_modifier, pv.sku, "
@@ -749,7 +749,7 @@ public class ProductDAO {
         return variants;
     }
 
-    // Cập nhật biến thể sản phẩm
+    // Cáº­p nháº­t biáº¿n thá»ƒ sáº£n pháº©m
     public void updateProductVariant(ProductVariant variant) throws SQLException {
         String sql = "UPDATE product_variants SET size = ?, color = ?, price_modifier = ?, sku = ? WHERE variant_id = ?";
         try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -785,7 +785,7 @@ public class ProductDAO {
         return false;
     }
 
-    // Xóa biến thể sản phẩm
+    // XÃ³a biáº¿n thá»ƒ sáº£n pháº©m
     public void deleteProductVariant(long variantId) throws SQLException {
         String sqlCheckInventory = "SELECT quantity FROM inventory WHERE variant_id = ?";
         String sqlInventory = "DELETE FROM inventory WHERE variant_id = ?";
@@ -812,7 +812,7 @@ public class ProductDAO {
         }
     }
 
-    // Lấy danh sách ảnh theo productId
+    // Láº¥y danh sÃ¡ch áº£nh theo productId
     public List<ProductImage> getProductImagesByProductId(long productId) throws SQLException {
         List<ProductImage> images = new ArrayList<>();
         String sql = "SELECT image_id, product_id, image_url, is_main, display_order FROM product_images WHERE product_id = ?";
@@ -833,7 +833,7 @@ public class ProductDAO {
         return images;
     }
 
-    // Xóa ảnh sản phẩm
+    // XÃ³a áº£nh sáº£n pháº©m
     public void deleteProductImage(long imageId) throws SQLException {
         String sql = "DELETE FROM product_images WHERE image_id = ?";
         try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -842,7 +842,7 @@ public class ProductDAO {
         }
     }
 
-    // Lấy danh sách sản phẩm theo category_id (PRODUCT LIST)
+    // Láº¥y danh sÃ¡ch sáº£n pháº©m theo category_id (PRODUCT LIST)
     public List<Product> getProductsByCategories(List<Long> categoryIds, int offset) throws SQLException {
         List<Product> products = new ArrayList<>();
         if (categoryIds == null || categoryIds.isEmpty()) {
@@ -904,7 +904,7 @@ public class ProductDAO {
         return products;
     }
 
-    // Tìm kiếm sản phẩm trên trang chủ
+    // TÃ¬m kiáº¿m sáº£n pháº©m trÃªn trang chá»§
     public List<Product> searchProductsForHomePage(String keyword) {
         List<Product> list = new ArrayList<>();
         String sql = "SELECT TOP 5 p.product_id, p.name, p.price, "
@@ -934,7 +934,7 @@ public class ProductDAO {
         }
     }
 
-    // Lọc sản phẩm trên trang
+    // Lá»�c sáº£n pháº©m trÃªn trang
     public List<Product> filterProducts(List<Long> categoryIds, List<Long> brandIds, List<String> sizes, List<String> colors, BigDecimal minPrice, BigDecimal maxPrice, String sort) throws SQLException {
         List<Product> products = new ArrayList<>();
         if (categoryIds == null || categoryIds.isEmpty()) {
@@ -1067,7 +1067,7 @@ public class ProductDAO {
         return images;
     }
 
-    // Lấy số lượng tồn kho theo variantId (dat)
+    // Láº¥y sá»‘ lÆ°á»£ng tá»“n kho theo variantId (dat)
     public int getAvailableQuantityByVariantId(Long variantId) {
         if (variantId == null || variantId == 0) {
             return 0;

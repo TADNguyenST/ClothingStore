@@ -11,12 +11,15 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import model.*;
-import java.io.BufferedReader;
+import model.Address;
+import model.District;
+import model.Province;
+import model.Users;
+import model.Ward;
+
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collections; 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,34 +33,51 @@ public class AddressController extends HttpServlet {
     private final WardDAO wardDAO = new WardDAO();
     private final Gson gson = new Gson();
 
+    /* =========================
+       GET
+       ========================= */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         HttpSession session = request.getSession(false);
+        String action = request.getParameter("action");
+
+        // Nếu là AJAX lấy địa giới / danh sách địa chỉ mà chưa đăng nhập -> trả JSON 401 (tránh redirect HTML)
         if (session == null || session.getAttribute("user") == null) {
+            if ("getProvinces".equals(action) || "getDistricts".equals(action) || "getWards".equals(action) || "getAddresses".equals(action)) {
+                response.setStatus(401);
+                writeJson(response, simpleError("Unauthorized")); // JDK8: không dùng Map.of
+                return;
+            }
             response.sendRedirect(request.getContextPath() + "/Login");
             return;
         }
 
-        String action = request.getParameter("action");
-
-        // --- SỬA LẠI LOGIC PROXY TẠI ĐÂY ---
-        if ("getProvinces".equals(action)) {
-            proxyApiRequest("https://provinces.open-api.vn/api/p", response);
-        } else if ("getDistricts".equals(action)) {
-            // Lấy code trực tiếp từ request và truyền đi, không cần tra cứu ID
-            String provinceCode = request.getParameter("id");
-            proxyApiRequest("https://provinces.open-api.vn/api/p/" + provinceCode + "?depth=2", response);
-        } else if ("getWards".equals(action)) {
-            // Lấy code trực tiếp từ request và truyền đi
-            String districtCode = request.getParameter("id");
-            proxyApiRequest("https://provinces.open-api.vn/api/d/" + districtCode + "?depth=2", response);
-        } else if ("getAddresses".equals(action)) {
-            handleGetSavedAddresses(request, response);
-        } else {
-            request.getRequestDispatcher("/WEB-INF/views/customer/address/address.jsp").forward(request, response);
+        try {
+            if ("getProvinces".equals(action)) {
+                serveProvinces(response);
+            } else if ("getDistricts".equals(action)) {
+                // Client gửi "id" nhưng thực chất là CODE
+                String provinceCode = request.getParameter("id");
+                serveDistricts(provinceCode, response);
+            } else if ("getWards".equals(action)) {
+                // Client gửi "id" nhưng thực chất là CODE
+                String districtCode = request.getParameter("id");
+                serveWards(districtCode, response);
+            } else if ("getAddresses".equals(action)) {
+                handleGetSavedAddresses(request, response);
+            } else {
+                request.getRequestDispatcher("/WEB-INF/views/customer/address/address.jsp").forward(request, response);
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            response.setStatus(500);
+            writeJson(response, simpleError("Internal server error"));
         }
     }
 
+    /* =========================
+       POST (giữ nguyên logic add/update/delete/setDefault)
+       ========================= */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
         HttpSession session = request.getSession(false);
@@ -75,72 +95,64 @@ public class AddressController extends HttpServlet {
         boolean success;
         String message = "";
         try {
-            switch (action) {
-                case "add": {
-                    Address newAddress = mapRequestToAddress(request);
-                    newAddress.setUserId(user.getUserId());
+            if ("add".equals(action)) {
+                Address newAddress = mapRequestToAddress(request);
+                newAddress.setUserId(user.getUserId());
 
-                    // --- LOGGING ĐỂ KIỂM TRA ---
-                    System.out.println("--- BẮT ĐẦU THÊM ĐỊA CHỈ MỚI ---");
-                    System.out.println("Tên người nhận: " + newAddress.getRecipientName());
-                    System.out.println("Checkbox 'isDefault' được chọn: " + newAddress.isDefault());
-                    // -----------------------------
+                System.out.println("--- ADD ADDRESS ---");
+                System.out.println("Recipient: " + newAddress.getRecipientName());
+                System.out.println("isDefault checkbox: " + newAddress.isDefault());
 
-                    success = addressDAO.addAddress(newAddress);
-                    if (success && newAddress.isDefault()) {
-                        // Tìm địa chỉ vừa thêm bằng vòng lặp
-                        List<Address> addresses = addressDAO.getAddressesByUserId(user.getUserId());
-                        Address addedAddress = null;
-                        for (Address a : addresses) {
-                            if (a.getRecipientName().equals(newAddress.getRecipientName())
-                                    && a.getPhoneNumber().equals(newAddress.getPhoneNumber())
-                                    && a.getStreetAddress().equals(newAddress.getStreetAddress())) {
-                                addedAddress = a;
-                                break;
-                            }
-                        }
-                        if (addedAddress != null) {
-                            success = addressDAO.setDefaultAddress(addedAddress.getAddressId(), user.getUserId());
-                            if (!success) {
-                                message = "Address added but failed to set as default.";
-                            }
-                        } else {
-                            message = "Address added but could not find it to set as default.";
-                            success = false;
+                success = addressDAO.addAddress(newAddress);
+
+                if (success && newAddress.isDefault()) {
+                    // tìm lại địa chỉ vừa thêm để set default (có thể tối ưu bằng trả id từ DAO)
+                    List<Address> addresses = addressDAO.getAddressesByUserId(user.getUserId());
+                    Address addedAddress = null;
+                    for (Address a : addresses) {
+                        if (eq(a.getRecipientName(), newAddress.getRecipientName())
+                                && eq(a.getPhoneNumber(), newAddress.getPhoneNumber())
+                                && eq(a.getStreetAddress(), newAddress.getStreetAddress())) {
+                            addedAddress = a;
+                            break;
                         }
                     }
-                    message = success ? "Address added successfully." : (message.isEmpty() ? "Failed to add address." : message);
-                    break;
-                }
-                case "update": {
-                    Address updatedAddress = mapRequestToAddress(request);
-                    updatedAddress.setAddressId(Long.parseLong(request.getParameter("addressId")));
-                    updatedAddress.setUserId(user.getUserId());
-
-                    success = addressDAO.updateAddress(updatedAddress);
-                    if (success && updatedAddress.isDefault()) {
-                        // Nếu update thành công và người dùng muốn đặt làm mặc định
-                        addressDAO.setDefaultAddress(updatedAddress.getAddressId(), user.getUserId());
+                    if (addedAddress != null) {
+                        success = addressDAO.setDefaultAddress(addedAddress.getAddressId(), user.getUserId());
+                        if (!success) {
+                            message = "Address added but failed to set as default.";
+                        }
+                    } else {
+                        message = "Address added but could not find it to set as default.";
+                        success = false;
                     }
-                    message = success ? "Address updated successfully." : "Failed to update address.";
-                    break;
                 }
-                case "delete": {
-                    long deleteId = Long.parseLong(request.getParameter("addressId"));
-                    success = addressDAO.deleteAddress(deleteId, user.getUserId());
-                    message = success ? "Address deleted successfully." : "Failed to delete address.";
-                    break;
+                message = success ? "Address added successfully." : (message.isEmpty() ? "Failed to add address." : message);
+
+            } else if ("update".equals(action)) {
+                Address updatedAddress = mapRequestToAddress(request);
+                updatedAddress.setAddressId(Long.parseLong(request.getParameter("addressId")));
+                updatedAddress.setUserId(user.getUserId());
+
+                success = addressDAO.updateAddress(updatedAddress);
+                if (success && updatedAddress.isDefault()) {
+                    addressDAO.setDefaultAddress(updatedAddress.getAddressId(), user.getUserId());
                 }
-                case "setDefault": {
-                    long defaultId = Long.parseLong(request.getParameter("addressId"));
-                    success = addressDAO.setDefaultAddress(defaultId, user.getUserId());
-                    message = success ? "Default address set successfully." : "Failed to set default address.";
-                    break;
-                }
-                default:
-                    success = false;
-                    message = "Invalid action.";
-                    break;
+                message = success ? "Address updated successfully." : "Failed to update address.";
+
+            } else if ("delete".equals(action)) {
+                long deleteId = Long.parseLong(request.getParameter("addressId"));
+                success = addressDAO.deleteAddress(deleteId, user.getUserId());
+                message = success ? "Address deleted successfully." : "Failed to delete address.";
+
+            } else if ("setDefault".equals(action)) {
+                long defaultId = Long.parseLong(request.getParameter("addressId"));
+                success = addressDAO.setDefaultAddress(defaultId, user.getUserId());
+                message = success ? "Default address set successfully." : "Failed to set default address.";
+
+            } else {
+                success = false;
+                message = "Invalid action.";
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -150,6 +162,9 @@ public class AddressController extends HttpServlet {
         sendJsonResponse(response, 200, success, message, null);
     }
 
+    /* =========================
+       Handlers/Helpers
+       ========================= */
     private void handleGetSavedAddresses(HttpServletRequest request, HttpServletResponse response) throws IOException {
         Users user = (Users) request.getSession().getAttribute("user");
         List<Address> addresses = addressDAO.getAddressesByUserId(user.getUserId());
@@ -160,43 +175,76 @@ public class AddressController extends HttpServlet {
         sendJsonResponse(response, 200, true, null, addresses);
     }
 
-    private void proxyApiRequest(String apiUrl, HttpServletResponse response) throws IOException {
-        HttpURLConnection connection = null;
-        try {
-            URL url = new URL(apiUrl);
-            connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestMethod("GET");
-            connection.setConnectTimeout(5000);
-            connection.setReadTimeout(5000);
-
-            if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
-                StringBuilder content = new StringBuilder();
-                try ( BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream(), "UTF-8"))) {
-                    String inputLine;
-                    while ((inputLine = in.readLine()) != null) {
-                        content.append(inputLine);
-                    }
-                }
-                response.setContentType("application/json");
-                response.setCharacterEncoding("UTF-8");
-                response.getWriter().write(content.toString());
-            } else {
-                response.sendError(connection.getResponseCode());
-            }
-        } finally {
-            if (connection != null) {
-                connection.disconnect();
-            }
+    /**
+     * Trả danh sách tỉnh từ DB: [{name, code}]
+     */
+    private void serveProvinces(HttpServletResponse response) throws IOException {
+        List<Province> list = provinceDAO.getAllProvinces();
+        List<Map<String, Object>> out = new ArrayList<Map<String, Object>>();
+        for (Province p : list) {
+            Map<String, Object> m = new HashMap<String, Object>();
+            m.put("name", p.getName());
+            m.put("code", p.getCode());
+            out.add(m);
         }
+        writeJson(response, out);
+    }
+
+    /**
+     * Nhận provinceCode (string) -> trả districts của tỉnh đó: [{name, code}]
+     */
+    private void serveDistricts(String provinceCode, HttpServletResponse response) throws IOException {
+        if (isBlank(provinceCode)) {
+            writeJson(response, Collections.emptyList()); // JDK8
+            return;
+        }
+        Province p = provinceDAO.findByCode(provinceCode);
+        if (p == null) {
+            writeJson(response, Collections.emptyList());
+            return;
+        }
+        List<District> districts = districtDAO.getDistrictsByProvinceId(p.getProvinceId());
+        List<Map<String, Object>> out = new ArrayList<Map<String, Object>>();
+        for (District d : districts) {
+            Map<String, Object> m = new HashMap<String, Object>();
+            m.put("name", d.getName());
+            m.put("code", d.getCode());
+            out.add(m);
+        }
+        writeJson(response, out);
+    }
+
+    /**
+     * Nhận districtCode (string) -> trả wards của quận/huyện đó: [{name, code}]
+     */
+    private void serveWards(String districtCode, HttpServletResponse response) throws IOException {
+        if (isBlank(districtCode)) {
+            writeJson(response, Collections.emptyList());
+            return;
+        }
+        District d = districtDAO.findByCode(districtCode);
+        if (d == null) {
+            writeJson(response, Collections.emptyList());
+            return;
+        }
+        List<Ward> wards = wardDAO.getWardsByDistrictId(d.getDistrictId());
+        List<Map<String, Object>> out = new ArrayList<Map<String, Object>>();
+        for (Ward w : wards) {
+            Map<String, Object> m = new HashMap<String, Object>();
+            m.put("name", w.getName());
+            m.put("code", w.getCode());
+            out.add(m);
+        }
+        writeJson(response, out);
     }
 
     private Address mapRequestToAddress(HttpServletRequest request) {
-        // Phương thức này đã chính xác
         Address address = new Address();
         address.setRecipientName(request.getParameter("recipientName"));
         address.setPhoneNumber(request.getParameter("phoneNumber"));
         address.setStreetAddress(request.getParameter("streetAddress"));
 
+        // 3 field phía client đặt tên ...Id nhưng thực chất là CODE
         String provinceCode = request.getParameter("provinceId");
         String districtCode = request.getParameter("districtId");
         String wardCode = request.getParameter("wardId");
@@ -220,7 +268,7 @@ public class AddressController extends HttpServlet {
         address.setWardId(w.getWardId());
 
         String isDefaultParam = request.getParameter("isDefault");
-        address.setDefault(isDefaultParam != null && isDefaultParam.equals("true"));
+        address.setDefault(isDefaultParam != null && "true".equals(isDefaultParam));
         return address;
     }
 
@@ -231,12 +279,37 @@ public class AddressController extends HttpServlet {
         response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
         response.setHeader("Pragma", "no-cache");
         response.setHeader("Expires", "0");
-        Map<String, Object> result = new HashMap<>();
+        Map<String, Object> result = new HashMap<String, Object>();
         result.put("success", success);
         result.put("message", message);
         result.put("data", data);
         String json = gson.toJson(result);
         System.out.println("JSON response: " + json);
         response.getWriter().write(json);
+    }
+
+    private void writeJson(HttpServletResponse response, Object data) throws IOException {
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+        response.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+        response.getWriter().write(gson.toJson(data));
+    }
+
+    /* ===== Utils cho JDK 8 ===== */
+    private boolean isBlank(String s) {
+        return s == null || s.trim().isEmpty();
+    }
+
+    private boolean eq(String a, String b) {
+        if (a == null) {
+            return b == null;
+        }
+        return a.equals(b);
+    }
+
+    private Map<String, String> simpleError(String msg) {
+        Map<String, String> m = new HashMap<String, String>();
+        m.put("error", msg);
+        return m;
     }
 }

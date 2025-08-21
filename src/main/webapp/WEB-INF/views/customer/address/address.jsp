@@ -150,6 +150,9 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+                            /* =========================
+                             Biến & hằng số
+                             ========================= */
                             const YOUR_BACKEND_URL = '${pageContext.request.contextPath}/customer/address';
                             const addressModal = new bootstrap.Modal(document.getElementById('addressModal'));
                             const form = document.getElementById('addressForm');
@@ -158,6 +161,173 @@
                             const wardSelect = document.getElementById('ward');
                             let savedAddresses = [];
 
+                            /* =========================
+                             Cache đơn giản (sessionStorage) + TTL
+                             ========================= */
+                            var TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 ngày
+
+                            function saveCache(key, data) {
+                                try {
+                                    sessionStorage.setItem(key, JSON.stringify({ts: Date.now(), data: data}));
+                                } catch (e) {
+                                }
+                            }
+                            function loadCache(key) {
+                                try {
+                                    var raw = sessionStorage.getItem(key);
+                                    if (!raw)
+                                        return null;
+                                    var obj = JSON.parse(raw);
+                                    if (!obj || typeof obj.ts !== 'number')
+                                        return null;
+                                    if (Date.now() - obj.ts > TTL_MS)
+                                        return null;
+                                    return obj.data;
+                                } catch (e) {
+                                    return null;
+                                }
+                            }
+
+                            function fillSelectFromArray(selectElement, items, placeholder) {
+                                var current = selectElement.value;
+                                selectElement.innerHTML = '<option value="">' + placeholder + '</option>';
+                                if (!Array.isArray(items))
+                                    items = [];
+                                for (var i = 0; i < items.length; i++) {
+                                    var item = items[i];
+                                    var code = (item.code !== undefined && item.code !== null) ? String(item.code) : '';
+                                    selectElement.add(new Option(item.name, code));
+                                }
+                                if (current) {
+                                    for (var j = 0; j < selectElement.options.length; j++) {
+                                        if (selectElement.options[j].value === current) {
+                                            selectElement.value = current;
+                                            break;
+                                        }
+                                    }
+                                }
+                                selectElement.disabled = false;
+                            }
+
+                            function fetchJsonNoStore(url) {
+                                return fetch(url, {cache: 'no-store'}).then(function (res) {
+                                    if (!res.ok)
+                                        throw new Error('HTTP ' + res.status);
+                                    return res.json();
+                                });
+                            }
+
+                            /* =========================
+                             Ensure loaders (có cache)
+                             ========================= */
+                            function ensureProvincesLoaded() {
+                                var cached = loadCache('provinces');
+                                if (cached) {
+                                    fillSelectFromArray(provinceSelect, cached, 'Select Province');
+                                    // stale-while-revalidate âm thầm
+                                    fetchJsonNoStore(YOUR_BACKEND_URL + '?action=getProvinces').then(function (fresh) {
+                                        if (JSON.stringify(fresh) !== JSON.stringify(cached)) {
+                                            saveCache('provinces', fresh);
+                                            if (!provinceSelect.value)
+                                                fillSelectFromArray(provinceSelect, fresh, 'Select Province');
+                                        }
+                                    }).catch(function () {});
+                                    return Promise.resolve(cached);
+                                }
+                                provinceSelect.innerHTML = '<option value="">Loading...</option>';
+                                provinceSelect.disabled = true;
+                                return fetchJsonNoStore(YOUR_BACKEND_URL + '?action=getProvinces')
+                                        .then(function (data) {
+                                            var items = Array.isArray(data) ? data : (data.districts || data.wards || []);
+                                            saveCache('provinces', items);
+                                            fillSelectFromArray(provinceSelect, items, 'Select Province');
+                                            return items;
+                                        })
+                                        .catch(function (err) {
+                                            console.error('load provinces failed', err);
+                                            provinceSelect.innerHTML = '<option value="">Load failed</option>';
+                                            provinceSelect.disabled = false;
+                                            return [];
+                                        });
+                            }
+
+                            function ensureDistrictsLoaded(provinceCode) {
+                                if (!provinceCode) {
+                                    resetDropdowns(true);
+                                    return Promise.resolve([]);
+                                }
+                                var key = 'districts_' + provinceCode;
+                                var cached = loadCache(key);
+                                districtSelect.disabled = true;
+                                if (cached) {
+                                    fillSelectFromArray(districtSelect, cached, 'Select District');
+                                    // revalidate âm thầm
+                                    fetchJsonNoStore(YOUR_BACKEND_URL + '?action=getDistricts&id=' + encodeURIComponent(provinceCode))
+                                            .then(function (fresh) {
+                                                if (JSON.stringify(fresh) !== JSON.stringify(cached)) {
+                                                    saveCache(key, fresh);
+                                                    if (!districtSelect.value)
+                                                        fillSelectFromArray(districtSelect, fresh, 'Select District');
+                                                }
+                                            }).catch(function () {});
+                                    return Promise.resolve(cached);
+                                }
+                                districtSelect.innerHTML = '<option value="">Loading...</option>';
+                                return fetchJsonNoStore(YOUR_BACKEND_URL + '?action=getDistricts&id=' + encodeURIComponent(provinceCode))
+                                        .then(function (data) {
+                                            var items = Array.isArray(data) ? data : (data.districts || []);
+                                            saveCache(key, items);
+                                            fillSelectFromArray(districtSelect, items, 'Select District');
+                                            return items;
+                                        })
+                                        .catch(function (err) {
+                                            console.error('load districts failed', err);
+                                            districtSelect.innerHTML = '<option value="">Load failed</option>';
+                                            districtSelect.disabled = false;
+                                            return [];
+                                        });
+                            }
+
+                            function ensureWardsLoaded(districtCode) {
+                                if (!districtCode) {
+                                    resetDropdowns(true, true);
+                                    return Promise.resolve([]);
+                                }
+                                var key = 'wards_' + districtCode;
+                                var cached = loadCache(key);
+                                wardSelect.disabled = true;
+                                if (cached) {
+                                    fillSelectFromArray(wardSelect, cached, 'Select Ward');
+                                    // revalidate âm thầm
+                                    fetchJsonNoStore(YOUR_BACKEND_URL + '?action=getWards&id=' + encodeURIComponent(districtCode))
+                                            .then(function (fresh) {
+                                                if (JSON.stringify(fresh) !== JSON.stringify(cached)) {
+                                                    saveCache(key, fresh);
+                                                    if (!wardSelect.value)
+                                                        fillSelectFromArray(wardSelect, fresh, 'Select Ward');
+                                                }
+                                            }).catch(function () {});
+                                    return Promise.resolve(cached);
+                                }
+                                wardSelect.innerHTML = '<option value="">Loading...</option>';
+                                return fetchJsonNoStore(YOUR_BACKEND_URL + '?action=getWards&id=' + encodeURIComponent(districtCode))
+                                        .then(function (data) {
+                                            var items = Array.isArray(data) ? data : (data.wards || []);
+                                            saveCache(key, items);
+                                            fillSelectFromArray(wardSelect, items, 'Select Ward');
+                                            return items;
+                                        })
+                                        .catch(function (err) {
+                                            console.error('load wards failed', err);
+                                            wardSelect.innerHTML = '<option value="">Load failed</option>';
+                                            wardSelect.disabled = false;
+                                            return [];
+                                        });
+                            }
+
+                            /* =========================
+                             UI danh sách địa chỉ
+                             ========================= */
                             function renderAddressList() {
                                 console.log("Rendering addresses:", savedAddresses);
                                 const container = document.getElementById('address-list-container');
@@ -169,10 +339,10 @@
                                 for (var i = 0; i < savedAddresses.length; i++) {
                                     var addr = savedAddresses[i];
                                     console.log("Address ID:", addr.addressId, "Default:", addr.default);
-                                    const isDefault = addr.default === true;
-                                    const defaultBadge = isDefault ? '<span class="badge bg-primary ms-2">Default</span>' : '';
-                                    const setDefaultButton = !isDefault ? '<button type="button" class="btn btn-sm btn-outline-success" onclick="handleSetDefault(' + addr.addressId + ')">Set Default</button>' : '';
-                                    const fullAddress = (addr.streetAddress || '') + ', ' + (addr.wardName || 'N/A') + ', ' + (addr.districtName || 'N/A') + ', ' + (addr.provinceName || 'N/A');
+                                    var isDefault = addr.default === true;
+                                    var defaultBadge = isDefault ? '<span class="badge bg-primary ms-2">Default</span>' : '';
+                                    var setDefaultButton = !isDefault ? '<button type="button" class="btn btn-sm btn-outline-success" onclick="handleSetDefault(' + addr.addressId + ')">Set Default</button>' : '';
+                                    var fullAddress = (addr.streetAddress || '') + ', ' + (addr.wardName || 'N/A') + ', ' + (addr.districtName || 'N/A') + ', ' + (addr.provinceName || 'N/A');
 
                                     listHtml +=
                                             '<div class="card mb-3 shadow-sm">' +
@@ -195,17 +365,22 @@
                                 container.innerHTML = listHtml;
                             }
 
+                            /* =========================
+                             Modal Add/Edit
+                             ========================= */
                             function openAddModal() {
                                 form.reset();
                                 document.getElementById('modalTitle').textContent = 'Add New Address';
                                 document.getElementById('formAction').value = 'add';
                                 document.getElementById('formAddressId').value = '';
                                 resetDropdowns();
+                                // ⚡ Dùng cache: mượt, không nhấp nháy
+                                ensureProvincesLoaded();
                                 addressModal.show();
                             }
 
                             function openEditModal(addressId) {
-                                let address = null;
+                                var address = null;
                                 for (var i = 0; i < savedAddresses.length; i++) {
                                     if (savedAddresses[i].addressId === addressId) {
                                         address = savedAddresses[i];
@@ -225,22 +400,26 @@
                                 document.getElementById('streetAddress').value = address.streetAddress;
                                 document.getElementById('isDefault').checked = address.default === true;
 
-                                populateDropdown(provinceSelect, YOUR_BACKEND_URL + '?action=getProvinces', 'Select Province')
+                                // ⚡ Chuỗi load dùng cache
+                                ensureProvincesLoaded()
                                         .then(function () {
-                                            provinceSelect.value = address.provinceCode;
-                                            return loadDistricts();
+                                            provinceSelect.value = String(address.provinceCode || '');
+                                            return ensureDistrictsLoaded(provinceSelect.value);
                                         })
                                         .then(function () {
-                                            districtSelect.value = address.districtCode;
-                                            return loadWards();
+                                            districtSelect.value = String(address.districtCode || '');
+                                            return ensureWardsLoaded(districtSelect.value);
                                         })
                                         .then(function () {
-                                            wardSelect.value = address.wardCode;
+                                            wardSelect.value = String(address.wardCode || '');
                                         });
 
                                 addressModal.show();
                             }
 
+                            /* =========================
+                             Toast & API helper
+                             ========================= */
                             function showToast(message, isSuccess) {
                                 if (typeof isSuccess === 'undefined')
                                     isSuccess = true;
@@ -275,6 +454,9 @@
                                         });
                             }
 
+                            /* =========================
+                             CRUD actions
+                             ========================= */
                             function loadSavedAddresses() {
                                 const container = document.getElementById('address-list-container');
                                 container.innerHTML = '<div class="text-center p-5"><i class="fas fa-spinner fa-spin fa-2x"></i><p>Loading addresses...</p></div>';
@@ -328,50 +510,19 @@
                                 });
                             }
 
-                            function populateDropdown(selectElement, url, defaultOptionText) {
-                                selectElement.innerHTML = '<option value="">Loading...</option>';
-                                selectElement.disabled = true;
-                                return fetch(url)
-                                        .then(function (response) {
-                                            if (!response.ok)
-                                                throw new Error('Network response was not ok. Status: ' + response.status);
-                                            return response.json();
-                                        })
-                                        .then(function (data) {
-                                            selectElement.innerHTML = '<option value="">' + defaultOptionText + '</option>';
-                                            var items = data.districts || data.wards || data;
-                                            for (var i = 0; i < items.length; i++) {
-                                                var item = items[i];
-                                                selectElement.add(new Option(item.name, item.code));
-                                            }
-                                            selectElement.disabled = false;
-                                        })
-                                        .catch(function (error) {
-                                            console.error("Failed to populate dropdown:", error);
-                                            selectElement.innerHTML = '<option value="">Load failed</option>';
-                                        });
-                            }
-
+                            /* =========================
+                             Hỗ trợ cũ (wrapper) để giữ tên hàm nếu nơi khác còn gọi
+                             ========================= */
                             function loadDistricts() {
-                                resetDropdowns(true);
-                                if (provinceSelect.value) {
-                                    return populateDropdown(districtSelect, YOUR_BACKEND_URL + '?action=getDistricts&id=' + provinceSelect.value, 'Select District');
-                                }
-                                return Promise.resolve();
+                                return ensureDistrictsLoaded(provinceSelect.value);
                             }
-
                             function loadWards() {
-                                resetDropdowns(true, true);
-                                if (districtSelect.value) {
-                                    return populateDropdown(wardSelect, YOUR_BACKEND_URL + '?action=getWards&id=' + districtSelect.value, 'Select Ward');
-                                }
-                                return Promise.resolve();
+                                return ensureWardsLoaded(districtSelect.value);
                             }
 
                             function resetDropdowns(keepProvince, keepDistrict) {
-                                if (typeof keepDistrict === 'undefined') {
+                                if (typeof keepDistrict === 'undefined')
                                     keepDistrict = false;
-                                }
                                 if (!keepDistrict) {
                                     districtSelect.innerHTML = '<option value="">Select District</option>';
                                     districtSelect.disabled = true;
@@ -380,12 +531,22 @@
                                 wardSelect.disabled = true;
                             }
 
+                            /* =========================
+                             Init
+                             ========================= */
                             document.addEventListener('DOMContentLoaded', function () {
-                                populateDropdown(provinceSelect, YOUR_BACKEND_URL + '?action=getProvinces', 'Select Province');
+                                ensureProvincesLoaded(); // ⚡ mượt vì có cache
                                 loadSavedAddresses();
                                 form.addEventListener('submit', handleFormSubmit);
-                                provinceSelect.addEventListener('change', loadDistricts);
-                                districtSelect.addEventListener('change', loadWards);
+                                provinceSelect.addEventListener('change', function () {
+                                    ensureDistrictsLoaded(provinceSelect.value).then(function () {
+                                        wardSelect.innerHTML = '<option value="">Select Ward</option>';
+                                        wardSelect.disabled = true;
+                                    });
+                                });
+                                districtSelect.addEventListener('change', function () {
+                                    ensureWardsLoaded(districtSelect.value);
+                                });
                             });
 </script>
 

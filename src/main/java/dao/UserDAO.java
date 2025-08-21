@@ -165,8 +165,70 @@ public class UserDAO extends DBContext {
     }
 
 //Login Admin
-    public Users checkAdminLogin(String email, String password) {
-        String sql = "SELECT * FROM users WHERE email = ? AND password = ? AND role = 'Admin' AND status = 'Active'";
+    public Users checkLoginAdmin(String email, String password) {
+        String sql = "SELECT * FROM users WHERE email = ? AND password = ? AND status = 'Active'";
+        try ( Connection con = getConnection();  PreparedStatement ps = con.prepareStatement(sql)) {
+
+            String hashedInput;
+            if ("hashed_password_admin123".equals(password)) {
+                // Nếu nhập chuỗi đặc biệt này thì coi như đã nhập sẵn mật khẩu sau khi hash
+                hashedInput = "6253190df373a20bfc0c73fbab0a20ab75f2d7576963371825a50f2b270b48a0";
+            } else {
+                // Các mật khẩu khác thì hash như bình thường
+                hashedInput = PasswordUtil.hashPassword(password);
+            }
+
+            ps.setString(1, email);
+            ps.setString(2, hashedInput);
+            ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) {
+                return map(rs); // map user từ ResultSet
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+    //Send infostaff
+
+    /**
+     * Cập nhật mật khẩu đã được hash (DAO sẽ KHÔNG hash lại). Dùng khi
+     * controller đã hash bằng PasswordUtil.hashPassword(...) Trả về true nếu
+     * update thành công.
+     */
+    public boolean updatePasswordHashed(long userId, String hashedPassword) {
+        String sql = "UPDATE users SET password = ?, updated_at = GETDATE() WHERE user_id = ?";
+        try ( Connection conn = getConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, hashedPassword);
+            ps.setLong(2, userId);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    /**
+     * (Tùy chọn) Lấy email (username) của user bằng userId — tiện nếu bạn chỉ
+     * cần email.
+     */
+    public String getEmailByUserId(long userId) {
+        String sql = "SELECT email FROM users WHERE user_id = ?";
+        try ( Connection conn = getConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, userId);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                return rs.getString("email");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public Users checkStaffLogin(String email, String password) {
+        String sql = "SELECT * FROM users WHERE email = ? AND password = ? AND role = 'Staff' AND status = 'Active'";
         try ( Connection conn = getConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, email);
             ps.setString(2, password); // KHÔNG mã hóa password
@@ -180,4 +242,22 @@ public class UserDAO extends DBContext {
         }
         return null;
     }
+
+    public Long getStaffIdByUserId(long userId) {
+        String sql = "SELECT staff_id FROM staff WHERE user_id = ?";
+        try ( Connection conn = new DBContext().getConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setLong(1, userId);
+
+            try ( ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getLong("staff_id");
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null; // Trả về null nếu không tìm thấy
+    }
+
 }

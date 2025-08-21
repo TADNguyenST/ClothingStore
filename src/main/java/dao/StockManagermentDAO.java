@@ -236,7 +236,7 @@ public class StockManagermentDAO {
      * @throws java.sql.SQLException
      */
     public boolean updateInventoryQuantities(Inventory inventory, Connection conn) throws SQLException {
-        String sql = "UPDATE inventory SET quantity = ?, reserved_quantity = ?, last_updated = GETDATE() WHERE inventory_id = ?";
+        String sql = "UPDATE inventory SET quantity = ?, reserved_quantity = ?, last_updated = SYSDATETIMEOFFSET() AT TIME ZONE 'SE Asia Standard Time' WHERE inventory_id = ?";
         try ( PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, inventory.getQuantity());
             ps.setInt(2, inventory.getReservedQuantity());
@@ -397,6 +397,133 @@ public class StockManagermentDAO {
             }
         }
         return movementHistory;
+    }
+      public List<Map<String, Object>> getDisplayItems(String searchTerm, String filterCategory, String sortBy, String sortOrder, int currentPage, int itemsPerPage) throws SQLException {
+        List<Map<String, Object>> displayList = new ArrayList<>();
+        
+        // Xây dựng câu lệnh SQL linh động
+        StringBuilder sql = new StringBuilder();
+        sql.append("SELECT pv.variant_id, p.name as productName, pv.sku, pv.size, pv.color, c.name as categoryName, b.name as brandName, COALESCE(i.quantity, 0) as quantity ");
+        sql.append("FROM ProductVariants pv ");
+        sql.append("JOIN Products p ON pv.product_id = p.product_id ");
+        sql.append("LEFT JOIN Categories c ON p.category_id = c.category_id ");
+        sql.append("LEFT JOIN Brands b ON p.brand_id = b.brand_id ");
+        sql.append("LEFT JOIN Inventories i ON pv.variant_id = i.variant_id ");
+
+        List<Object> params = new ArrayList<>();
+        StringBuilder whereClause = new StringBuilder();
+
+        // 1. Điều kiện lọc theo searchTerm
+        if (searchTerm != null && !searchTerm.trim().isEmpty()) {
+            whereClause.append("(p.name LIKE ? OR pv.sku LIKE ?) ");
+            params.add("%" + searchTerm.trim() + "%");
+            params.add("%" + searchTerm.trim() + "%");
+        }
+
+        // 2. Điều kiện lọc theo category
+        if (filterCategory != null && !filterCategory.isEmpty() && !"all".equals(filterCategory)) {
+            if (whereClause.length() > 0) {
+                whereClause.append("AND ");
+            }
+            whereClause.append("p.category_id = ? ");
+            params.add(Long.parseLong(filterCategory));
+        }
+        
+        if (whereClause.length() > 0) {
+            sql.append("WHERE ").append(whereClause);
+        }
+
+        // 3. Sắp xếp
+        if (sortBy != null && !sortBy.trim().isEmpty()) {
+            // Whitelist các cột được phép sort để tránh SQL Injection
+            String sortColumn = "p.name"; // Mặc định
+            switch (sortBy) {
+                case "sku": sortColumn = "pv.sku"; break;
+                case "productName": sortColumn = "p.name"; break;
+                case "categoryName": sortColumn = "c.name"; break;
+                case "quantity": sortColumn = "quantity"; break;
+            }
+            String finalSortOrder = "desc".equalsIgnoreCase(sortOrder) ? "DESC" : "ASC";
+            sql.append(" ORDER BY ").append(sortColumn).append(" ").append(finalSortOrder);
+        } else {
+            sql.append(" ORDER BY p.name ASC"); // Sắp xếp mặc định
+        }
+
+        // 4. Phân trang (SQL Server syntax)
+        int offset = (currentPage - 1) * itemsPerPage;
+        sql.append(" OFFSET ? ROWS FETCH NEXT ? ROWS ONLY");
+        params.add(offset);
+        params.add(itemsPerPage);
+
+        // Thực thi câu lệnh
+        try (Connection conn = new DBContext().getConnection(); PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+            // Set các tham số
+            for (int i = 0; i < params.size(); i++) {
+                ps.setObject(i + 1, params.get(i));
+            }
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Map<String, Object> itemData = new HashMap<>();
+                    itemData.put("variantId", rs.getLong("variant_id"));
+                    itemData.put("productName", rs.getString("productName"));
+                    itemData.put("sku", rs.getString("sku"));
+                    itemData.put("size", rs.getString("size"));
+                    itemData.put("color", rs.getString("color"));
+                    itemData.put("categoryName", rs.getString("categoryName"));
+                    itemData.put("brandName", rs.getString("brandName"));
+                    itemData.put("quantity", rs.getInt("quantity"));
+                    displayList.add(itemData);
+                }
+            }
+        }
+        return displayList;
+    }
+
+    /**
+     * Đếm tổng số lượng sản phẩm thỏa mãn điều kiện lọc (dùng cho việc tính tổng số trang).
+     *
+     * @param searchTerm     Từ khóa tìm kiếm.
+     * @param filterCategory ID danh mục để lọc.
+     * @return Tổng số sản phẩm.
+     * @throws SQLException
+     */
+    public int countDisplayItems(String searchTerm, String filterCategory) throws SQLException {
+        StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM ProductVariants pv JOIN Products p ON pv.product_id = p.product_id ");
+        
+        List<Object> params = new ArrayList<>();
+        StringBuilder whereClause = new StringBuilder();
+
+        if (searchTerm != null && !searchTerm.trim().isEmpty()) {
+            whereClause.append("(p.name LIKE ? OR pv.sku LIKE ?) ");
+            params.add("%" + searchTerm.trim() + "%");
+            params.add("%" + searchTerm.trim() + "%");
+        }
+
+        if (filterCategory != null && !filterCategory.isEmpty() && !"all".equals(filterCategory)) {
+            if (whereClause.length() > 0) {
+                whereClause.append("AND ");
+            }
+            whereClause.append("p.category_id = ? ");
+            params.add(Long.parseLong(filterCategory));
+        }
+
+        if (whereClause.length() > 0) {
+            sql.append("WHERE ").append(whereClause);
+        }
+
+        try (Connection conn = new DBContext().getConnection(); PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+            for (int i = 0; i < params.size(); i++) {
+                ps.setObject(i + 1, params.get(i));
+            }
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+        }
+        return 0;
     }
 
 }
