@@ -1,10 +1,12 @@
 <%@ page import="java.util.ArrayList"%>
-<%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.Map" %>
 <%@ page import="model.Product" %>
 <%@ page import="java.text.NumberFormat" %>
 <%@ page import="java.util.Locale" %>
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt" %>
 
 <%
     String pageTitle = (String) request.getAttribute("pageTitle");
@@ -174,7 +176,7 @@
     }
 </style>
 
-<div class="container my-3 ">
+<div class="container my-3">
     <div class="text-center">
         <h2 class="section-title"><%= pageTitle %></h2>
         <% if (error != null && !error.isEmpty()) { %>
@@ -203,32 +205,30 @@
             <div class="row" id="productList" data-total-pages="<%= totalPages %>">
                 <% if (products != null && !products.isEmpty()) {
                     for (Product product : products) {
-                        String imageUrl = product.getImageUrl() != null ? product.getImageUrl() : "https://placehold.co/400x500/f0f0f0/333?text=No+Image";
+                        String imageUrl = product.getImageUrl() != null ? product.getImageUrl().replace("/upload/", "/upload/w_320,h_500,c_fill,f_auto,q_auto/") : "https://placehold.co/400x500/f0f0f0/333?text=No+Image";
                         String name = product.getName() != null ? product.getName() : "Unknown Product";
                         String price = product.getPrice() != null ? currencyFormat.format(product.getPrice()) : "N/A";
                         Long variantId = product.getDefaultVariantId();
                         boolean hasVariant = variantId != null && variantId != 0;
                         int available = availableMap.getOrDefault(product.getProductId(), 0);
                         boolean hasStock = hasVariant && (available > 0);
-                        String buttonTextCart = hasStock ? "Add to Cart" : "Out Stock";
-                        String buttonTextBuy = hasStock ? "Buy Now" : "Out Stock";
+                        String buttonTextCart = hasStock ? "Add to Cart" : "Out of Stock";
+                        String buttonTextBuy = hasStock ? "Buy Now" : "Out of Stock";
                 %>
                 <div class="col-lg-4 col-md-6 col-sm-6 col-12">
                     <div class="product-card">
                         <div class="product-image">
                             <a href="<%= request.getContextPath() %>/ProductList/detail?productId=<%= product.getProductId() %>">
-                                <img src="<%= imageUrl %>" alt="<%= name %>">
+                                <img src="<%= imageUrl %>" alt="<%= name %>" onerror="this.src='https://placehold.co/400x500/f0f0f0/333?text=No+Image'; console.log('Image error for <%= name %>: ' + this.src);">
                             </a>
                         </div>
                         <a href="<%= request.getContextPath() %>/ProductList/detail?productId=<%= product.getProductId() %>" class="product-title"><%= name %></a>
                         <p class="product-price"><%= price %></p>
                         <div class="btn-container">
-                            <form action="<%= request.getContextPath() %>/customer/cart" method="post">
-                                <input type="hidden" name="action" value="add">
-                                <input type="hidden" name="variantId" value="<%= hasVariant ? variantId : 0 %>">
-                                <input type="hidden" name="quantity" value="1">
-                                <button type="submit" class="btn btn-dark btn-custom-sm" <%= hasStock ? "" : "disabled" %>><%= buttonTextCart %></button>
-                            </form>
+                            <button class="btn btn-dark btn-custom-sm add-to-cart" 
+                                    data-variant-id="<%= hasVariant ? variantId : 0 %>" 
+                                    data-csrf-token="${sessionScope.csrfToken}"
+                                    <%= hasStock ? "" : "disabled" %>><%= buttonTextCart %></button>
                             <form action="<%= request.getContextPath() %>/customer/checkout" method="post">
                                 <input type="hidden" name="action" value="buy">
                                 <input type="hidden" name="variantId" value="<%= hasVariant ? variantId : 0 %>">
@@ -256,173 +256,335 @@
 </div>
 
 <script>
-let currentPage = <%= currentPage %>;
-const pageSize = 6; // Updated to 6 products per page as requested
-let totalPages = <%= totalPages %>;
-let currentSort = '<%= sort %>';
+    let currentPage = <%= currentPage %>;
+    const pageSize = 6;
+    let totalPages = <%= totalPages %>;
+    let currentSort = '<%= sort %>';
 
-function changePage(delta) {
-    currentPage += delta;
-    if (currentPage < 1) currentPage = 1;
-    if (currentPage > totalPages) currentPage = totalPages;
-    updatePagination();
-    submitFilter();
-}
+    document.addEventListener('DOMContentLoaded', function () {
+        var toastSuccess = new bootstrap.Toast(document.getElementById('successToast'), {delay: 3000});
+        var toastError = new bootstrap.Toast(document.getElementById('errorToast'), {delay: 3000});
 
-function updatePagination() {
-    document.getElementById('pageNumber').textContent = 'Page ' + currentPage;
-    document.getElementById('prevPage').disabled = currentPage === 1;
-    document.getElementById('nextPage').disabled = currentPage === totalPages;
-}
-
-function submitFilter() {
-    const productList = document.getElementById('productList');
-    productList.innerHTML = '<div class="text-center"><p>Loading...</p></div>';
-
-    const colors = [];
-    const sizes = [];
-    const brands = [];
-    const priceRange = document.querySelector('input[name="priceRange"]')?.value || null;
-    const parentCategoryId = document.querySelector('input[name="parentCategoryId"]')?.value || null;
-    const categoryId = document.querySelector('input[name="categoryId"]')?.value || null;
-    const sort = document.querySelector('#sort')?.value || 'default';
-    currentSort = sort;
-
-    document.querySelectorAll('input[name="colors"]:checked').forEach(cb => colors.push(cb.value));
-    document.querySelectorAll('input[name="sizes"]:checked').forEach(cb => sizes.push(cb.value));
-    document.querySelectorAll('input[name="brands"]:checked').forEach(cb => brands.push(cb.value));
-
-    const params = new URLSearchParams();
-    colors.forEach(color => params.append('colors', color));
-    sizes.forEach(size => params.append('sizes', size));
-    brands.forEach(brand => params.append('brands', brand));
-    if (priceRange && priceRange !== '0') params.append('priceRange', priceRange);
-    if (parentCategoryId) params.append('parentCategoryId', parentCategoryId);
-    if (categoryId) params.append('categoryId', categoryId);
-    if (currentPage !== 1) params.append('page', currentPage);
-    if (sort !== 'default') params.append('sort', sort);
-
-    const actionPath = window.location.pathname.split('/').pop() || '';
-    const url = '${pageContext.request.contextPath}/ProductList' + (actionPath ? '/' + actionPath : '') + (params.toString() ? '?' + params.toString() : '');
-    console.log('submitFilter - Request URL:', url);
-
-    fetch(url, {
-        method: 'GET',
-        headers: {
-            'Accept': 'text/html',
-            'X-Requested-With': 'XMLHttpRequest'
+        function showToast(message, isSuccess) {
+            var toast = isSuccess ? toastSuccess : toastError;
+            var toastBody = document.getElementById(isSuccess ? 'successToastBody' : 'errorToastBody');
+            toastBody.textContent = message;
+            toast.show();
         }
-    })
-        .then(response => {
-            if (!response.ok) throw new Error('Network response was not ok: ' + response.statusText);
-            return response.text();
-        })
-        .then(data => {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(data, 'text/html');
-            const row = doc.querySelector('.row');
-            if (row) {
-                productList.innerHTML = row.outerHTML;
-                totalPages = parseInt(row.getAttribute('data-total-pages')) || 1;
-                document.getElementById('totalPages').textContent = ' of ' + totalPages;
-                updatePagination();
-                const newUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
-                window.history.replaceState({}, '', newUrl);
-                console.log('submitFilter - Updated URL:', newUrl);
-            } else {
-                productList.innerHTML = '<div class="text-center"><p>No products found.</p></div>';
-            }
-        })
-        .catch(error => {
-            console.error('submitFilter - Error:', error);
-            productList.innerHTML = '<div class="text-center"><p>An error occurred while fetching products. Please try again.</p></div>';
+
+        // Handle add to cart
+        document.querySelectorAll('.add-to-cart').forEach(button => {
+            button.addEventListener('click', function () {
+                const variantId = this.dataset.variantId;
+                const csrfToken = this.dataset.csrfToken;
+                const quantity = 1;
+
+                if (!csrfToken) {
+                    showToast('CSRF token is missing.', false);
+                    return;
+                }
+
+                if (!variantId || variantId === '0') {
+                    showToast('Invalid product variant.', false);
+                    return;
+                }
+
+                const formData = new URLSearchParams();
+                formData.append('action', 'add');
+                formData.append('variantId', variantId);
+                formData.append('quantity', quantity);
+                formData.append('csrfToken', csrfToken);
+
+                console.log('Sending add to cart request:', {action: 'add', variantId, quantity, csrfToken});
+
+                fetch('${pageContext.request.contextPath}/customer/cart', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'Accept': 'application/json',
+                        'Cache-Control': 'no-cache'
+                    }
+                })
+                        .then(response => {
+                            if (!response.ok)
+                                throw new Error('Network response was not ok: ' + response.statusText);
+                            return response.json();
+                        })
+                        .then(result => {
+                            console.log('Cart response:', result);
+                            if (result.success) {
+                                showToast(result.message, true);
+                                if (result.cartCount !== undefined && typeof window.updateCartCount === 'function') {
+                                    window.updateCartCount(result.cartCount);
+                                }
+                            } else {
+                                showToast(result.message, false);
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            showToast('Error: ' + error.message, false);
+                        });
+            });
         });
-}
 
-window.onload = function() {
-    const urlParams = new URLSearchParams(window.location.search);
-    currentPage = parseInt(urlParams.get('page')) || 1;
-    currentSort = urlParams.get('sort') || 'default';
-
-    const sortSelect = document.querySelector('#sort');
-    if (sortSelect) {
-        sortSelect.value = currentSort;
-    }
-
-    document.getElementById('pageNumber').textContent = 'Page ' + currentPage;
-    document.getElementById('prevPage').disabled = currentPage === 1;
-    document.getElementById('nextPage').disabled = currentPage >= totalPages;
-
-    urlParams.getAll('colors').forEach(color => {
-        const checkbox = document.querySelector(`input[name="colors"][value="${color}"]`);
-        if (checkbox) checkbox.checked = true;
+        // Debug image loading
+        document.querySelectorAll('.product-card img').forEach(img => {
+            img.addEventListener('error', function () {
+                console.log('Image failed to load for <%= name %>: ' + this.src);
+                this.src = 'https://placehold.co/400x500/f0f0f0/333?text=No+Image';
+            });
+            img.addEventListener('load', function () {
+                console.log('Image loaded successfully for <%= name %>: ' + this.src);
+            });
+        });
     });
-    urlParams.getAll('sizes').forEach(size => {
-        const checkbox = document.querySelector(`input[name="sizes"][value="${size}"]`);
-        if (checkbox) checkbox.checked = true;
-    });
-    urlParams.getAll('brands').forEach(brand => {
-        const checkbox = document.querySelector(`input[name="brands"][value="${brand}"]`);
-        if (checkbox) checkbox.checked = true;
-    });
-    const priceRange = urlParams.get('priceRange');
-    if (priceRange) {
-        const rangeInput = document.querySelector('input[name="priceRange"]');
-        if (rangeInput) {
-            rangeInput.value = priceRange;
-            rangeInput.nextElementSibling.value = priceRange + ' VND';
-        }
-    }
 
-    const hasFilters = urlParams.getAll('colors').length > 0 ||
-                      urlParams.getAll('sizes').length > 0 ||
-                      urlParams.getAll('brands').length > 0 ||
-                      (urlParams.get('priceRange') && urlParams.get('priceRange') !== '0') ||
-                      urlParams.get('parentCategoryId') ||
-                      urlParams.get('categoryId') ||
-                      currentPage !== 1 ||
-                      currentSort !== 'default';
-    if (hasFilters) {
+    function changePage(delta) {
+        currentPage += delta;
+        if (currentPage < 1)
+            currentPage = 1;
+        if (currentPage > totalPages)
+            currentPage = totalPages;
+        updatePagination();
         submitFilter();
     }
-};
 
-window.addEventListener('popstate', function(event) {
-    const urlParams = new URLSearchParams(window.location.search);
-    currentPage = parseInt(urlParams.get('page')) || 1;
-    currentSort = urlParams.get('sort') || 'default';
-
-    const sortSelect = document.querySelector('#sort');
-    if (sortSelect) {
-        sortSelect.value = currentSort;
+    function updatePagination() {
+        document.getElementById('pageNumber').textContent = 'Page ' + currentPage;
+        document.getElementById('prevPage').disabled = currentPage === 1;
+        document.getElementById('nextPage').disabled = currentPage === totalPages;
     }
 
-    document.querySelectorAll('input[name="colors"]').forEach(cb => cb.checked = false);
-    document.querySelectorAll('input[name="sizes"]').forEach(cb => cb.checked = false);
-    document.querySelectorAll('input[name="brands"]').forEach(cb => cb.checked = false);
-    urlParams.getAll('colors').forEach(color => {
-        const checkbox = document.querySelector(`input[name="colors"][value="${color}"]`);
-        if (checkbox) checkbox.checked = true;
-    });
-    urlParams.getAll('sizes').forEach(size => {
-        const checkbox = document.querySelector(`input[name="sizes"][value="${size}"]`);
-        if (checkbox) checkbox.checked = true;
-    });
-    urlParams.getAll('brands').forEach(brand => {
-        const checkbox = document.querySelector(`input[name="brands"][value="${brand}"]`);
-        if (checkbox) checkbox.checked = true;
-    });
-    const priceRange = urlParams.get('priceRange');
-    if (priceRange) {
-        const rangeInput = document.querySelector('input[name="priceRange"]');
-        if (rangeInput) {
-            rangeInput.value = priceRange;
-            rangeInput.nextElementSibling.value = priceRange + ' VND';
+    function submitFilter() {
+        const productList = document.getElementById('productList');
+        productList.innerHTML = '<div class="text-center"><p>Loading...</p></div>';
+
+        const colors = [];
+        const sizes = [];
+        const brands = [];
+                const priceRange = document.querySelector('input[name="priceRange"]')?.value || null;
+                const parentCategoryId = document.querySelector('input[name="parentCategoryId"]')?.value || null;
+                const categoryId = document.querySelector('input[name="categoryId"]')?.value || null;
+                const sort = document.querySelector('#sort')?.value || 'default';
+        currentSort = sort;
+
+        document.querySelectorAll('input[name="colors"]:checked').forEach(cb => colors.push(cb.value));
+        document.querySelectorAll('input[name="sizes"]:checked').forEach(cb => sizes.push(cb.value));
+        document.querySelectorAll('input[name="brands"]:checked').forEach(cb => brands.push(cb.value));
+
+        const params = new URLSearchParams();
+        colors.forEach(color => params.append('colors', color));
+        sizes.forEach(size => params.append('sizes', size));
+        brands.forEach(brand => params.append('brands', brand));
+        if (priceRange && priceRange !== '0')
+            params.append('priceRange', priceRange);
+        if (parentCategoryId)
+            params.append('parentCategoryId', parentCategoryId);
+        if (categoryId)
+            params.append('categoryId', categoryId);
+        if (currentPage !== 1)
+            params.append('page', currentPage);
+        if (sort !== 'default')
+            params.append('sort', sort);
+
+        const actionPath = window.location.pathname.split('/').pop() || '';
+        const url = '${pageContext.request.contextPath}/ProductList' + (actionPath ? '/' + actionPath : '') + (params.toString() ? '?' + params.toString() : '');
+        console.log('submitFilter - Request URL:', url);
+
+        fetch(url, {
+            method: 'GET',
+            headers: {
+                'Accept': 'text/html',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+                .then(response => {
+                    if (!response.ok)
+                        throw new Error('Network response was not ok: ' + response.statusText);
+                    return response.text();
+                })
+                .then(data => {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(data, 'text/html');
+                    const row = doc.querySelector('.row');
+                    if (row) {
+                        productList.innerHTML = row.outerHTML;
+                        totalPages = parseInt(row.getAttribute('data-total-pages')) || 1;
+                        document.getElementById('totalPages').textContent = ' of ' + totalPages;
+                        updatePagination();
+                        const newUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+                        window.history.replaceState({}, '', newUrl);
+                        console.log('submitFilter - Updated URL:', newUrl);
+
+                        // Re-attach event listeners for new add-to-cart buttons
+                        document.querySelectorAll('.add-to-cart').forEach(button => {
+                            button.addEventListener('click', function () {
+                                const variantId = this.dataset.variantId;
+                                const csrfToken = this.dataset.csrfToken;
+                                const quantity = 1;
+
+                                if (!csrfToken) {
+                                    showToast('CSRF token is missing.', false);
+                                    return;
+                                }
+
+                                if (!variantId || variantId === '0') {
+                                    showToast('Invalid product variant.', false);
+                                    return;
+                                }
+
+                                const formData = new URLSearchParams();
+                                formData.append('action', 'add');
+                                formData.append('variantId', variantId);
+                                formData.append('quantity', quantity);
+                                formData.append('csrfToken', csrfToken);
+
+                                console.log('Sending add to cart request:', {action: 'add', variantId, quantity, csrfToken});
+
+                                fetch('${pageContext.request.contextPath}/customer/cart', {
+                                    method: 'POST',
+                                    body: formData,
+                                    headers: {
+                                        'Content-Type': 'application/x-www-form-urlencoded',
+                                        'Accept': 'application/json',
+                                        'Cache-Control': 'no-cache'
+                                    }
+                                })
+                                        .then(response => {
+                                            if (!response.ok)
+                                                throw new Error('Network response was not ok: ' + response.statusText);
+                                            return response.json();
+                                        })
+                                        .then(result => {
+                                            console.log('Cart response:', result);
+                                            if (result.success) {
+                                                showToast(result.message, true);
+                                                if (result.cartCount !== undefined && typeof window.updateCartCount === 'function') {
+                                                    window.updateCartCount(result.cartCount);
+                                                }
+                                            } else {
+                                                showToast(result.message, false);
+                                            }
+                                        })
+                                        .catch(error => {
+                                            console.error('Error:', error);
+                                            showToast('Error: ' + error.message, false);
+                                        });
+                            });
+                        });
+
+                        // Re-attach image debug listeners
+                        document.querySelectorAll('.product-card img').forEach(img => {
+                            img.addEventListener('error', function () {
+                                console.log('Image failed to load for <%= name %>: ' + this.src);
+                                this.src = 'https://placehold.co/400x500/f0f0f0/333?text=No+Image';
+                            });
+                            img.addEventListener('load', function () {
+                                console.log('Image loaded successfully for <%= name %>: ' + this.src);
+                            });
+                        });
+                    } else {
+                        productList.innerHTML = '<div class="text-center"><p>No products found.</p></div>';
+                    }
+                })
+                .catch(error => {
+                    console.error('submitFilter - Error:', error);
+                    productList.innerHTML = '<div class="text-center"><p>An error occurred while fetching products. Please try again.</p></div>';
+                });
+    }
+
+    window.onload = function () {
+        const urlParams = new URLSearchParams(window.location.search);
+        currentPage = parseInt(urlParams.get('page')) || 1;
+        currentSort = urlParams.get('sort') || 'default';
+
+        const sortSelect = document.querySelector('#sort');
+        if (sortSelect) {
+            sortSelect.value = currentSort;
         }
-    }
 
-    submitFilter();
-});
+        document.getElementById('pageNumber').textContent = 'Page ' + currentPage;
+        document.getElementById('prevPage').disabled = currentPage === 1;
+        document.getElementById('nextPage').disabled = currentPage >= totalPages;
+
+        urlParams.getAll('colors').forEach(color => {
+            const checkbox = document.querySelector(`input[name="colors"][value="${color}"]`);
+            if (checkbox)
+                checkbox.checked = true;
+        });
+        urlParams.getAll('sizes').forEach(size => {
+            const checkbox = document.querySelector(`input[name="sizes"][value="${size}"]`);
+            if (checkbox)
+                checkbox.checked = true;
+        });
+        urlParams.getAll('brands').forEach(brand => {
+            const checkbox = document.querySelector(`input[name="brands"][value="${brand}"]`);
+            if (checkbox)
+                checkbox.checked = true;
+        });
+        const priceRange = urlParams.get('priceRange');
+        if (priceRange) {
+            const rangeInput = document.querySelector('input[name="priceRange"]');
+            if (rangeInput) {
+                rangeInput.value = priceRange;
+                rangeInput.nextElementSibling.value = priceRange + ' VND';
+            }
+        }
+
+        const hasFilters = urlParams.getAll('colors').length > 0 ||
+                urlParams.getAll('sizes').length > 0 ||
+                urlParams.getAll('brands').length > 0 ||
+                (urlParams.get('priceRange') && urlParams.get('priceRange') !== '0') ||
+                urlParams.get('parentCategoryId') ||
+                urlParams.get('categoryId') ||
+                currentPage !== 1 ||
+                currentSort !== 'default';
+        if (hasFilters) {
+            submitFilter();
+        }
+    };
+
+    window.addEventListener('popstate', function (event) {
+        const urlParams = new URLSearchParams(window.location.search);
+        currentPage = parseInt(urlParams.get('page')) || 1;
+        currentSort = urlParams.get('sort') || 'default';
+
+        const sortSelect = document.querySelector('#sort');
+        if (sortSelect) {
+            sortSelect.value = currentSort;
+        }
+
+        document.querySelectorAll('input[name="colors"]').forEach(cb => cb.checked = false);
+        document.querySelectorAll('input[name="sizes"]').forEach(cb => cb.checked = false);
+        document.querySelectorAll('input[name="brands"]').forEach(cb => cb.checked = false);
+        urlParams.getAll('colors').forEach(color => {
+            const checkbox = document.querySelector(`input[name="colors"][value="${color}"]`);
+            if (checkbox)
+                checkbox.checked = true;
+        });
+        urlParams.getAll('sizes').forEach(size => {
+            const checkbox = document.querySelector(`input[name="sizes"][value="${size}"]`);
+            if (checkbox)
+                checkbox.checked = true;
+        });
+        urlParams.getAll('brands').forEach(brand => {
+            const checkbox = document.querySelector(`input[name="brands"][value="${brand}"]`);
+            if (checkbox)
+                checkbox.checked = true;
+        });
+        const priceRange = urlParams.get('priceRange');
+        if (priceRange) {
+            const rangeInput = document.querySelector('input[name="priceRange"]');
+            if (rangeInput) {
+                rangeInput.value = priceRange;
+                rangeInput.nextElementSibling.value = priceRange + ' VND';
+            }
+        }
+
+        submitFilter();
+    });
 </script>
 
 <jsp:include page="/WEB-INF/views/common/footer.jsp" />
