@@ -17,7 +17,7 @@ public class BrandDAO {
 
     public List<Brand> getAll() {
         List<Brand> list = new ArrayList<>();
-        String sql = "SELECT * FROM brands";
+        String sql = "SELECT * FROM brands ORDER BY name";
         try (Connection conn = DBContext.getNewConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
@@ -33,7 +33,6 @@ public class BrandDAO {
             }
             return list;
         } catch (SQLException e) {
-            e.printStackTrace();
             throw new RuntimeException("Error fetching brands: " + e.getMessage());
         }
     }
@@ -45,11 +44,10 @@ public class BrandDAO {
                 checkPs.setString(1, brand.getName().trim());
                 try (ResultSet rs = checkPs.executeQuery()) {
                     if (rs.next() && rs.getInt(1) > 0) {
-                        throw new IllegalArgumentException("Thương hiệu '" + brand.getName() + "' đã tồn tại.");
+                        throw new IllegalArgumentException("Brand '" + brand.getName() + "' existed.");
                     }
                 }
             }
-
             String sql = "INSERT INTO brands (name, description, logo_url, is_active, created_at) VALUES (?, ?, ?, ?, ?)";
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setString(1, brand.getName());
@@ -60,7 +58,7 @@ public class BrandDAO {
                 ps.executeUpdate();
             }
         } catch (SQLException e) {
-            throw new RuntimeException("Lỗi thêm thương hiệu: " + e.getMessage(), e);
+            throw new RuntimeException("Error adding brand: " + e.getMessage(), e);
         }
     }
 
@@ -71,7 +69,7 @@ public class BrandDAO {
             ps.setLong(1, brandId);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    return new Brand(
+                    Brand brand = new Brand(
                             rs.getLong("brand_id"),
                             rs.getString("name"),
                             rs.getString("description"),
@@ -79,12 +77,11 @@ public class BrandDAO {
                             rs.getBoolean("is_active"),
                             rs.getTimestamp("created_at")
                     );
+                    return brand;
                 }
                 return null;
             }
         } catch (SQLException e) {
-            System.out.println("Error in getBrandById: " + e.getMessage());
-            e.printStackTrace();
             return null;
         }
     }
@@ -97,11 +94,10 @@ public class BrandDAO {
                 checkPs.setLong(2, brand.getBrandId());
                 try (ResultSet rs = checkPs.executeQuery()) {
                     if (rs.next() && rs.getInt(1) > 0) {
-                        throw new IllegalArgumentException("Thương hiệu '" + brand.getName() + "' đã tồn tại.");
+                        throw new IllegalArgumentException("Brand '" + brand.getName() + "' existed.");
                     }
                 }
             }
-
             String sql = "UPDATE brands SET name = ?, description = ?, logo_url = ?, is_active = ? WHERE brand_id = ?";
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setString(1, brand.getName());
@@ -109,11 +105,10 @@ public class BrandDAO {
                 ps.setString(3, brand.getLogoUrl());
                 ps.setBoolean(4, brand.isActive());
                 ps.setLong(5, brand.getBrandId());
-                return ps.executeUpdate() > 0;
+                int rowsAffected = ps.executeUpdate();
+                return rowsAffected > 0;
             }
         } catch (SQLException e) {
-            System.out.println("Error in updateBrand: " + e.getMessage());
-            e.printStackTrace();
             return false;
         }
     }
@@ -126,18 +121,17 @@ public class BrandDAO {
                 psCheck.setLong(1, brandId);
                 try (ResultSet rs = psCheck.executeQuery()) {
                     if (rs.next() && rs.getInt(1) > 0) {
-                        throw new IllegalStateException("Không thể xóa thương hiệu: Thương hiệu đang được sử dụng bởi sản phẩm.");
+                        throw new IllegalStateException("Unable to remove brand: Brand is in use by product.");
                     }
                 }
             }
-
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setLong(1, brandId);
                 int rowsAffected = ps.executeUpdate();
                 return rowsAffected > 0;
             }
         } catch (SQLException e) {
-            throw new RuntimeException("Lỗi xóa thương hiệu: " + e.getMessage(), e);
+            throw new RuntimeException("Brand deletion error: " + e.getMessage(), e);
         }
     }
 
@@ -155,33 +149,81 @@ public class BrandDAO {
             }
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    return rs.getInt(1) > 0;
+                    boolean exists = rs.getInt(1) > 0;
+                    return exists;
                 }
                 return false;
             }
         } catch (SQLException e) {
-            System.out.println("Error in isBrandExists: " + e.getMessage());
-            e.printStackTrace();
             return false;
         }
     }
 
-    public static void main(String[] args) {
-        BrandDAO brandDAO = new BrandDAO();
-        List<Brand> brands = brandDAO.getAll();
-        if (brands.isEmpty()) {
-            System.out.println("No brands found!");
-        } else {
-            System.out.println("Brands retrieved from database:");
-            for (Brand brand : brands) {
-                System.out.printf("ID: %d, Name: %s, Description: %s, Logo URL: %s, Active: %b, Created At: %s%n",
-                        brand.getBrandId(),
-                        brand.getName(),
-                        brand.getDescription() != null ? brand.getDescription() : "N/A",
-                        brand.getLogoUrl() != null ? brand.getLogoUrl() : "N/A",
-                        brand.isActive(),
-                        brand.getCreatedAt());
+    //Tìm kiếm thương hiệu theo tên và trạng thái
+    public List<Brand> searchBrandsByName(String keyword, String filter) {
+        List<Brand> list = new ArrayList<>();
+        StringBuilder sql = new StringBuilder(
+            "SELECT * FROM brands WHERE 1=1"
+        );
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            sql.append(" AND LOWER(name) LIKE ?");
+        }
+        if (filter != null && !filter.equals("All")) {
+            sql.append(" AND is_active = ?");
+        }
+        sql.append(" ORDER BY name");
+
+        try (Connection conn = DBContext.getNewConnection()) {
+            if (conn == null) {
+                throw new RuntimeException("Database connection failed");
             }
+            try (PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+                int paramIndex = 1;
+                if (keyword != null && !keyword.trim().isEmpty()) {
+                    ps.setString(paramIndex++, "%" + keyword.trim().toLowerCase() + "%");
+                }
+                if (filter != null && !filter.equals("All")) {
+                    ps.setBoolean(paramIndex, filter.equals("Active"));
+                }
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        String name = rs.getString("name");
+                        name = (name == null || name.trim().isEmpty()) ? "Unnamed Brand" : name.trim();
+                        Brand brand = new Brand(
+                                rs.getLong("brand_id"),
+                                name,
+                                rs.getString("description"),
+                                rs.getString("logo_url"),
+                                rs.getBoolean("is_active"),
+                                rs.getTimestamp("created_at")
+                        );
+                        list.add(brand);
+                    }
+                    return list;
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Error searching brands: " + e.getMessage());
         }
     }
+
+//    public static void main(String[] args) {
+//        BrandDAO brandDAO = new BrandDAO();
+//        try {
+//            List<Brand> brands = brandDAO.searchBrandsByName("nike", "All");
+//            if (brands.isEmpty()) {
+//            } else {
+//                for (Brand brand : brands) {
+//                            brand.getBrandId(),
+//                            brand.getName(),
+//                            brand.getDescription() != null ? brand.getDescription() : "N/A",
+//                            brand.getLogoUrl() != null ? brand.getLogoUrl() : "N/A",
+//                            brand.isActive(),
+//                            brand.getCreatedAt());
+//                }
+//            }
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+//    }
 }
