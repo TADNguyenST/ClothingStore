@@ -366,7 +366,7 @@
                     </div>
                     <img src="<%= imageUrl%>" alt="<%= name%>">
                     <div class="card-body">
-                        <a href="<%= request.getContextPath()%>/ProductList/detail?productId=<%= product.getProductId()%>" class="product-title"><%= name%></a>
+                        <a href="<%= request.getContextPath()%>/ProductDetail?productId=<%= product.getProductId()%>" class="product-title"><%= name%></a>
                         <p class="product-price"><%= price%></p>
                         <div class="btn-container">
                             <form id="addToCartForm-<%= product.getProductId()%>"
@@ -441,7 +441,7 @@
                     </div>
                     <img src="<%= imageUrl%>" alt="<%= name%>">
                     <div class="card-body">
-                        <a href="<%= request.getContextPath()%>/ProductList/detail?productId=<%= product.getProductId()%>" class="product-title"><%= name%></a>
+                        <a href="<%= request.getContextPath()%>/ProductDetail?productId=<%= product.getProductId()%>" class="product-title"><%= name%></a>
                         <p class="product-price"><%= price%></p>
                         <div class="btn-container">
                             <form id="addToCartForm-<%= product.getProductId()%>"
