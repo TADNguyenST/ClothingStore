@@ -8,7 +8,6 @@ package controller.admin;
 import dao.StaffDAO;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.regex.Pattern;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -77,8 +76,6 @@ public class CreateAccountController extends HttpServlet {
         request.setCharacterEncoding("UTF-8");
 
         String email = request.getParameter("email");
-        String password = request.getParameter("password");
-        String confirmPassword = request.getParameter("confirmPassword");
         String fullName = request.getParameter("fullName");
         String phoneNumber = request.getParameter("phoneNumber");
         String position = request.getParameter("position");
@@ -87,21 +84,17 @@ public class CreateAccountController extends HttpServlet {
         String errorMessage = null;
 
         if (email == null || email.isEmpty() ||
-            password == null || password.isEmpty() ||
-            confirmPassword == null || confirmPassword.isEmpty() ||
             fullName == null || fullName.isEmpty() ||
             phoneNumber == null || phoneNumber.isEmpty() ||
             position == null || position.isEmpty()) {
             errorMessage = "All fields are required.";
-        } else if (!password.equals(confirmPassword)) {
-            errorMessage = "Passwords do not match.";
         } else if (!email.matches("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}$")) {
             errorMessage = "Invalid email format.";
         } else if (!phoneNumber.matches("\\d{10}")) {
             errorMessage = "Phone number must be 10 digits and contain only numbers.";
         } else {
             StaffDAO dao = new StaffDAO();
-            if (dao.isEmailExists(email)) { // Sửa tên hàm ở đây
+            if (dao.isEmailExists(email)) {
                 errorMessage = "Email already exists.";
             }
         }
@@ -119,7 +112,7 @@ public class CreateAccountController extends HttpServlet {
 
         Users user = new Users();
         user.setEmail(email);
-        user.setPassword(password); // sẽ hash trong DAO
+        user.setPassword(null); // <-- luôn để null
         user.setFullName(fullName);
         user.setPhoneNumber(phoneNumber);
 
