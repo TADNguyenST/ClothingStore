@@ -13,6 +13,10 @@
         <servlet-name>BlogController</servlet-name>
         <servlet-class>controller.customer.BlogController</servlet-class>
     </servlet>
+    <servlet>
+        <servlet-name>StaffdashboardController</servlet-name>
+        <servlet-class>controller.staff.StaffdashboardController</servlet-class>
+    </servlet>
     <servlet-mapping>
         <servlet-name>HomepageController</servlet-name>
         <url-pattern>/home</url-pattern>
@@ -115,6 +119,10 @@
     <servlet-mapping>
         <servlet-name>SendVouchersController</servlet-name>
         <url-pattern>/admin/sendvouchers</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>StaffdashboardController</servlet-name>
+        <url-pattern>/Staffdashboard</url-pattern>
     </servlet-mapping>
     <session-config>
         <session-timeout>30</session-timeout>

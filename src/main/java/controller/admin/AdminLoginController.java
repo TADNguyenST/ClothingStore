@@ -5,7 +5,6 @@
 package controller.admin;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -15,89 +14,46 @@ import jakarta.servlet.http.HttpSession;
 import dao.UserDAO;
 import model.Users;
 
-/**
- *
- * @author Khoa
- */
 @WebServlet(name = "AdminLoginController", urlPatterns = {"/AdminLogin"})
 public class AdminLoginController extends HttpServlet {
 
     /**
-     * Processes requests for both HTTP <code>GET</code> and <code>POST</code> methods.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
-     */
-    protected void processRequest(HttpServletRequest request, HttpServletResponse response)
-    throws ServletException, IOException {
-        response.setContentType("text/html;charset=UTF-8");
-        try ( PrintWriter out = response.getWriter()) {
-            /* TODO output your page here. You may use following sample code. */
-            out.println("<!DOCTYPE html>");
-            out.println("<html>");
-            out.println("<head>");
-            out.println("<title>Servlet AdminLoginController</title>");  
-            out.println("</head>");
-            out.println("<body>");
-            out.println("<h1>Servlet AdminLoginController at " + request.getContextPath () + "</h1>");
-            out.println("</body>");
-            out.println("</html>");
-        }
-    }
-
-    // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
-    /**
      * Handles the HTTP <code>GET</code> method.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
+     * Chuyển hướng đến trang login cho admin.
      */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
-    throws ServletException, IOException {
-        // Thay vì hiển thị HTML tạm, ta forward đến trang login JSP
+            throws ServletException, IOException {
         request.getRequestDispatcher("/WEB-INF/views/admin/admin-login.jsp").forward(request, response);
     }
 
     /**
      * Handles the HTTP <code>POST</code> method.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
+     * Xử lý logic đăng nhập admin.
      */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
-    throws ServletException, IOException {
+            throws ServletException, IOException {
         String email = request.getParameter("email");
         String password = request.getParameter("password");
 
         UserDAO dao = new UserDAO();
-        Users user = dao.checkAdminLogin(email, password); // chỉ cho phép tài khoản admin và đang active
+        Users admin = dao.checkLoginAdmin(email, password); // gọi phương thức mới
 
-        if (user != null) {
+        if (admin != null && "Admin".equalsIgnoreCase(admin.getRole())) {
+            // Nếu đăng nhập thành công và đúng role Admin
             HttpSession session = request.getSession();
-            session.setAttribute("admin", user);
+            session.setAttribute("admin", admin);
             response.sendRedirect(request.getContextPath() + "/Admindashboard");
         } else {
+            // Sai tài khoản/mật khẩu hoặc không phải admin
             request.setAttribute("error", "Invalid credentials or not an Admin account.");
             request.getRequestDispatcher("/WEB-INF/views/admin/admin-login.jsp").forward(request, response);
         }
     }
 
-    /**
-     * Returns a short description of the servlet.
-     *
-     * @return a String containing servlet description
-     */
     @Override
     public String getServletInfo() {
-        return "Short description";
-    }// </editor-fold>
-
+        return "Admin Login Controller";
+    }
 }
