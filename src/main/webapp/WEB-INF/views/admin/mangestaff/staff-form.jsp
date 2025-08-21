@@ -28,11 +28,11 @@
                 font-family: Arial, sans-serif;
                 background-color: #f4f4f9;
             }
-            
+
             .content-area {
                 padding: 20px;
             }
-            
+
             .form-container {
                 max-width: 800px;
                 margin: 0 auto;
@@ -41,42 +41,42 @@
                 border-radius: 8px;
                 box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             }
-            
+
             .form-header {
                 text-align: center;
                 margin-bottom: 30px;
                 padding-bottom: 20px;
                 border-bottom: 2px solid #007bff;
             }
-            
+
             .form-header h2 {
                 color: #333;
                 margin: 0;
                 font-size: 28px;
                 font-weight: 600;
             }
-            
+
             .form-header p {
                 color: #666;
                 margin: 10px 0 0 0;
                 font-size: 14px;
             }
-            
+
             .form-row {
                 display: flex;
                 gap: 20px;
                 margin-bottom: 20px;
             }
-            
+
             .form-group {
                 flex: 1;
                 margin-bottom: 20px;
             }
-            
+
             .form-group.full-width {
                 flex: 100%;
             }
-            
+
             .form-group label {
                 display: block;
                 margin-bottom: 8px;
@@ -84,12 +84,12 @@
                 font-weight: 500;
                 font-size: 14px;
             }
-            
+
             .form-group label .required {
                 color: #dc3545;
                 margin-left: 3px;
             }
-            
+
             .form-group input,
             .form-group textarea,
             .form-group select {
@@ -101,7 +101,7 @@
                 transition: all 0.3s ease;
                 box-sizing: border-box;
             }
-            
+
             .form-group input:focus,
             .form-group textarea:focus,
             .form-group select:focus {
@@ -109,24 +109,24 @@
                 border-color: #007bff;
                 box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
             }
-            
+
             .form-group textarea {
                 resize: vertical;
                 min-height: 80px;
             }
-            
+
             .password-strength {
                 margin-top: 5px;
                 font-size: 12px;
                 color: #666;
             }
-            
+
             .strength-indicator {
                 display: flex;
                 gap: 3px;
                 margin-top: 5px;
             }
-            
+
             .strength-bar {
                 height: 4px;
                 flex: 1;
@@ -134,19 +134,19 @@
                 border-radius: 2px;
                 transition: background-color 0.3s ease;
             }
-            
+
             .strength-bar.active {
                 background-color: #28a745;
             }
-            
+
             .strength-bar.medium {
                 background-color: #ffc107;
             }
-            
+
             .strength-bar.weak {
                 background-color: #dc3545;
             }
-            
+
             .form-actions {
                 display: flex;
                 gap: 15px;
@@ -155,7 +155,7 @@
                 padding-top: 20px;
                 border-top: 1px solid #e9ecef;
             }
-            
+
             .btn {
                 padding: 12px 30px;
                 border: none;
@@ -171,40 +171,40 @@
                 min-width: 120px;
                 justify-content: center;
             }
-            
+
             .btn-primary {
                 background-color: #007bff;
                 color: white;
             }
-            
+
             .btn-primary:hover {
                 background-color: #0056b3;
                 transform: translateY(-2px);
                 box-shadow: 0 4px 12px rgba(0,123,255,0.3);
             }
-            
+
             .btn-secondary {
                 background-color: #6c757d;
                 color: white;
             }
-            
+
             .btn-secondary:hover {
                 background-color: #545b62;
                 transform: translateY(-2px);
                 box-shadow: 0 4px 12px rgba(108,117,125,0.3);
             }
-            
+
             .btn-back {
                 background-color: #28a745;
                 color: white;
             }
-            
+
             .btn-back:hover {
                 background-color: #218838;
                 transform: translateY(-2px);
                 box-shadow: 0 4px 12px rgba(40,167,69,0.3);
             }
-            
+
             .error-message {
                 background-color: #f8d7da;
                 color: #721c24;
@@ -216,7 +216,7 @@
                 align-items: center;
                 gap: 10px;
             }
-            
+
             .success-message {
                 background-color: #d4edda;
                 color: #155724;
@@ -228,11 +228,11 @@
                 align-items: center;
                 gap: 10px;
             }
-            
+
             .input-group {
                 position: relative;
             }
-            
+
             .input-group .form-icon {
                 position: absolute;
                 right: 15px;
@@ -241,15 +241,15 @@
                 color: #6c757d;
                 cursor: pointer;
             }
-            
+
             .input-group input {
                 padding-right: 45px;
             }
-            
+
             .form-section {
                 margin-bottom: 30px;
             }
-            
+
             .form-section-title {
                 font-size: 18px;
                 font-weight: 600;
@@ -258,23 +258,23 @@
                 padding-bottom: 8px;
                 border-bottom: 1px solid #e9ecef;
             }
-            
+
             @media (max-width: 768px) {
                 .form-row {
                     flex-direction: column;
                     gap: 0;
                 }
-                
+
                 .form-container {
                     padding: 20px;
                     margin: 10px;
                 }
-                
+
                 .form-actions {
                     flex-direction: column;
                     align-items: center;
                 }
-                
+
                 .btn {
                     width: 100%;
                     max-width: 200px;
@@ -324,7 +324,7 @@
                         <%-- Account Information Section --%>
                         <div class="form-section">
                             <h3 class="form-section-title">Account Information</h3>
-                            
+
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="email">Email Address <span class="required">*</span></label>
@@ -332,39 +332,12 @@
                                            value="${email}" placeholder="Enter email address">
                                 </div>
                             </div>
-
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="password">Password <span class="required">*</span></label>
-                                    <div class="input-group">
-                                        <input type="password" id="password" name="password" required 
-                                               placeholder="Enter password" minlength="6">
-                                        <i class="fa fa-eye form-icon" id="togglePassword"></i>
-                                    </div>
-                                    <div class="password-strength" id="passwordStrength"></div>
-                                    <div class="strength-indicator" id="strengthIndicator">
-                                        <div class="strength-bar"></div>
-                                        <div class="strength-bar"></div>
-                                        <div class="strength-bar"></div>
-                                        <div class="strength-bar"></div>
-                                    </div>
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="confirmPassword">Confirm Password <span class="required">*</span></label>
-                                    <div class="input-group">
-                                        <input type="password" id="confirmPassword" name="confirmPassword" required 
-                                               placeholder="Confirm password">
-                                        <i class="fa fa-eye form-icon" id="toggleConfirmPassword"></i>
-                                    </div>
-                                </div>
-                            </div>
                         </div>
 
                         <%-- Personal Information Section --%>
                         <div class="form-section">
                             <h3 class="form-section-title">Personal Information</h3>
-                            
+
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="fullName">Full Name <span class="required">*</span></label>
@@ -383,7 +356,7 @@
                         <%-- Work Information Section --%>
                         <div class="form-section">
                             <h3 class="form-section-title">Work Information</h3>
-                            
+
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="position">Position <span class="required">*</span></label>
@@ -417,13 +390,12 @@
                 </div>
             </div>
         </div>
-
         <%-- Link đến file JS dùng chung --%>
         <script src="${pageContext.request.contextPath}/admin-dashboard/js/admin-js.js"></script>
-        
+
         <script>
             // Toggle password visibility
-            document.getElementById('togglePassword').addEventListener('click', function() {
+            document.getElementById('togglePassword').addEventListener('click', function () {
                 const passwordInput = document.getElementById('password');
                 const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
                 passwordInput.setAttribute('type', type);
@@ -431,7 +403,7 @@
                 this.classList.toggle('fa-eye-slash');
             });
 
-            document.getElementById('toggleConfirmPassword').addEventListener('click', function() {
+            document.getElementById('toggleConfirmPassword').addEventListener('click', function () {
                 const confirmPasswordInput = document.getElementById('confirmPassword');
                 const type = confirmPasswordInput.getAttribute('type') === 'password' ? 'text' : 'password';
                 confirmPasswordInput.setAttribute('type', type);
@@ -440,25 +412,30 @@
             });
 
             // Password strength checker
-            document.getElementById('password').addEventListener('input', function() {
+            document.getElementById('password').addEventListener('input', function () {
                 const password = this.value;
                 const strengthText = document.getElementById('passwordStrength');
                 const strengthBars = document.querySelectorAll('.strength-bar');
-                
+
                 let strength = 0;
                 let strengthLabel = '';
-                
-                if (password.length >= 8) strength++;
-                if (password.match(/[a-z]/)) strength++;
-                if (password.match(/[A-Z]/)) strength++;
-                if (password.match(/[0-9]/)) strength++;
-                if (password.match(/[^a-zA-Z0-9]/)) strength++;
-                
+
+                if (password.length >= 8)
+                    strength++;
+                if (password.match(/[a-z]/))
+                    strength++;
+                if (password.match(/[A-Z]/))
+                    strength++;
+                if (password.match(/[0-9]/))
+                    strength++;
+                if (password.match(/[^a-zA-Z0-9]/))
+                    strength++;
+
                 // Reset all bars
                 strengthBars.forEach(bar => {
                     bar.classList.remove('active', 'weak', 'medium');
                 });
-                
+
                 if (strength < 2) {
                     strengthLabel = 'Weak';
                     for (let i = 0; i < Math.min(strength, 2); i++) {
@@ -475,21 +452,21 @@
                         strengthBars[i].classList.add('active');
                     }
                 }
-                
+
                 strengthText.textContent = password.length > 0 ? `Password strength: ${strengthLabel}` : '';
             });
 
             // Form validation
-            document.getElementById('staffForm').addEventListener('submit', function(e) {
+            document.getElementById('staffForm').addEventListener('submit', function (e) {
                 const password = document.getElementById('password').value;
                 const confirmPassword = document.getElementById('confirmPassword').value;
-                
+
                 if (password !== confirmPassword) {
                     alert('Passwords do not match!');
                     e.preventDefault();
                     return false;
                 }
-                
+
                 if (password.length < 6) {
                     alert('Password must be at least 6 characters long!');
                     e.preventDefault();

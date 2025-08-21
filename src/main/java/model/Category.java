@@ -7,14 +7,15 @@ public class Category {
     private String name;
     private String description;
     private Long parentCategoryId;
+    private String parentCategoryName;
     private boolean isActive;
     private Date createdAt;
 
     public Category() {
     }
 
-    public Category(Long categoryId, String name, String description, Long parentCategoryId, 
-                    boolean isActive, Date createdAt) {
+    public Category(Long categoryId, String name, String description, Long parentCategoryId,
+                   boolean isActive, Date createdAt) {
         this.categoryId = categoryId;
         this.name = name;
         this.description = description;
@@ -23,56 +24,71 @@ public class Category {
         this.createdAt = createdAt;
     }
 
-    public Long getCategoryId() {
-        return categoryId;
-    }
-
-    public void setCategoryId(Long categoryId) {
+    public Category(Long categoryId, String name, String description, Long parentCategoryId,
+                   String parentCategoryName, boolean isActive, Date createdAt) {
         this.categoryId = categoryId;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
         this.name = name;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
         this.description = description;
-    }
-
-    public Long getParentCategoryId() {
-        return parentCategoryId;
-    }
-
-    public void setParentCategoryId(Long parentCategoryId) {
         this.parentCategoryId = parentCategoryId;
+        this.parentCategoryName = parentCategoryName;
+        this.isActive = isActive;
+        this.createdAt = createdAt;
     }
 
-    public boolean isActive() {
+    public Long getCategoryId() { 
+        return categoryId; 
+    }
+    public void setCategoryId(Long categoryId) {
+        this.categoryId = categoryId; 
+    }
+    public String getName() {
+        return name; 
+    }
+    public void setName(String name) {
+        this.name = name; 
+    }
+    public String getDescription() {
+        return description; 
+    }
+    public void setDescription(String description) {
+        this.description = description; 
+    }
+    public Long getParentCategoryId() { 
+        return parentCategoryId; 
+    }
+    public void setParentCategoryId(Long parentCategoryId) {
+        this.parentCategoryId = parentCategoryId; 
+    }
+    public String getParentCategoryName() {
+        return parentCategoryName; 
+    }
+    public void setParentCategoryName(String parentCategoryName) {
+        this.parentCategoryName = parentCategoryName; 
+    }
+    public boolean isActive() { 
+        return isActive; 
+    }
+    public boolean getIsActive() {
         return isActive;
     }
-
     public void setActive(boolean isActive) {
         this.isActive = isActive;
     }
-
     public Date getCreatedAt() {
         return createdAt;
     }
-
     public void setCreatedAt(Date createdAt) {
-        this.createdAt = createdAt;
+        this.createdAt = createdAt; 
     }
 
     public String getSeoUrl() {
+        if (name == null) return "/category/" + categoryId;
         String slug = name.toLowerCase().replaceAll("[^a-z0-9]+", "-");
         return "/category/" + categoryId + "/" + slug;
+    }
+
+    @Override
+    public String toString() {
+        return "Category{categoryId=" + categoryId + ", name='" + name + "', isActive=" + isActive + "}";
     }
 }

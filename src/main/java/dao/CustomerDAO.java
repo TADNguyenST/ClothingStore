@@ -8,6 +8,8 @@ import util.DBContext;
 import model.Customer;
 import model.Users;
 import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  *
@@ -97,11 +99,9 @@ public class CustomerDAO {
 
     public java.util.List<Users> getAllCustomersWithUserDetails() {
         java.util.List<Users> customers = new java.util.ArrayList<>();
-        String sql = "SELECT u.user_id, u.email, u.full_name, u.phone_number, c.customer_id " +
-                     "FROM users u JOIN customers c ON u.user_id = c.user_id";
-        try (Connection conn = new DBContext().getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+        String sql = "SELECT u.user_id, u.email, u.full_name, u.phone_number, c.customer_id "
+                + "FROM users u JOIN customers c ON u.user_id = c.user_id";
+        try ( Connection conn = new DBContext().getConnection();  PreparedStatement ps = conn.prepareStatement(sql);  ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
                 Users user = new Users();
                 user.setUserId(rs.getLong("user_id"));
@@ -116,6 +116,154 @@ public class CustomerDAO {
         }
         return customers;
     }
-//Login with Google
-}
+//List
 
+    public static class CustomerInfo {
+
+        private Users user;
+        private Customer customer;
+        private long customerId;
+
+        public CustomerInfo(Users user, Customer customer, long customerId) {
+            this.user = user;
+            this.customer = customer;
+            this.customerId = customerId;
+        }
+
+        public Users getUser() {
+            return user;
+        }
+
+        public Customer getCustomer() {
+            return customer;
+        }
+
+        public long getCustomerId() {
+            return customerId;
+        }
+    }
+
+    public List<CustomerInfo> getAllCustomers() {
+        List<CustomerInfo> list = new ArrayList<>();
+        String sql = "SELECT u.*, c.* FROM users u JOIN customers c ON u.user_id = c.user_id WHERE u.role = 'Customer'";
+
+        try ( PreparedStatement ps = getConnection().prepareStatement(sql);  ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                Users user = new Users(
+                        rs.getLong("user_id"),
+                        rs.getString("email"),
+                        rs.getString("password"),
+                        rs.getString("full_name"),
+                        rs.getString("phone_number"),
+                        rs.getString("status"),
+                        rs.getString("role"),
+                        rs.getTimestamp("created_at"),
+                        rs.getTimestamp("updated_at")
+                );
+
+                Customer customer = new Customer();
+                customer.setCustomerId(rs.getLong("customer_id"));
+                customer.setUserId(rs.getLong("user_id"));
+                customer.setLoyaltyPoints(rs.getInt("loyalty_points"));
+                customer.setBirthDate(rs.getDate("birth_date"));
+                customer.setGender(rs.getString("gender"));
+                customer.setAvatarUrl(rs.getString("avatar_url"));
+
+                list.add(new CustomerInfo(user, customer, customer.getCustomerId()));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    // Hàm bổ sung để tránh lỗi thiếu getConnection()
+    private Connection getConnection() throws SQLException {
+        return new DBContext().getConnection();
+    }
+
+    public List<CustomerInfo> searchCustomerByKeyword(String keyword) {
+        List<CustomerInfo> list = new ArrayList<>();
+        String sql = "SELECT u.*, c.* FROM users u JOIN customers c ON u.user_id = c.user_id "
+                + "WHERE u.role = 'Customer' AND (u.full_name LIKE ? OR u.email LIKE ?)";
+        try ( PreparedStatement ps = getConnection().prepareStatement(sql)) {
+            ps.setString(1, "%" + keyword + "%");
+            ps.setString(2, "%" + keyword + "%");
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                Users user = new Users(
+                        rs.getLong("user_id"),
+                        rs.getString("email"),
+                        rs.getString("password"),
+                        rs.getString("full_name"),
+                        rs.getString("phone_number"),
+                        rs.getString("status"),
+                        rs.getString("role"),
+                        rs.getTimestamp("created_at"),
+                        rs.getTimestamp("updated_at")
+                );
+                Customer customer = new Customer();
+                customer.setCustomerId(rs.getLong("customer_id"));
+                customer.setUserId(rs.getLong("user_id"));
+                customer.setLoyaltyPoints(rs.getInt("loyalty_points"));
+                customer.setBirthDate(rs.getDate("birth_date"));
+                customer.setGender(rs.getString("gender"));
+                customer.setAvatarUrl(rs.getString("avatar_url"));
+                list.add(new CustomerInfo(user, customer, customer.getCustomerId()));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+    //Detail
+
+    public CustomerInfo getCustomerInfoByUserId(long userId) {
+        String sql = "SELECT u.*, c.* FROM users u JOIN customers c ON u.user_id = c.user_id WHERE u.user_id = ?";
+        try ( PreparedStatement ps = getConnection().prepareStatement(sql)) {
+            ps.setLong(1, userId);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                Users user = new Users(
+                        rs.getLong("user_id"),
+                        rs.getString("email"),
+                        rs.getString("password"),
+                        rs.getString("full_name"),
+                        rs.getString("phone_number"),
+                        rs.getString("status"),
+                        rs.getString("role"),
+                        rs.getTimestamp("created_at"),
+                        rs.getTimestamp("updated_at")
+                );
+
+                Customer customer = new Customer();
+                customer.setCustomerId(rs.getLong("customer_id"));
+                customer.setUserId(rs.getLong("user_id"));
+                customer.setLoyaltyPoints(rs.getInt("loyalty_points"));
+                customer.setBirthDate(rs.getDate("birth_date"));
+                customer.setGender(rs.getString("gender"));
+                customer.setAvatarUrl(rs.getString("avatar_url"));
+                customer.setCreatedAt(rs.getTimestamp("created_at"));
+
+                return new CustomerInfo(user, customer, customer.getCustomerId());
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+    //GoogleLogin
+
+// Thêm bản ghi customer rỗng cho người dùng đăng nhập bằng Google
+    public boolean createCustomerForGoogleUser(long userId) {
+        String sql = "INSERT INTO customers (user_id, loyalty_points, created_at) VALUES (?, 0, GETDATE())";
+        try ( Connection conn = getConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, userId);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+}

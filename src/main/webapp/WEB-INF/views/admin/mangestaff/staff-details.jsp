@@ -90,6 +90,24 @@
         .back-link:hover {
             background-color: #138496;
         }
+
+        .send-btn {
+            display: block;
+            width: fit-content;
+            margin: 20px auto;
+            padding: 10px 20px;
+            background-color: #28a745;
+            color: white;
+            text-decoration: none;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .send-btn:hover {
+            background-color: #218838;
+        }
     </style>
 </head>
 <body>
@@ -121,6 +139,15 @@
                     <tr><td class="info-label">Staff Created At</td><td>${staffInfo.staff.createdAt}</td></tr>
                 </tbody>
             </table>
+
+            <!-- Nút gửi mail -->
+            <form action="${pageContext.request.contextPath}/sendInfoStaff" method="get" style="text-align:center; margin-top:20px;">
+                <input type="hidden" name="userId" value="${staffInfo.user.userId}" />
+                <input type="hidden" name="email" value="${staffInfo.user.email}" />
+                <button type="submit" class="send-btn">
+                    <i class="fa fa-envelope"></i> Send Mail
+                </button>
+            </form>
         </c:if>
 
         <a class="back-link" href="${pageContext.request.contextPath}/StaffManagement">&larr; Back to Staff List</a>
@@ -130,4 +157,3 @@
 <script src="${pageContext.request.contextPath}/admin-dashboard/js/admin-js.js"></script>
 </body>
 </html>
-

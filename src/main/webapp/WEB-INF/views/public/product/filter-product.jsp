@@ -1,261 +1,217 @@
-<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
-<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
-<div class="filter-panel">
-    <style>
-        .filter-panel {
-            padding: 20px;
-            background-color: #ffffff;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
-            max-width: 100%;
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ page import="dao.ProductDAO" %>
+<%@ page import="model.Brand" %>
+<%@ page import="java.util.*" %>
+<%
+    String categoryId = request.getParameter("categoryId");
+    String parentCategoryId = request.getParameter("parentCategoryId");
+    List<Brand> brands = (List<Brand>) request.getAttribute("brands");
+    List<String> sizes = (List<String>) request.getAttribute("sizes");
+    List<String> colors = (List<String>) request.getAttribute("colors");
+    if (brands == null || sizes == null || colors == null) {
+        try {
+            ProductDAO pdao = new ProductDAO();
+            if (brands == null) brands = pdao.getBrands();
+            if (sizes == null) sizes = pdao.getSizes();
+            if (colors == null) colors = pdao.getColors();
+        } catch (Exception e) {
+            brands = new ArrayList<>();
+            sizes = new ArrayList<>();
+            colors = new ArrayList<>();
         }
-        .filter-section {
-            margin-bottom: 20px;
-        }
-        .filter-section h3 {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 10px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .color-swatches {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            width: 100%;
-        }
-        .color-swatches label {
-            margin: 0;
-            display: flex;
-            align-items: center;
-        }
-        .color-circle {
-            width: 25px;
-            height: 25px;
-            border-radius: 50%;
-            border: 1px solid #ddd;
-            cursor: pointer;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-            margin-right: 5px !important;
-        }
-        .color-circle:hover {
-            transform: scale(1.1) !important;
-            box-shadow: 0 0 5px rgba(0, 0, 0, 0.2) !important;
-        }
-        .size-options {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            width: 100%;
-        }
-        .size-options label {
-            margin: 0;
-            display: flex;
-            align-items: center;
-        }
-        .size-option {
-            padding: 6px 12px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            cursor: pointer;
-            background-color: #f8f9fa;
-            transition: background-color 0.2s ease;
-            color: #333;
-        }
-        .size-option:hover, .size-option.active {
-            background-color: #007bff !important;
-            color: #fff !important;
-            border-color: #0056b3 !important;
-        }
-        .price-range {
-            margin: 10px 0;
-        }
-        .price-range output {
-            display: block;
-            font-size: 0.9rem;
-            color: #555;
-            margin-top: 5px;
-        }
-        .price-range input[type="range"] {
-            width: 100%;
-            margin-top: 10px;
-        }
-        .brand-list {
-            max-height: 150px;
-            overflow-y: auto;
-            padding-right: 5px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-        .brand-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            cursor: pointer;
-        }
-        .brand-item input[type="checkbox"] {
-            margin: 0;
-            position: absolute;
-            opacity: 0;
-        }
-        .brand-item label {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin: 0;
-            font-size: 0.8rem;
-            color: #333;
-            text-align: center;
-            padding: 5px;
-        }
-        .brand-item img {
-            width: 40px;
-            height: 40px;
-            object-fit: contain;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            transition: border-color 0.2s ease, transform 0.2s ease;
-        }
-        .brand-item input[type="checkbox"]:checked + label img {
-            border-color: #007bff;
-            transform: scale(1.05);
-        }
-        .brand-item input[type="checkbox"]:focus + label img {
-            outline: 2px solid #007bff;
-            outline-offset: 2px;
-        }
-        .filter-actions {
-            margin-top: 20px;
-        }
-        .filter-actions button {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 10px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            transition: background-color 0.2s ease;
-            box-sizing: border-box !important;
-        }
-        .filter-actions .apply-btn {
-            background-color: #007bff !important;
-            color: #fff !important;
-        }
-        .filter-actions .apply-btn:hover {
-            background-color: #0056b3 !important;
-        }
-        .filter-actions .clear-btn {
-            background-color: #6c757d !important;
-            color: #fff !important;
-        }
-        .filter-actions .clear-btn:hover {
-            background-color: #5a6268 !important;
-        }
-        .filter-panel input[type="checkbox"] {
-            margin-right: 5px;
-        }
-        @media (max-width: 768px) {
-            .filter-panel {
+    }
+    Set<String> selectedBrandIds = (Set<String>) request.getAttribute("selectedBrandIds");
+    if (selectedBrandIds == null) {
+        String[] brandArr = request.getParameterValues("brandId");
+        selectedBrandIds = new HashSet<>();
+        if (brandArr != null) selectedBrandIds.addAll(Arrays.asList(brandArr));
+    }
+    Set<String> selectedSizes = (Set<String>) request.getAttribute("selectedSizes");
+    if (selectedSizes == null) {
+        String[] sizeArr = request.getParameterValues("size");
+        selectedSizes = new HashSet<>();
+        if (sizeArr != null) selectedSizes.addAll(Arrays.asList(sizeArr));
+    }
+    Set<String> selectedColors = (Set<String>) request.getAttribute("selectedColors");
+    if (selectedColors == null) {
+        String[] colorArr = request.getParameterValues("color");
+        selectedColors = new HashSet<>();
+        if (colorArr != null) selectedColors.addAll(Arrays.asList(colorArr));
+    }
+    String selectedSort = (String) request.getAttribute("selectedSort");
+    if (selectedSort == null) selectedSort = request.getParameter("sort");
+    String clearUrl = request.getContextPath() + "/ProductFilter";
+    if (categoryId != null && !categoryId.trim().isEmpty()) {
+        clearUrl += "?categoryId=" + categoryId.trim();
+    } else if (parentCategoryId != null && !parentCategoryId.trim().isEmpty()) {
+        clearUrl += "?parentCategoryId=" + parentCategoryId.trim();
+    }
+%>
+<!DOCTYPE html>
+<html>
+    <head>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+        <style>
+            .filter-card {
+                transition: all 0.3s ease;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            }
+            .filter-card:hover {
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            }
+            .filter-section {
+                background: #f8f9fa;
+                border-radius: 8px;
                 padding: 15px;
             }
-            .color-swatches, .size-options {
-                justify-content: center;
+            .filter-label {
+                font-size: 1.1rem;
+                font-weight: 600;
+                margin-bottom: 10px;
             }
-            .brand-list {
-                justify-content: center;
+            .scrollable-filter {
+                max-height: 200px;
+                overflow-y: auto;
+                padding-right: 10px;
             }
-            .filter-actions button {
-                padding: 8px;
-                font-size: 0.85rem;
+            .form-check {
+                margin-bottom: 8px;
             }
-        }
-    </style>
+            .btn-apply {
+                background-color: #1a1a1a;
+                border-color: #1a1a1a;
+            }
+            .btn-apply:hover {
+                background-color: #333;
+                border-color: #333;
+            }
+            @media (max-width: 768px) {
+                .filter-section {
+                    margin-bottom: 20px;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container my-5">
+            <div class="filter-card p-4 bg-white rounded-3">
+                <h3 class="mb-4 fw-bold">Product Filters</h3>
+                <form action="<%= request.getContextPath() %>/ProductFilter" method="get">
+                    <% if (categoryId != null && !categoryId.trim().isEmpty()) { %>
+                    <input type="hidden" name="categoryId" value="<%= categoryId %>">
+                    <% } %>
+                    <% if (parentCategoryId != null && !parentCategoryId.trim().isEmpty()) { %>
+                    <input type="hidden" name="parentCategoryId" value="<%= parentCategoryId %>">
+                    <% } %>
+                    <div class="row g-4">
+                        <!-- Brand -->
+                        <div class="col-12 col-md-4">
+                            <div class="filter-section">
+                                <label class="filter-label">Brand</label>
+                                <div class="scrollable-filter">
+                                    <% 
+                                        if (brands != null) {
+                                            for (Brand b : brands) {
+                                                String bid = String.valueOf(b.getBrandId());
+                                                boolean checked = selectedBrandIds.contains(bid);
+                                    %>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="brandId" id="brand_<%= bid %>" value="<%= bid %>" <%= checked ? "checked" : "" %>>
+                                        <label class="form-check-label" for="brand_<%= bid %>"><%= b.getName() %></label>
+                                    </div>
+                                    <% }
+                                        }
+                                    %>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Size -->
+                        <div class="col-12 col-md-4">
+                            <div class="filter-section">
+                                <label class="filter-label">Size</label>
+                                <div class="scrollable-filter">
+                                    <% 
+                                        if (sizes != null) {
+                                            for (String s : sizes) {
+                                                if (s == null) continue;
+                                                String sval = s.trim();
+                                                if (sval.isEmpty()) continue;
+                                                boolean checked = selectedSizes.contains(sval);
+                                    %>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="checkbox" name="size" id="size_<%= sval %>" value="<%= sval %>" <%= checked ? "checked" : "" %>>
+                                        <label class="form-check-label" for="size_<%= sval %>"><%= sval %></label>
+                                    </div>
+                                    <% }
+                                        }
+                                    %>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Color -->
+                        <div class="col-12 col-md-4">
+                            <div class="filter-section">
+                                <label class="filter-label">Color</label>
+                                <div class="scrollable-filter">
+                                    <% 
+                                        if (colors != null) {
+                                            for (String c : colors) {
+                                                if (c == null) continue;
+                                                String cval = c.trim();
+                                                if (cval.isEmpty()) continue;
+                                                boolean checked = selectedColors.contains(cval);
+                                    %>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="checkbox" name="color" id="color_<%= cval %>" value="<%= cval %>" <%= checked ? "checked" : "" %>>
+                                        <label class="form-check-label" for="color_<%= cval %>"><%= cval %></label>
+                                    </div>
+                                    <% }
+                                        }
+                                    %>
+                                </div>
+                            </div>
+                        </div>
+                                
+                                <div class="col-12"><hr></div>
+                        <!-- Sort -->
+                        <div class="col-12 col-md-4">
+                            <div class="filter-section">
+                                <label class="filter-label">Sort by Price</label>
+                                <select name="sort" class="form-select">
+                                    <option value="">Default</option>
+                                    <option value="price_asc" <%= "price_asc".equals(selectedSort) ? "selected" : "" %> >Low → High</option>
+                                    <option value="price_desc" <%= "price_desc".equals(selectedSort) ? "selected" : "" %> >High → Low</option>
+                                </select>
+                            </div>
+                        </div>
+                        <!-- Price Range -->
+                        <div class="col-12 col-md-4">
+                            <div class="filter-section">
+                                <label class="filter-label">Price Range (VNĐ)</label>
+                                <div class="input-group mb-2">
+                                    <span class="input-group-text">Min</span>
+                                    <input type="number" class="form-control" name="minPrice" 
+                                           value="<%= request.getParameter("minPrice") != null ? request.getParameter("minPrice") : "" %>" 
+                                           placeholder="e.g. 100000">
+                                </div>
+                                <div class="input-group">
+                                    <span class="input-group-text">Max</span>
+                                    <input type="number" class="form-control" name="maxPrice" 
+                                           value="<%= request.getParameter("maxPrice") != null ? request.getParameter("maxPrice") : "" %>" 
+                                           placeholder="e.g. 2000000">
+                                </div>
+                            </div>
+                        </div>
 
-    <div class="filter-section">
-        <h3>Colors</h3>
-        <div class="color-swatches">
-            <label><input type="checkbox" name="colors" value="white" onchange="updateFilterUI(this)"><span style="background: white; border: 1px solid #ccc;" class="color-circle"></span></label>
-            <label><input type="checkbox" name="colors" value="black" onchange="updateFilterUI(this)"><span style="background: black;" class="color-circle"></span></label>
-            <label><input type="checkbox" name="colors" value="blue" onchange="updateFilterUI(this)"><span style="background: blue;" class="color-circle"></span></label>
-            <label><input type="checkbox" name="colors" value="red" onchange="updateFilterUI(this)"><span style="background: red;" class="color-circle"></span></label>
-            <label><input type="checkbox" name="colors" value="yellow" onchange="updateFilterUI(this)"><span style="background: yellow;" class="color-circle"></span></label>
-            <label><input type="checkbox" name="colors" value="green" onchange="updateFilterUI(this)"><span style="background: green;" class="color-circle"></span></label>
-            <label><input type="checkbox" name="colors" value="gray" onchange="updateFilterUI(this)"><span style="background: gray;" class="color-circle"></span></label>
-            <label><input type="checkbox" name="colors" value="navy" onchange="updateFilterUI(this)"><span style="background: navy;" class="color-circle"></span></label>
+                        <!-- Actions -->
+                        <div class="col-12 d-flex gap-3 justify-content-end">
+                            <a class="btn btn-outline-secondary" href="<%= clearUrl %>">Clear Filters</a>
+                            <button type="submit" class="btn btn-apply text-white">Apply Filters</button>
+                        </div>
+                    </div> 
+                </form>
+            </div>
         </div>
-    </div>
-
-    <div class="filter-section">
-        <h3>Sizes</h3>
-        <div class="size-options">
-            <label><input type="checkbox" name="sizes" value="XS" onchange="updateFilterUI(this)" class="size-option">XS</label>
-            <label><input type="checkbox" name="sizes" value="S" onchange="updateFilterUI(this)" class="size-option">S</label>
-            <label><input type="checkbox" name="sizes" value="M" onchange="updateFilterUI(this)" class="size-option">M</label>
-            <label><input type="checkbox" name="sizes" value="L" onchange="updateFilterUI(this)" class="size-option">L</label>
-            <label><input type="checkbox" name="sizes" value="XL" onchange="updateFilterUI(this)" class="size-option">XL</label>
-            <label><input type="checkbox" name="sizes" value="XXL" onchange="updateFilterUI(this)" class="size-option">XXL</label>
-        </div>
-    </div>
-
-    <div class="filter-section">
-        <h3>Price Range</h3>
-        <div class="price-range">
-            <input type="range" name="priceRange" min="0" max="2000000" step="50000" value="0" oninput="this.nextElementSibling.value = this.value === '0' ? 'All' : this.value + ' VND'">
-            <output>0 VND</output>
-        </div>
-    </div>
-
-    <div class="filter-section">
-        <h3>Brands</h3>
-        <div class="brand-list">
-            <c:if test="${empty brands}">
-                <p style="color: #777;">No brands available.</p>
-            </c:if>
-            <c:forEach var="brand" items="${brands}">
-                <div class="brand-item">
-                    <input type="checkbox" name="brands" value="${brand.brandId}" id="brand-${brand.brandId}" onchange="updateFilterUI(this)">
-                    <label for="brand-${brand.brandId}">
-                        <img src="${brand.logoUrl != null ? brand.logoUrl : 'https://placehold.co/50x50?text=' + brand.name}" alt="${brand.name}">
-                        <span>${brand.name}</span>
-                    </label>
-                </div>
-            </c:forEach>
-        </div>
-    </div>
-
-    <input type="hidden" name="parentCategoryId" value="${param.parentCategoryId}">
-    <input type="hidden" name="categoryId" value="${param.categoryId}">
-
-    <div class="filter-actions">
-        <button class="apply-btn" onclick="submitFilter()">Apply Filters</button>
-        <button class="clear-btn" onclick="clearFilters()">Clear Filters</button>
-    </div>
-</div>
-
-<script>
-function updateFilterUI(checkbox) {
-    const label = checkbox.parentElement;
-    if (checkbox.checked) {
-        label.classList.add('active');
-    } else {
-        label.classList.remove('active');
-    }
-}
-
-function clearFilters() {
-    document.querySelectorAll('input[name="colors"]').forEach(cb => cb.checked = false);
-    document.querySelectorAll('input[name="sizes"]').forEach(cb => cb.checked = false);
-    document.querySelectorAll('input[name="brands"]').forEach(cb => cb.checked = false);
-    document.querySelector('input[name="priceRange"]').value = '0';
-    document.querySelector('input[name="priceRange"]').nextElementSibling.value = 'All';
-    document.querySelectorAll('.color-circle').forEach(circle => circle.classList.remove('active'));
-    document.querySelectorAll('.size-option').forEach(option => option.classList.remove('active'));
-    document.querySelectorAll('.brand-item label').forEach(label => label.classList.remove('active'));
-    submitFilter();
-}
-</script>
+    </body>
+</html>

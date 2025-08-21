@@ -11,7 +11,6 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-
 /**
  *
  * @author Khoa
@@ -19,29 +18,20 @@ import jakarta.servlet.http.HttpSession;
 @WebServlet(name = "LogoutController", urlPatterns = {"/Logout"})
 public class LogoutController extends HttpServlet {
 
-    /**
-     * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
-     * methods.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
-     */
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         response.setContentType("text/html;charset=UTF-8");
 
-        HttpSession session = request.getSession(false); // false = không tạo mới nếu chưa có
+        // Huỷ session hiện tại nếu tồn tại
+        HttpSession session = request.getSession(false); // false = không tạo session mới nếu chưa có
         if (session != null) {
-            session.invalidate(); // Huỷ session
+            session.invalidate();
         }
 
-        // Chuyển về trang home
-        request.getRequestDispatcher("/WEB-INF/views/public/home.jsp").forward(request, response);
+        // ✅ Redirect về trang chủ qua controller (chứ không phải forward tới JSP trực tiếp)
+        response.sendRedirect(request.getContextPath() + "/home");
     }
 
-    // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -56,7 +46,7 @@ public class LogoutController extends HttpServlet {
 
     @Override
     public String getServletInfo() {
-        return "Logout and return to public home";
-    }// </editor-fold>
-
+        return "Logout and redirect to homepage";
+    }
 }
+

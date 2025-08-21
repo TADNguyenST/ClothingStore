@@ -1,476 +1,324 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
-<%@ page import="model.Product" %>
-<%@ page import="model.ProductVariant" %>
-<%@ page import="model.ProductImage" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
 <%@ page import="java.text.NumberFormat" %>
 <%@ page import="java.util.Locale" %>
-<%@ page import="dao.ProductDAO" %>
-<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
-
-<%
-    Product product = (Product) request.getAttribute("product");
-    String error = (String) request.getAttribute("error");
-    NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(new Locale("vi", "VN"));
-    ProductDAO productDAO = new ProductDAO();
-
-    ProductVariant defaultVariant = null;
-    double lowestPrice = Double.MAX_VALUE;
-    if (product != null && product.getVariants() != null && !product.getVariants().isEmpty()) {
-        for (ProductVariant variant : product.getVariants()) {
-            if (variant.getPriceModifier() != null) {
-                double price = variant.getPriceModifier().doubleValue();
-                if (price < lowestPrice) {
-                    lowestPrice = price;
-                    defaultVariant = variant;
-                }
-            }
-        }
-    }
-    if (lowestPrice == Double.MAX_VALUE) {
-        lowestPrice = product != null && product.getPrice() != null ? product.getPrice().doubleValue() : 0;
-    }
-%>
-
 <jsp:include page="/WEB-INF/views/common/header.jsp" />
-
 <style>
-    :root {
-        --primary-color: #2563eb;
-        --secondary-color: #f97316;
-        --text-color: #1f2937;
-        --border-color: #d1d5db;
-        --background-color: #f9fafb;
-    }
-
     body {
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        background-color: var(--background-color);
-        color: var(--text-color);
-        margin: 0;
-        padding: 0;
+        font-family: 'Jost', sans-serif;
+        background-color: #f8f9fa;
     }
-
     .product-detail-container {
-        max-width: 1280px;
-        margin: 2rem auto;
-        padding: 1.5rem;
-        background: #ffffff;
-        border-radius: 16px;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+        margin-top: 3rem;
+        margin-bottom: 2rem;
+        background-color: white;
+        padding: 2rem;
+        border-radius: 0.5rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        position: relative;
+        z-index: 500;
     }
-
-    .image-gallery-container {
-        display: grid;
-        grid-template-columns: 120px 1fr;
-        gap: 1rem;
-        align-items: start;
-    }
-
-    .thumbnail-column {
+    .product-detail-container .thumbnail-list {
         display: flex;
         flex-direction: column;
         gap: 0.75rem;
     }
-
-    .thumbnail-column img {
+    .product-detail-container .thumbnail-img {
         width: 100%;
         aspect-ratio: 4/5;
         object-fit: cover;
-        border-radius: 8px;
         cursor: pointer;
+        border-radius: 0.25rem;
         border: 2px solid transparent;
-        transition: border-color 0.3s ease, transform 0.2s ease;
+        transition: all 0.2s ease;
     }
-
-    .thumbnail-column img.active, .thumbnail-column img:hover {
-        border-color: var(--primary-color);
-        transform: scale(1.03);
+    .product-detail-container .thumbnail-img.active,
+    .product-detail-container .thumbnail-img:hover {
+        border-color: #0d6efd;
+        transform: scale(1.05);
     }
-
-    .main-image-wrapper {
+    .product-detail-container .main-image-wrapper {
         position: relative;
-        background-color: #f1f5f9;
-        border-radius: 12px;
-        overflow: hidden;
         aspect-ratio: 4/5;
         display: flex;
         align-items: center;
         justify-content: center;
+        background-color: #f1f1f1;
+        border-radius: 0.25rem;
+        overflow: hidden;
     }
-
-    .main-image-wrapper .product-image-main {
+    .product-detail-container .main-image-wrapper img {
         max-width: 100%;
         max-height: 100%;
-        object-fit: contain;
+        object-fit: cover;
     }
-
-    .nav-arrow {
+    .product-detail-container .nav-arrow {
         position: absolute;
         top: 50%;
         transform: translateY(-50%);
-        background-color: rgba(255, 255, 255, 0.95);
+        background-color: rgba(255, 255, 255, 0.9);
         border: none;
         border-radius: 50%;
-        width: 48px;
-        height: 48px;
-        font-size: 1.5rem;
-        color: var(--text-color);
+        width: 40px;
+        height: 40px;
+        font-size: 1.2rem;
+        color: #333;
         cursor: pointer;
-        transition: all 0.3s ease;
+        transition: background-color 0.3s ease;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    .product-detail-container .nav-arrow:hover {
+        background-color: #fff;
+    }
+    .product-detail-container .nav-arrow.prev {
+        left: 1rem;
+    }
+    .product-detail-container .nav-arrow.next {
+        right: 1rem;
+    }
+    .product-detail-container .quantity-selector .btn {
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
+    }
+    .product-detail-container .quantity-selector input {
+        width: 70px;
+        text-align: center;
+        font-size: 1rem;
+    }
+    .product-detail-container .product-info dt {
+        font-weight: 600;
+        color: #495057;
+    }
+    .product-detail-container .product-info dd {
+        color: #6c757d;
+    }
+    .product-detail-container .alert {
+        border-radius: 6px;
+        margin-bottom: 1.5rem;
+        font-size: 0.9rem;
+    }
+    .product-detail-container .btn-dark,
+    .product-detail-container .btn-primary {
+        font-size: 1rem;
+        padding: 0.75rem 1.5rem;
+        border-radius: 50px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    .wishlist-icon {
+        position: absolute;
+        top: 12px;
+        right: 12px;
         z-index: 10;
     }
-
-    .nav-arrow:hover {
-        background-color: #ffffff;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    }
-
-    .nav-arrow.prev { left: 1rem; }
-    .nav-arrow.next { right: 1rem; }
-
-    .product-info-section {
-        padding: 1.5rem;
-    }
-
-    .product-title {
-        font-size: 2rem;
-        font-weight: 700;
-        margin-bottom: 0.75rem;
-        color: var(--text-color);
-    }
-
-    .product-current-price {
-        font-size: 1.75rem;
-        font-weight: 600;
-        color: #dc2626;
-        margin-bottom: 1rem;
-    }
-
-    .product-info {
-        margin-bottom: 1.5rem;
-        font-size: 1rem;
-        line-height: 1.7;
-    }
-
-    .product-info p {
-        margin: 0.5rem 0;
-        color: #4b5563;
-    }
-
-    .product-info p strong {
-        color: var(--text-color);
-    }
-
-    .variant-selector, .quantity-selector {
-        margin-bottom: 1.5rem;
-    }
-
-    .variant-selector label, .quantity-selector label {
-        font-weight: 600;
-        margin-bottom: 0.5rem;
-        display: block;
-        color: var(--text-color);
-    }
-
-    .variant-selector select, .quantity-selector input {
-        width: 100%;
-        max-width: 320px;
-        padding: 0.75rem;
-        border: 1px solid var(--border-color);
-        border-radius: 8px;
-        font-size: 1rem;
-        transition: border-color 0.3s ease, box-shadow 0.3s ease;
-    }
-
-    .variant-selector select:focus, .quantity-selector input:focus {
-        border-color: var(--primary-color);
-        box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
-        outline: none;
-    }
-
-    .quantity-selector {
+    .wishlist-icon-circle {
+        background-color: white;
+        border: 1px solid #ddd;
+        border-radius: 50%;
+        width: 36px;
+        height: 36px;
         display: flex;
         align-items: center;
-        gap: 0.75rem;
-    }
-
-    .quantity-selector button {
-        width: 48px;
-        height: 48px;
-        border: 1px solid var(--border-color);
-        background: #ffffff;
-        border-radius: 8px;
-        font-size: 1.25rem;
+        justify-content: center;
+        color: #666;
+        font-size: 16px;
         cursor: pointer;
         transition: all 0.3s ease;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
-
-    .quantity-selector button:hover {
-        background-color: #f3f4f6;
+    .wishlist-icon-circle:hover {
+        border-color: #ff4d4f;
+        color: #ff4d4f;
     }
-
-    .quantity-selector input {
-        width: 80px;
-        text-align: center;
+    .wishlist-icon-circle.active {
+        border-color: #ff4d4f;
+        color: #ff4d4f;
     }
-
-    .btn-container {
-        display: flex;
-        gap: 1rem;
-        flex-wrap: wrap;
+    .toast-container {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 1050;
     }
-
-    .btn {
-        flex: 1;
-        padding: 0.75rem 1.5rem;
-        border-radius: 8px;
-        font-size: 1rem;
-        font-weight: 600;
-        text-align: center;
-        transition: all 0.3s ease;
-        text-decoration: none;
-        cursor: pointer;
-    }
-
-    .btn-dark {
-        background: var(--text-color);
-        color: #ffffff;
-    }
-
-    .btn-dark:hover {
-        background: #111827;
-        transform: translateY(-2px);
-    }
-
-    .btn-orange {
-        background: var(--secondary-color);
-        color: #ffffff;
-    }
-
-    .btn-orange:hover {
-        background: #ea580c;
-        transform: translateY(-2px);
-    }
-
-    .btn.disabled {
-        background: #e5e7eb;
-        color: #9ca3af;
-        cursor: not-allowed;
-        transform: none;
-    }
-
-    .shipping-info {
-        margin-top: 1.5rem;
-        font-size: 0.875rem;
-        color: #4b5563;
-    }
-
-    .shipping-info ul {
-        list-style: none;
-        padding: 0;
-    }
-
-    .shipping-info ul li {
-        margin: 0.75rem 0;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-
-    .shipping-info ul li i {
-        color: var(--primary-color);
-    }
-
-    .error-message {
-        color: #dc2626;
-        font-weight: 500;
-        margin-bottom: 1.5rem;
-        text-align: center;
-    }
-
-    @media (max-width: 992px) {
-        .image-gallery-container {
-            grid-template-columns: 1fr;
-        }
-
-        .thumbnail-column {
+    @media (max-width: 991.98px) {
+        .product-detail-container .thumbnail-list {
             flex-direction: row;
             overflow-x: auto;
-            white-space: nowrap;
+            padding-bottom: 0.75rem;
             gap: 0.5rem;
         }
-
-        .thumbnail-column img {
+        .product-detail-container .thumbnail-img {
             width: 80px;
             height: 100px;
-        }
-
-        .main-image-wrapper {
-            aspect-ratio: 3/4;
+            flex-shrink: 0;
         }
     }
-
-    @media (max-width: 576px) {
+    @media (max-width: 767.98px) {
         .product-detail-container {
-            margin: 1rem;
-            padding: 1rem;
+            padding: 1.25rem;
+            margin-top: 4rem;
         }
-
-        .product-title {
-            font-size: 1.5rem;
+        .product-detail-container .main-image-wrapper {
+            aspect-ratio: 1/1;
         }
-
-        .product-current-price {
-            font-size: 1.25rem;
-        }
-
-        .btn-container {
-            flex-direction: column;
-        }
-
-        .btn {
-            width: 100%;
+        .product-detail-container .btn-dark,
+        .product-detail-container .btn-primary {
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
         }
     }
 </style>
-
-<div class="product-detail-container">
-    <% if (error != null && !error.isEmpty()) { %>
-        <p class="error-message"><%= error %></p>
-    <% } else if (product != null && "Active".equalsIgnoreCase(product.getStatus())) { %>
-        <div class="row">
-            <div class="col-lg-6">
-                <div class="image-gallery-container">
-                    <div class="thumbnail-column">
-                        <%
-                            if (product.getImages() != null && !product.getImages().isEmpty()) {
-                                for (ProductImage image : product.getImages()) {
-                        %>
-                            <img src="<%= image.getImageUrl() != null ? image.getImageUrl() : "https://placehold.co/100x120" %>"
-                                 alt="Thumbnail of <%= product.getName() != null ? product.getName() : "Product" %>"
-                                 class="<%= image.isMain() ? "active" : "" %>"
-                                 onclick="updateMainImage(this)">
-                        <%
-                            }
-                        } else {
-                        %>
-                            <img src="https://placehold.co/100x120" alt="No Thumbnail" class="active" onclick="updateMainImage(this)">
-                        <%
-                            }
-                        %>
+<div class="container-lg product-detail-container">
+    <c:choose>
+        <c:when test="${not empty errorMessage}">
+            <div class="alert alert-danger text-center" role="alert">${errorMessage}</div>
+        </c:when>
+        <c:when test="${not empty product and product.status eq 'Active'}">
+            <div class="row g-4">
+                <div class="col-lg-6">
+                    <div class="row g-2">
+                        <div class="col-lg-2 order-lg-1 order-2">
+                            <div class="thumbnail-list">
+                                <c:choose>
+                                    <c:when test="${not empty product.images}">
+                                        <c:forEach var="image" items="${product.images}" varStatus="loop">
+                                            <img src="<c:out value='${image.imageUrl}' default='https://placehold.co/100x125/f0f0f0/333?text=No+Image' />"
+                                                 alt="Thumbnail ${loop.count}"
+                                                 class="thumbnail-img ${image.main ? 'active' : ''}">
+                                        </c:forEach>
+                                    </c:when>
+                                    <c:otherwise>
+                                        <img src="https://placehold.co/100x125/f0f0f0/333?text=No+Image" alt="No Image" class="thumbnail-img active">
+                                    </c:otherwise>
+                                </c:choose>
+                            </div>
+                        </div>
+                        <div class="col-lg-10 order-lg-2 order-1">
+                            <div class="main-image-wrapper">
+                                <c:set var="mainImageUrl" value="https://placehold.co/500x625/f0f0f0/333?text=No+Image" />
+                                <c:forEach var="image" items="${product.images}">
+                                    <c:if test="${image.main}">
+                                        <c:set var="mainImageUrl" value="${image.imageUrl}" />
+                                    </c:if>
+                                </c:forEach>
+                                <div class="wishlist-icon">
+                                    <form action="${pageContext.request.contextPath}/wishlist" method="post">
+                                        <input type="hidden" name="action" value="add">
+                                        <input type="hidden" name="productId" value="${product.productId}">
+                                        <button type="submit" class="wishlist-icon-circle ${wishlistProductIds != null && wishlistProductIds.contains(product.productId) ? 'active' : ''}">
+                                            <i class="fas fa-heart"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                                <img src="${mainImageUrl}" alt="<c:out value='${product.name}'/>" id="mainProductImage">
+                                <button class="nav-arrow prev" id="prevImageBtn" aria-label="Previous Image">❮</button>
+                                <button class="nav-arrow next" id="nextImageBtn" aria-label="Next Image">❯</button>
+                            </div>
+                        </div>
                     </div>
-                    <div class="main-image-wrapper">
-                        <%
-                            String mainImageUrl = product.getImageUrl() != null ? product.getImageUrl() : "https://placehold.co/500x600/f0f0f0/333?text=No+Image";
-                            if (product.getImages() != null && !product.getImages().isEmpty()) {
-                                for (ProductImage image : product.getImages()) {
-                                    if (image.isMain()) {
-                                        mainImageUrl = image.getImageUrl() != null ? image.getImageUrl() : "https://placehold.co/500x600";
-                                        break;
-                                    }
-                                }
-                            }
-                        %>
-                        <img src="<%= mainImageUrl %>" alt="<%= product.getName() != null ? product.getName() : "Product Image" %>" class="product-image-main">
-                        <button class="nav-arrow prev" onclick="navigateImage(-1)" aria-label="Previous Image">❮</button>
-                        <button class="nav-arrow next" onclick="navigateImage(1)" aria-label="Next Image">❯</button>
-                    </div>
                 </div>
-            </div>
-            <div class="col-lg-6 product-info-section">
-                <h1 class="product-title"><%= product.getName() != null ? product.getName() : "Unknown Product" %></h1>
-                <p class="product-current-price" id="productPrice"><%= currencyFormat.format(lowestPrice) %></p>
-                <div class="product-info">
-                    <p><strong>Status:</strong> <%= product.getStatus() != null ? product.getStatus() : "N/A" %></p>
-                    <p><strong>Category:</strong> <%= product.getCategory() != null ? product.getCategory().getName() : "N/A" %></p>
-                    <p><strong>Brand:</strong> <%= product.getBrand() != null ? product.getBrand().getName() : "N/A" %></p>
-                    <p><strong>Material:</strong> <%= product.getMaterial() != null ? product.getMaterial() : "N/A" %></p>
-                    <p><strong>Description:</strong> <%= product.getDescription() != null ? product.getDescription() : "No description available" %></p>
-                </div>
-                <div class="variant-selector">
-                    <label for="variantSelect">Select Variant:</label>
-                    <select id="variantSelect" name="variantId" onchange="updatePrice()" aria-describedby="variantHelp">
-                        <%
-                            if (product.getVariants() != null && !product.getVariants().isEmpty()) {
-                                for (ProductVariant variant : product.getVariants()) {
-                                    String size = variant.getSize() != null
-                                            ? variant.getSize().substring(0, 1).toUpperCase() + variant.getSize().substring(1).toLowerCase()
-                                            : "N/A";
-                                    String color = variant.getColor() != null
-                                            ? variant.getColor().substring(0, 1).toUpperCase() + variant.getColor().substring(1).toLowerCase()
-                                            : "N/A";
-                                    String variantLabel = size + " - " + color;
-                                    double finalPrice = variant.getPriceModifier() != null ? variant.getPriceModifier().doubleValue() : lowestPrice;
-                                    int available = productDAO.getAvailableQuantityByVariantId(variant.getVariantId());
-                        %>
-                            <option value="<%= variant.getVariantId() %>"
-                                    data-price="<%= finalPrice %>"
-                                    data-sku="<%= variant.getSku() != null ? variant.getSku() : "N/A" %>"
-                                    data-available="<%= available %>"
-                                    <%= defaultVariant != null && defaultVariant.getVariantId().equals(variant.getVariantId()) ? "selected" : "" %>>
-                                <%= variantLabel %> - <%= currencyFormat.format(finalPrice) %> <%= available > 0 ? "" : "(Out of Stock)" %>
-                            </option>
-                        <%
-                            }
-                        } else {
-                        %>
-                            <option value="0" data-price="<%= lowestPrice %>" data-available="0">No variants available</option>
-                        <%
-                            }
-                        %>
-                    </select>
-                    <small id="variantHelp" class="form-text text-muted">Choose size and color combination.</small>
-                </div>
-                <div class="quantity-selector">
-                    <label for="quantity">Quantity:</label>
-                    <div>
-                        <button onclick="decreaseQuantity()" aria-label="Decrease Quantity">-</button>
-                        <input type="number" id="quantity" value="1" min="1" readonly aria-describedby="quantityHelp">
-                        <button onclick="increaseQuantity()" aria-label="Increase Quantity">+</button>
-                    </div>
-                    <small id="quantityHelp" class="form-text text-muted">Select the number of items.</small>
-                </div>
-                <div class="btn-container">
-                    <form id="addToCartForm" action="${pageContext.request.contextPath}/customer/cart" method="post">
-                        <input type="hidden" name="action" value="add">
-                        <input type="hidden" name="variantId" id="cartVariantId" value="<%= defaultVariant != null ? defaultVariant.getVariantId() : 0 %>">
-                        <input type="hidden" name="quantity" id="cartQuantity" value="1">
-                        <button type="submit" id="addToCartBtn" class="btn btn-dark <%= defaultVariant != null && productDAO.getAvailableQuantityByVariantId(defaultVariant.getVariantId()) > 0 ? "" : "disabled" %>">
-                            <%= defaultVariant != null && productDAO.getAvailableQuantityByVariantId(defaultVariant.getVariantId()) > 0 ? "Add to Cart" : "Out of Stock" %>
-                        </button>
-                    </form>
-                    <form id="buyNowForm" action="${pageContext.request.contextPath}/customer/checkout" method="post">
-                        <input type="hidden" name="action" value="buy">
-                        <input type="hidden" name="productId" value="<%= product != null ? product.getProductId() : 0 %>">
-                        <input type="hidden" name="variantId" id="buyVariantId" value="<%= defaultVariant != null ? defaultVariant.getVariantId() : 0 %>">
-                        <input type="hidden" name="quantity" id="buyQuantity" value="1">
-                        <button type="submit" id="buyNowBtn" class="btn btn-orange <%= defaultVariant != null && productDAO.getAvailableQuantityByVariantId(defaultVariant.getVariantId()) > 0 ? "" : "disabled" %>">
-                            <%= defaultVariant != null && productDAO.getAvailableQuantityByVariantId(defaultVariant.getVariantId()) > 0 ? "Buy Now" : "Out of Stock" %>
-                        </button>
+                <div class="col-lg-6">
+                    <h1 class="mb-2 fs-2 fw-bold"><c:out value="${product.name}" default="Undefined Product"/></h1>
+                    <p class="fs-3 text-danger fw-light" id="productPrice">
+                        <%= NumberFormat.getCurrencyInstance(new Locale("vi", "VN")).format(request.getAttribute("lowestPrice") != null ? (Double) request.getAttribute("lowestPrice") : 0) %>
+                    </p>
+                    <dl class="row product-info mb-3">
+                        <dt class="col-sm-3">Category:</dt>
+                        <dd class="col-sm-9"><c:out value="${product.category.name}" default="N/A"/></dd>
+                        <dt class="col-sm-3">Brand:</dt>
+                        <dd class="col-sm-9"><c:out value="${product.brand.name}" default="N/A"/></dd>
+                        <dt class="col-sm-3">Material:</dt>
+                        <dd class="col-sm-9"><c:out value="${product.material}" default="N/A"/></dd>
+                    </dl>
+                    <p class="text-muted"><c:out value="${product.description}" default="No description."/></p>
+                    <form id="productForm">
+                        <div class="mb-3">
+                            <label for="variantSelect" class="form-label fw-bold">Select Variant:</label>
+                            <select id="variantSelect" name="variantId" class="form-select">
+                                <c:choose>
+                                    <c:when test="${not empty product.variants}">
+                                        <c:forEach var="variant" items="${product.variants}">
+                                            <option value="${variant.variantId}"
+                                                    data-price="${variant.priceModifier}"
+                                                    data-available="${variant.quantity}"
+                                                    ${defaultVariant.variantId eq variant.variantId ? 'selected' : ''}>
+                                                ${variant.size} - ${variant.color}
+                                                <c:if test="${variant.quantity <= 0}"> (Out of stock)</c:if>
+                                            </option>
+                                        </c:forEach>
+                                    </c:when>
+                                    <c:otherwise>
+                                        <option value="0" data-price="${lowestPrice}" data-available="0">No variants</option>
+                                    </c:otherwise>
+                                </c:choose>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="quantity" class="form-label fw-bold">Quantity:</label>
+                            <div class="d-flex align-items-center gap-2 quantity-selector">
+                                <button type="button" class="btn btn-outline-secondary" id="decreaseQtyBtn">-</button>
+                                <input type="number" id="quantity" name="quantity" value="1" min="1" class="form-control" readonly>
+                                <button type="button" class="btn btn-outline-secondary" id="increaseQtyBtn">+</button>
+                                <small id="stockStatus" class="ms-2 text-muted"></small>
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2 flex-wrap mt-4">
+                            <button type="button" id="addToCartBtn" class="btn btn-dark flex-grow-1">
+                                <i class="fas fa-cart-plus"></i> Add to Cart
+                            </button>
+                            <button type="button" id="buyNowBtn" class="btn btn-primary flex-grow-1">
+                                <i class="fas fa-bag-check"></i> Buy Now
+                            </button>
+                        </div>
                     </form>
                 </div>
-                <div class="shipping-info">
-                    <ul>
-                        <li><i class="bi bi-truck"></i> Free shipping on orders over 500,000 VND</li>
-                        <li><i class="bi bi-arrow-counterclockwise"></i> 30-day return policy</li>
-                        <li><i class="bi bi-shield-check"></i> Secure payment methods</li>
-                    </ul>
-                </div>
             </div>
-        </div>
-    <% } else { %>
-        <p class="error-message">No product details available or product is not active.</p>
-    <% } %>
+        </c:when>
+        <c:otherwise>
+            <div class="alert alert-warning text-center" role="alert">Product does not exist or is discontinued.</div>
+        </c:otherwise>
+    </c:choose>
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<div class="toast-container"></div>
+<jsp:include page="/WEB-INF/views/common/footer.jsp" />
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        const mainImage = document.querySelector('.product-image-main');
-        const thumbnails = document.querySelectorAll('.thumbnail-column img');
-        let currentIndex = Array.from(thumbnails).findIndex(thumb => thumb.classList.contains('active'));
+        const showToast = function (message, isSuccess) {
+            const toast = document.createElement('div');
+            toast.className = `toast align-items-center text-white ${isSuccess ? 'bg-success' : 'bg-danger'} border-0`;
+            toast.setAttribute('role', 'alert');
+            toast.setAttribute('aria-live', 'assertive');
+            toast.setAttribute('aria-atomic', 'true');
+            toast.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">${message}</div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            `;
+            document.querySelector('.toast-container').appendChild(toast);
+            new bootstrap.Toast(toast, {delay: 3000}).show();
+        };
 
-        window.updateMainImage = (selectedThumb) => {
+        const mainImage = document.getElementById('mainProductImage');
+        const thumbnails = document.querySelectorAll('.product-detail-container .thumbnail-img');
+        const prevImageBtn = document.getElementById('prevImageBtn');
+        const nextImageBtn = document.getElementById('nextImageBtn');
+        const variantSelect = document.getElementById('variantSelect');
+        const priceElement = document.getElementById('productPrice');
+        const quantityInput = document.getElementById('quantity');
+        const decreaseQtyBtn = document.getElementById('decreaseQtyBtn');
+        const increaseQtyBtn = document.getElementById('increaseQtyBtn');
+        const stockStatus = document.getElementById('stockStatus');
+        const addToCartBtn = document.getElementById('addToCartBtn');
+        const buyNowBtn = document.getElementById('buyNowBtn');
+        const productForm = document.getElementById('productForm');
+        let currentIndex = Array.from(thumbnails).findIndex(thumb => thumb.classList.contains('active'));
+        let currentAvailable = 0;
+
+        const updateMainImage = (selectedThumb) => {
+            if (!mainImage || !selectedThumb) return;
             mainImage.src = selectedThumb.src;
             mainImage.alt = selectedThumb.alt;
             thumbnails.forEach(t => t.classList.remove('active'));
@@ -478,78 +326,124 @@
             currentIndex = Array.from(thumbnails).indexOf(selectedThumb);
         };
 
-        window.navigateImage = (direction) => {
+        const navigateImage = (direction) => {
+            if (thumbnails.length === 0) return;
             let newIndex = currentIndex + direction;
             if (newIndex >= thumbnails.length) newIndex = 0;
             if (newIndex < 0) newIndex = thumbnails.length - 1;
             updateMainImage(thumbnails[newIndex]);
         };
 
-        window.decreaseQuantity = () => {
-            const quantityInput = document.getElementById('quantity');
-            let value = parseInt(quantityInput.value);
-            if (value > 1) {
-                quantityInput.value = value - 1;
-                updateFormQuantities();
+        thumbnails.forEach(thumb => thumb.addEventListener('click', () => updateMainImage(thumb)));
+        prevImageBtn.addEventListener('click', () => navigateImage(-1));
+        nextImageBtn.addEventListener('click', () => navigateImage(1));
+
+        const currencyFormatter = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' });
+
+        const updateUIFromVariant = () => {
+            const selectedOption = variantSelect.options[variantSelect.selectedIndex];
+            if (!selectedOption) return;
+            const price = parseFloat(selectedOption.dataset.price || '0');
+            currentAvailable = parseInt(selectedOption.dataset.available || '0', 10);
+            priceElement.textContent = currencyFormatter.format(price);
+            stockStatus.textContent = currentAvailable > 0 ? `(Available: ${currentAvailable} items)` : '(Out of stock)';
+            quantityInput.value = 1;
+            quantityInput.max = currentAvailable;
+            const isAvailable = currentAvailable > 0;
+            addToCartBtn.disabled = !isAvailable;
+            buyNowBtn.disabled = !isAvailable;
+            increaseQtyBtn.disabled = !isAvailable || quantityInput.value >= currentAvailable;
+            decreaseQtyBtn.disabled = !isAvailable || quantityInput.value <= 1;
+            addToCartBtn.innerHTML = isAvailable ? '<i class="fas fa-cart-plus"></i> Add to Cart' : '<i class="fas fa-x-circle"></i> Out of Stock';
+            buyNowBtn.innerHTML = isAvailable ? '<i class="fas fa-bag-check"></i> Buy Now' : '<i class="fas fa-x-circle"></i> Out of Stock';
+        };
+
+        increaseQtyBtn.addEventListener('click', () => {
+            let currentQty = parseInt(quantityInput.value, 10);
+            if (currentQty < currentAvailable) {
+                quantityInput.value = currentQty + 1;
+                decreaseQtyBtn.disabled = false;
+                increaseQtyBtn.disabled = currentQty + 1 >= currentAvailable;
             }
-        };
+        });
 
-        window.increaseQuantity = () => {
-            const quantityInput = document.getElementById('quantity');
-            const select = document.getElementById('variantSelect');
-            const selectedOption = select.options[select.selectedIndex];
-            const available = parseInt(selectedOption.getAttribute('data-available')) || 0;
-            let value = parseInt(quantityInput.value);
-            if (value < available) {
-                quantityInput.value = value + 1;
-                updateFormQuantities();
-            } else {
-                alert(`Maximum available quantity: ${available}`);
+        decreaseQtyBtn.addEventListener('click', () => {
+            let currentQty = parseInt(quantityInput.value, 10);
+            if (currentQty > 1) {
+                quantityInput.value = currentQty - 1;
+                increaseQtyBtn.disabled = false;
+                decreaseQtyBtn.disabled = currentQty - 1 <= 1;
             }
-        };
+        });
 
-        const updateFormQuantities = () => {
-            const quantityInput = document.getElementById('quantity');
-            document.getElementById('cartQuantity').value = quantityInput.value;
-            document.getElementById('buyQuantity').value = quantityInput.value;
-        };
-
-        window.updatePrice = () => {
-            const select = document.getElementById('variantSelect');
-            const priceElement = document.getElementById('productPrice');
-            const addToCartBtn = document.getElementById('addToCartBtn');
-            const buyNowBtn = document.getElementById('buyNowBtn');
-            const selectedOption = select.options[select.selectedIndex];
-            const finalPrice = parseFloat(selectedOption.getAttribute('data-price')) || <%= lowestPrice %>;
-            const available = parseInt(selectedOption.getAttribute('data-available')) || 0;
-
-            priceElement.textContent = new Intl.NumberFormat('vi-VN', {
-                style: 'currency',
-                currency: 'VND'
-            }).format(finalPrice);
-
-            const quantityInput = document.getElementById('quantity');
-            if (available > 0) {
-                addToCartBtn.textContent = 'Add to Cart';
-                buyNowBtn.textContent = 'Buy Now';
-                addToCartBtn.classList.remove('disabled');
-                buyNowBtn.classList.remove('disabled');
-                quantityInput.value = Math.min(parseInt(quantityInput.value), available);
-            } else {
-                addToCartBtn.textContent = 'Out of Stock';
-                buyNowBtn.textContent = 'Out of Stock';
-                addToCartBtn.classList.add('disabled');
-                buyNowBtn.classList.add('disabled');
-                quantityInput.value = 1;
+        addToCartBtn.addEventListener('click', () => {
+            if (currentAvailable <= 0) {
+                showToast('This product is out of stock.', false);
+                return;
             }
+            const formData = new FormData(productForm);
+            formData.append('action', 'add');
+            fetch('${pageContext.request.contextPath}/customer/cart', {
+                method: 'POST',
+                body: new URLSearchParams(formData),
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Network response was not ok: ' + response.statusText);
+                return response.json();
+            })
+            .then(result => {
+                console.log('Add to Cart response:', result);
+                if (result.success) {
+                    showToast(result.message || 'Product added to cart!', true);
+                    setTimeout(() => {
+                        window.location.href = '${pageContext.request.contextPath}/customer/cart';
+                    }, 1000);
+                } else {
+                    showToast(result.message || 'Unable to add to cart.', false);
+                }
+            })
+            .catch(error => {
+                console.error('Error adding to cart:', error);
+                showToast('An error occurred while adding to cart: ' + error.message, false);
+            });
+        });
 
-            document.getElementById('cartVariantId').value = selectedOption.value;
-            document.getElementById('buyVariantId').value = selectedOption.value;
-            updateFormQuantities();
-        };
+        buyNowBtn.addEventListener('click', () => {
+            if (currentAvailable <= 0) {
+                showToast('This product is out of stock.', false);
+                return;
+            }
+            productForm.action = '${pageContext.request.contextPath}/customer/checkout';
+            productForm.method = 'POST';
+            productForm.submit();
+        });
 
-        updatePrice();
+        variantSelect.addEventListener('change', updateUIFromVariant);
+        updateUIFromVariant();
+
+        document.querySelectorAll('[data-bs-toggle="dropdown"]').forEach(toggle => {
+            toggle.addEventListener('click', function (e) {
+                const dropdown = document.getElementById(this.getAttribute('aria-controls'));
+                if (dropdown) {
+                    const isOpen = dropdown.classList.contains('show');
+                    document.querySelectorAll('.dropdown-menu.show').forEach(d => d.classList.remove('show'));
+                    if (!isOpen) {
+                        dropdown.classList.add('show');
+                    }
+                }
+            });
+        });
+
+        document.addEventListener('click', function (e) {
+            if (!e.target.closest('.dropdown')) {
+                document.querySelectorAll('.dropdown-menu.show').forEach(dropdown => {
+                    dropdown.classList.remove('show');
+                });
+            }
+        });
     });
 </script>
-
-<jsp:include page="/WEB-INF/views/common/footer.jsp" />
