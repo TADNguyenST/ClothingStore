@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.sql.Date;
 
 public class Voucher {
+
     private long voucherId;
     private String code;
     private String name;
@@ -152,5 +153,4 @@ public class Voucher {
     public Voucher() {
     }
 
-    
 }

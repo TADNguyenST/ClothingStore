@@ -3,10 +3,9 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 
-</main> <%-- Đóng thẻ main từ header --%>
+</main> <%-- Đóng thẻ <main> mở từ header.jsp --%>
 
 <style>
-    /* CSS cho Footer */
     .main-footer {
         background-color: #f8f9fa;
         color: #6c757d;
@@ -56,8 +55,11 @@
         <div class="row">
             <div class="col-lg-3 col-md-6 mb-4 mb-lg-0">
                 <h5 class="footer-heading">CLOTHING</h5>
-                <p class="small">The best place to find your style. We offer high-quality clothing for men and women with unique designs.</p>
+                <p class="small">
+                    The best place to find your style. We offer high-quality clothing for men and women with unique designs.
+                </p>
             </div>
+
             <div class="col-lg-2 col-md-6 mb-4 mb-lg-0">
                 <h5 class="footer-heading">Shop</h5>
                 <ul class="list-unstyled footer-links">
@@ -67,6 +69,7 @@
                     <li><a href="#">On Sale</a></li>
                 </ul>
             </div>
+
             <div class="col-lg-3 col-md-6 mb-4 mb-lg-0">
                 <h5 class="footer-heading">Help & Support</h5>
                 <ul class="list-unstyled footer-links">
@@ -77,6 +80,7 @@
                     <li><a href="#">Terms of Service</a></li>
                 </ul>
             </div>
+
             <div class="col-lg-4 col-md-6 mb-4 mb-lg-0">
                 <h5 class="footer-heading">Stay Connected</h5>
                 <p class="small">Subscribe to our newsletter to get the latest updates and special offers.</p>
@@ -92,9 +96,13 @@
                 </div>
             </div>
         </div>
+
         <div class="footer-bottom d-flex flex-column flex-md-row justify-content-between align-items-center">
-            <c:set var="currentYear"><jsp:useBean id="date" class="java.util.Date" /><fmt:formatDate value="${date}" pattern="yyyy" /></c:set>
+            <%-- Năm hiện tại gọn gàng --%>
+            <jsp:useBean id="now" class="java.util.Date" scope="request"/>
+            <fmt:formatDate var="currentYear" value="${now}" pattern="yyyy"/>
             <p class="small mb-3 mb-md-0">&copy; ${currentYear} ClothingStore. All Rights Reserved.</p>
+
             <div class="footer-payment-icons">
                 <i class="fab fa-cc-visa fa-2x mx-1"></i>
                 <i class="fab fa-cc-mastercard fa-2x mx-1"></i>
@@ -105,30 +113,26 @@
     </div>
 </footer>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="${pageContext.request.contextPath}/assets/js/main.js"></script>
+
 <script>
-    // Đợi cho toàn bộ nội dung trang được tải xong rồi mới chạy script
+    // Auto-close Bootstrap alerts after 5s (nếu có phần tử .alert-dismissible trên trang)
     document.addEventListener('DOMContentLoaded', function () {
-
-        // 1. Tìm tất cả các thẻ div có class là "alert-dismissible"
-        // Đây là class mà chúng ta đã dùng cho các thông báo trong các trang trước
-        const alertMessages = document.querySelectorAll('.alert-dismissible');
-
-        // 2. Với mỗi thông báo tìm được, thực hiện hành động sau:
-        alertMessages.forEach(function (alert) {
-
-            // 3. Đặt một bộ đếm thời gian, sau 5 giây (5000 mili giây) sẽ tự động thực thi
-            setTimeout(function () {
-
-                // 4. Dùng hàm 'close' có sẵn của Bootstrap để đóng thông báo một cách mượt mà
-                // Điều này yêu cầu project đã nhúng file Javascript của Bootstrap
-                const bsAlert = new bootstrap.Alert(alert);
-                bsAlert.close();
-
-            }, 5000); // Bạn có thể thay đổi thời gian ở đây, ví dụ: 3000 cho 3 giây
-        });
+        var alerts = document.querySelectorAll('.alert-dismissible');
+        for (var i = 0; i < alerts.length; i++) {
+            (function (alertEl) {
+                setTimeout(function () {
+                    try {
+                        var bsAlert = bootstrap.Alert.getOrCreateInstance(alertEl);
+                        bsAlert.close();
+                    } catch (e) {
+                        // no-op
+                    }
+                }, 5000);
+            })(alerts[i]);
+        }
     });
 </script>
+
 </body>
 </html>
