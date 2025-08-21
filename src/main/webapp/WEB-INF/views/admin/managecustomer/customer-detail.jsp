@@ -90,6 +90,7 @@
             .back-link:hover {
                 background-color: #138496;
             }
+            
         </style>
     </head>
     <body>
@@ -100,7 +101,7 @@
         <jsp:include page="/WEB-INF/includes/admin-sidebar.jsp" />
 
         <div class="main-content-wrapper">
-            <jsp:include page="/WEB-INF/includes/admin-header.jsp" />
+            
             <div class="content-area">
                 <h2>Customer Information</h2>
 

@@ -221,7 +221,6 @@
                 </div>
                 <a href="<%= request.getContextPath()%>/ProductDetail?productId=<%= product.getProductId()%>" class="product-title"><%= name%></a>
                 <p class="product-price"><%= price%></p>
-                <p class="stock-status"><%= product.getStockStatus() %> (Qty: <%= product.getQuantity() %>)</p>
                 <div class="btn-container" id="cartButtons-<%= product.getProductId()%>">
                     <form id="addToCartForm-<%= product.getProductId()%>" data-product-id="<%= product.getProductId()%>" data-has-stock="<%= hasStock%>">
                         <input type="hidden" name="action" value="add">
