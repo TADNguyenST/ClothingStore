@@ -123,6 +123,7 @@
             text-align: right;
             margin-top: 20px;
         }
+        
     </style>
 </head>
 <body>
@@ -137,7 +138,7 @@
 
     <div class="main-content-wrapper">
         <%-- Nhúng Header --%>
-        <jsp:include page="/WEB-INF/includes/admin-header.jsp" />
+        
 
         <%-- Nội dung chính của trang Edit Staff --%>
         <div class="content-area">

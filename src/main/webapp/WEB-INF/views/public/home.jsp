@@ -311,7 +311,7 @@
                     <img src="https://images.unsplash.com/photo-1532453288672-3a27e9be9efd?q=80&w=2070&auto=format&fit=crop" alt="Men's Collection">
                     <div class="content">
                         <h3>Men's Collection</h3>
-                        <a href="<%= request.getContextPath()%>/ProductList/men" class="btn btn-outline-light">Explore Men</a>
+                        <a href="<%= request.getContextPath()%>/ProductList?parentCategoryId=<%= menCategoryId%>" class="btn btn-outline-light">Explore Men</a>
                     </div>
                 </div>
             </div>
@@ -322,7 +322,7 @@
                     <img src="https://images.unsplash.com/photo-1529139574466-a303027c1d8b?q=80&w=2070&auto=format&fit=crop" alt="Women's Collection">
                     <div class="content">
                         <h3>Women's Collection</h3>
-                        <a href="<%= request.getContextPath()%>/ProductList/women" class="btn btn-outline-light">Explore Women</a>
+                        <a href="<%= request.getContextPath()%>/ProductList?parentCategoryId=<%= womenCategoryId%>" class="btn btn-outline-light">Explore Women</a>
                     </div>
                 </div>
             </div>
@@ -348,8 +348,8 @@
                         String price = product.getPrice() != null ? currencyFormat.format(product.getPrice()) : "N/A";
                         Long variantId = product.getDefaultVariantId();
                         boolean hasVariant = variantId != null && variantId != 0;
-                        int available = (availableMap != null) ? availableMap.getOrDefault(product.getProductId(), 0) : 0;
-                        boolean hasStock = hasVariant && (available > 0);
+                        int available = product.getQuantity();
+                        boolean hasStock = available > 0;
                         String buttonTextCart = hasStock ? "Add to Cart" : "Out of Stock";
                         String buttonTextBuy = hasStock ? "Buy Now" : "Out of Stock";
             %>

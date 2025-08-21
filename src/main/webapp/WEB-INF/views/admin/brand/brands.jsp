@@ -131,7 +131,7 @@
     <c:set var="currentAction" value="brands" scope="request"/>
     <c:set var="currentModule" value="admin" scope="request"/>
     <c:set var="pageTitle" value="Brand List" scope="request"/>
-    <jsp:include page="/WEB-INF/includes/sidebar.jsp" />
+    <jsp:include page="/WEB-INF/includes/admin-sidebar.jsp" />
     <div class="content-area">
         <h2 style="text-align: center;">Brand List</h2>
         <div class="search-filter-container">
