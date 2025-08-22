@@ -1,210 +1,270 @@
-<%-- src/main/webapp/WEB-INF/includes/admin-sidebar.jsp --%>
-<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+<style>
+    /* --- CSS Variables --- */
+    :root {
+        --primary-color: #0E4BF1;
+        --panel-color: #FFF;
+        --text-color: #333;
+        --black-light-color: #707070;
+        --border-color: #E6E5E5;
+        --toggle-color: #DDD;
+        --title-icon-color: #FFF;
+        --tran-03: all 0.3s ease;
+        --tran-05: all 0.5s ease;
+    }
+    /* --- Global Styles --- */
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: 'Poppins', sans-serif;
+    }
+    body {
+        min-height: 100vh;
+        background-color: #f4f5f7;
+        transition: var(--tran-05);
+        margin: 0;
+        overflow-x: hidden; /* Prevent horizontal scrollbar */
+    }
+    a {
+        text-decoration: none;
+    }
+    /* --- Sidebar --- */
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100%;
+        width: 260px;
+        padding: 10px 14px;
+        background-color: white;
+        border-right: 1px solid var(--border-color);
+        transition: var(--tran-05);
+        z-index: 100;
+    }
+    .sidebar.close {
+        width: 88px; /* Collapse to 88px */
+    }
+    .sidebar.hidden {
+        left: -260px; /* Completely hidden on mobile */
+    }
+    /* --- Sidebar Header --- */
+    .sidebar-header {
+        position: relative;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 0;
+    }
+    .sidebar .logo {
+        display: flex;
+        align-items: center;
+    }
+    .sidebar .logo i {
+        font-size: 28px;
+        margin-right: 5px;
+        color: var(--primary-color);
+    }
+    .sidebar .logo span {
+        font-size: 22px;
+        font-weight: 600;
+        color: var(--text-color);
+        opacity: 1;
+        transition: var(--tran-03);
+    }
+    .sidebar.close .logo span {
+        opacity: 0;
+        pointer-events: none;
+    }
+    /* Toggle button for sidebar */
+    #btn-toggle {
+        position: absolute;
+        top: 50%;
+        right: -25px;
+        transform: translateY(-50%) rotate(180deg);
+        height: 25px;
+        width: 25px;
+        background-color: var(--primary-color);
+        color: var(--panel-color);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        cursor: pointer;
+        transition: var(--tran-05);
+    }
+    .sidebar.close #btn-toggle {
+        transform: translateY(-50%) rotate(0deg);
+        right: -10px; /* Adjust button position when collapsed */
+    }
+    /* --- Sidebar Links --- */
+    .sidebar-links {
+        height: calc(100% - 90px);
+        display: flex; /* Use flexbox to push logout to the bottom */
+        flex-direction: column;
+        justify-content: space-between;
+        overflow-y: auto; /* Allow vertical scrolling if needed */
+        padding-top: 20px;
+        list-style: none;
+        padding-left: 0; /* Reset padding left */
+    }
+    .sidebar-links a {
+        display: flex;
+        align-items: center;
+        height: 50px;
+        width: 100%;
+        border-radius: 8px;
+        color: var(--black-light-color);
+        transition: var(--tran-03);
+        padding: 0 10px; /* Add padding to avoid icon and text sticking to the edge */
+    }
 
-<div class="sidebar">
-    <ul class="sidebar-menu">
-        <li class="header">MAIN NAVIGATION</li>
+    .sidebar.close .sidebar-links a {
+        padding: 0; /* Reset padding when collapsed */
+    }
 
-        <%-- Use requestScope.currentAction and requestScope.currentModule to activate menu items --%>
-        <li class="${requestScope.currentAction eq 'home' || requestScope.currentAction == null || requestScope.currentAction eq 'dashboard' ? 'active' : ''}">
-            <a href="${pageContext.request.contextPath}/Admindashboard?action=dashboard&module=admin">
-                <i class="fa fa-dashboard"></i> <span>Dashboard</span>
-            </a>
-        </li>
-
-        <li class="treeview ${requestScope.currentModule eq 'category' ? 'active menu-open' : ''}">
-            <a href="#">
-                <i class="fa fa-th"></i> <span>Category Management</span>
-                <span class="pull-right-container"><i class="fa fa-angle-left pull-right"></i></span>
-            </a>
-            <ul class="treeview-menu">
-                <li class="${requestScope.currentAction eq 'categoryList' ? 'active' : ''}">
-                    <a href="${pageContext.request.contextPath}/Admindashboard?action=categoryList&module=category"><i class="fa fa-circle-o"></i> Category List</a>
-                </li>
-                <li class="${requestScope.currentAction eq 'categoryForm' ? 'active' : ''}">
-                    <a href="${pageContext.request.contextPath}/Admindashboard?action=categoryForm&module=category"><i class="fa fa-circle-o"></i> Add New Category</a>
-                </li>
-                <li class="${requestScope.currentAction eq 'categoryDetails' ? 'active' : ''}">
-                    <a href="${pageContext.request.contextPath}/admindashboard?action=categoryDetails&module=category"><i class="fa fa-circle-o"></i> Category Details</a>
-                </li>
-            </ul>
-        </li>
-
-        <li class="treeview ${requestScope.currentModule eq 'mangestaff' ? 'active menu-open' : ''}">
-            <a href="#">
-                <i class="fa fa-user-secret"></i> <span>Staff Account Management</span>
-                <span class="pull-right-container"><i class="fa fa-angle-left pull-right"></i></span>
-            </a>
-            <ul class="treeview-menu">
-                <li class="${requestScope.currentAction eq 'staffList' ? 'active' : ''}">
-                    <a href="${pageContext.request.contextPath}/StaffManagement">
-                        <i class="fa fa-circle-o"></i> Account List
-                    </a>
-                </li>
-                <li class="${requestScope.currentAction eq 'staffForm' ? 'active' : ''}">
-                    <a href="${pageContext.request.contextPath}/CreateAccount">
-                        <i class="fa fa-circle-o"></i> Add Staff
-                    </a>
-                </li>
-                <li class="${requestScope.currentAction eq 'staffDetails' ? 'active' : ''}">
-                    <a href="${pageContext.request.contextPath}/admindashboard?action=staffDetails&module=mangestaff">
-                        <i class="fa fa-circle-o"></i> Account Details
-                    </a>
-                </li>
-            </ul>
-        </li>
-
-        <li class="treeview ${requestScope.currentModule eq 'voucher' ? 'active menu-open' : ''}">
-            <a href="#">
-                <i class="fa fa-ticket"></i> <span>Voucher Management</span>
-                <span class="pull-right-container"><i class="fa fa-angle-left pull-right"></i></span>
-            </a>
-            <ul class="treeview-menu">
-                <li class="${requestScope.currentAction eq 'voucherList' ? 'active' : ''}">
-                    <a href="${pageContext.request.contextPath}/Admindashboard?action=voucherList&module=voucher"><i class="fa fa-circle-o"></i> Voucher List</a>
-                </li>
-                <li class="${requestScope.currentAction eq 'voucherForm' ? 'active' : ''}">
-                    <a href="${pageContext.request.contextPath}/admindashboard?action=voucherForm&module=voucher"><i class="fa fa-circle-o"></i> Create New Voucher</a>
-                </li>
-                <li class="${requestScope.currentAction eq 'sendVoucher' ? 'active' : ''}">
-                    <a href="${pageContext.request.contextPath}/admindashboard?action=sendVoucher&module=voucher"><i class="fa fa-circle-o"></i> Send Voucher</a>
-                </li>
-                <li class="${requestScope.currentAction eq 'voucherDetails' ? 'active' : ''}">
-                    <a href="${pageContext.request.contextPath}/admindashboard?action=voucherDetails&module=voucher"><i class="fa fa-circle-o"></i> Voucher Details</a>
-                </li>
-            </ul>
-        </li>
-        <li class="treeview ${requestScope.currentModule eq 'brand' ? 'active menu-open' : ''}">
-            <a href="#">
-                <i class="fa fa-tags"></i> <span>Brand Management</span>
-                <span class="pull-right-container"><i class="fa fa-angle-left pull-right"></i></span>
-            </a>
-            <ul class="treeview-menu">
-                <li class="${requestScope.currentAction eq 'brandList' ? 'active' : ''}">
-                    <a href="${pageContext.request.contextPath}/BrandManager?action=list&module=brand"><i class="fa fa-circle-o"></i> Brand List</a>
-                </li>
-                <li class="${requestScope.currentAction eq 'brandForm' ? 'active' : ''}">
-                    <a href="${pageContext.request.contextPath}/BrandManager?action=create&module=brand"><i class="fa fa-circle-o"></i> Add New Brand</a>
-                </li>
-                <li class="${requestScope.currentAction eq 'brandDetails' ? 'active' : ''}">
-                    <a href="${pageContext.request.contextPath}/BrandManager?action=detail&module=brand"><i class="fa fa-circle-o"></i> Brand Details</a>
-                </li>
-            </ul>
-        </li>
-        <%-- NOTE: C c module d??i ? y (product, order, blog, customer, feedback, revenue, stock, supplier) --%>
-        <%-- B?n ?  n i ch ng n?m trong th? m?c 'staff' trong WEB-INF/views/staff/ --%>
-        <%-- V  v?y, ???ng d?n trong href c?a ch ng v?n l  /admindashboard v  module t??ng ?ng --%>
-        <%-- ?i?u ch?nh `currentModule` trong Controller ?? kh?p v?i t n th? m?c `staff` khi c?n --%>
-
-        <li class="${requestScope.currentModule eq 'product' ? 'active' : ''}">
-            <a href="${pageContext.request.contextPath}/Admindashboard?action=productList&module=product">
-                <i class="fa fa-cubes"></i> <span>Product Management</span>
-            </a>
-        </li>
-        <li class="treeview ${requestScope.currentModule eq 'order' ? 'active menu-open' : ''}">
-            <a href="#">
-                <i class="fa fa-shopping-cart"></i> <span>Order Management</span>
-                <span class="pull-right-container"><i class="fa fa-angle-left pull-right"></i></span>
-            </a>
-            <ul class="treeview-menu">
-                <li class="${requestScope.currentAction eq 'orderList' ? 'active' : ''}">
-                    <a href="${pageContext.request.contextPath}/admindashboard?action=orderList&module=order"><i class="fa fa-circle-o"></i> Order List</a>
-                </li>
-                <li class="${requestScope.currentAction eq 'orderDetails' ? 'active' : ''}">
-                    <a href="${pageContext.request.contextPath}/admindashboard?action=orderDetails&module=order"><i class="fa fa-circle-o"></i> Order Details</a>
-                </li>
-            </ul>
-        </li>
-
-        <li class="treeview ${requestScope.currentModule eq 'blog' ? 'active menu-open' : ''}">
-            <a href="#">
-                <i class="fa fa-pencil-square-o"></i> <span>Blog Management</span>
-                <span class="pull-right-container"><i class="fa fa-angle-left pull-right"></i></span>
-            </a>
-            <ul class="treeview-menu">
-                <li class="${requestScope.currentAction eq 'blogList' ? 'active' : ''}">
-                    <a href="${pageContext.request.contextPath}/admindashboard?action=blogList&module=blog"><i class="fa fa-circle-o"></i> Blog List</a>
-                </li>
-                <li class="${requestScope.currentAction eq 'blogForm' ? 'active' : ''}">
-                    <a href="${pageContext.request.contextPath}/admindashboard?action=blogForm&module=blog"><i class="fa fa-circle-o"></i> Blog Form</a>
-                </li>
-            </ul>
-        </li>
-
-        <li class="treeview ${requestScope.currentModule eq 'customer' ? 'active menu-open' : ''}">
-            <a href="#">
-                <i class="fa fa-users"></i> <span>Customer Management</span>
-                <span class="pull-right-container"><i class="fa fa-angle-left pull-right"></i></span>
-            </a>
-            <ul class="treeview-menu">
-                <li class="${requestScope.currentAction eq 'customerList' ? 'active' : ''}">
-                    <a href="${pageContext.request.contextPath}/CustomerManagement">
-                        <i class="fa fa-circle-o"></i> Customer List
-                    </a>
-                </li>
-            </ul>
-        </li>
-
-        <li class="treeview ${requestScope.currentModule eq 'feedback' ? 'active menu-open' : ''}">
-            <a href="#">
-                <i class="fa fa-comment"></i> <span>Feedback Management</span>
-                <span class="pull-right-container"><i class="fa fa-angle-left pull-right"></i></span>
-            </a>
-            <ul class="treeview-menu">
-                <li class="${requestScope.currentAction eq 'feedbackList' ? 'active' : ''}">
-                    <a href="${pageContext.request.contextPath}/admindashboard?action=feedbackList&module=feedback"><i class="fa fa-circle-o"></i> Feedback List</a>
-                </li>
-                <li class="${requestScope.currentAction eq 'viewFeedback' ? 'active' : ''}">
-                    <a href="${pageContext.request.contextPath}/admindashboard?action=viewFeedback&module=feedback"><i class="fa fa-circle-o"></i> View Feedback</a>
-                </li>
-                <li class="${requestScope.currentAction eq 'feedbackReplyForm' ? 'active' : ''}">
-                    <a href="${pageContext.request.contextPath}/admindashboard?action=feedbackReplyForm&module=feedback"><i class="fa fa-circle-o"></i> Reply Feedback</a>
-                </li>
-            </ul>
-        </li>
-
-        <li class="treeview ${requestScope.currentModule eq 'revenue' ? 'active menu-open' : ''}">
-            <a href="#">
-                <i class="fa fa-dollar"></i> <span>Revenue Management</span>
-                <span class="pull-right-container"><i class="fa fa-angle-left pull-right"></i></span>
-            </a>
-            <ul class="treeview-menu">
-                <li class="${requestScope.currentAction eq 'bestSellingProducts' ? 'active' : ''}">
-                    <a href="${pageContext.request.contextPath}/admindashboard?action=bestSellingProducts&module=revenue"><i class="fa fa-circle-o"></i> Best Selling Products</a>
-                </li>
-                <li class="${requestScope.currentAction eq 'revenueByProduct' ? 'active' : ''}">
-                    <a href="${pageContext.request.contextPath}/admindashboard?action=revenueByProduct&module=revenue"><i class="fa fa-circle-o"></i> Revenue by Product</a>
-                </li>
-            </ul>
-        </li>
-
-        <li class="treeview ${requestScope.currentModule eq 'stock' ? 'active menu-open' : ''}">
-            <a href="#">
-                <i class="fa fa-database"></i> <span>Stock Management</span>
-                <span class="pull-right-container"><i class="fa fa-angle-left pull-right"></i></span>
-            </a>
-            <ul class="treeview-menu">
-                <li class="${requestScope.currentAction eq 'stockList' ? 'active' : ''}">
-                    <a href="${pageContext.request.contextPath}/Admindashboard?action=stockList&module=stock"><i class="fa fa-circle-o"></i> Stock List</a>
-                </li>
-                <li class="${requestScope.currentAction eq 'importStock' ? 'active' : ''}">
-                    <a href="${pageContext.request.contextPath}/Admindashboard?action=importStock&module=stock"><i class="fa fa-circle-o"></i> Stock Movement</a>
-                <li class="${requestScope.currentAction eq 'purchaseorder' ? 'active' : ''}">
-                    <a href="${pageContext.request.contextPath}/Admindashboard?action=purchaseorder&module=stock"><i class="fa fa-circle-o"></i> Purchase Order List</a>
-                </li>
-            </ul>
-        </li>
-        <li class="treeview ${requestScope.currentModule eq 'supplier' ? 'active menu-open' : ''}">
-            <a href="#">
-                <i class="fa fa-truck"></i> <span>Supplier Management</span>
-                <span class="pull-right-container"><i class="fa fa-angle-left pull-right"></i></span>
-            </a>
-            <ul class="treeview-menu">
-                <li class="${requestScope.currentAction eq 'supplierList' ? 'active' : ''}">
-                    <a href="${pageContext.request.contextPath}/Admindashboard?action=supplierList&module=supplier"><i class="fa fa-circle-o"></i> Supplier List</a>
-                </li>
-
-            </ul>
-        </li>
+    .sidebar-links a:hover {
+        background-color: var(--primary-color);
+        color: var(--panel-color);
+    }
+    .sidebar-links i {
+        min-width: 60px;
+        font-size: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .sidebar .link-name {
+        font-size: 16px;
+        font-weight: 400;
+        opacity: 1;
+        transition: all 0.2s ease;
+    }
+    .sidebar.close .link-name {
+        opacity: 0;
+        pointer-events: none;
+    }
+    /* Responsive for mobile devices */
+    @media (max-width: 768px) {
+        .sidebar {
+            left: -260px;
+        }
+        .sidebar.close {
+            left: 0;
+            width: 88px;
+        }
+        #btn-toggle {
+            right: -20px;
+        }
+    }
+</style>
+<nav class="sidebar">
+    <div class="sidebar-header">
+        <a href="#" class="logo">
+            <i class='bx bxs-dashboard'></i>
+            <span>Admin</span>
+        </a>
+        <i class='bx bx-menu' id="btn-toggle"></i>
+    </div>
+    <ul class="sidebar-links">
+        <div>
+            <li>
+                <a href="#">
+                    <i class='bx bx-grid-alt'></i>
+                    <span class="link-name">Overview</span>
+                </a>
+            </li>
+            <li>
+                <a href="#">
+                    <i class='bx bx-cart-alt'></i>
+                    <span class="link-name">Orders</span>
+                </a>
+            </li>
+            <li>
+                <a href="${pageContext.request.contextPath}/CustomerManagement">
+                    <i class='bx bx-group'></i>
+                    <span class="link-name">Customer Management</span>
+                </a>
+            </li>
+            <li>
+                <a href="${pageContext.request.contextPath}/StaffManagement">
+                    <i class='bx bx-id-card'></i>
+                    <span class="link-name">Staff Management</span>
+                </a>
+            </li>
+            <li>
+                <a href="${pageContext.request.contextPath}/ProductListAdmin?action=list">
+                    <i class='bx bx-box'></i>
+                    <span class="link-name">Products</span>
+                </a>
+            </li>
+            <li>
+                <a href="${pageContext.request.contextPath}/CategoryListAdmin">
+                    <i class='bx bx-category'></i>
+                    <span class="link-name">Categories</span>
+                </a>
+            </li>
+             <li>
+                <a href="${pageContext.request.contextPath}/BrandListAdmin">
+                    <i class='bx bx-purchase-tag-alt'></i>
+                    <span class="link-name">Brands</span>
+                </a>
+            </li>
+            <li>
+                <a href="${pageContext.request.contextPath}/Admindashboard?action=stockList&module=stock">
+                    <i class='bx bx-package'></i>
+                    <span class="link-name">Inventory Management</span>
+                </a>
+            </li>
+             <li>
+                <a href="${pageContext.request.contextPath}/Admindashboard?action=supplierList&module=supplier">
+                    <i class='bx bx-buildings'></i>
+                    <span class="link-name">Supplier Management</span>
+                </a>
+            </li>
+            <li>
+                <!-- ICON FIXED HERE -->
+                <a href="${pageContext.request.contextPath}/Admindashboard?action=voucherList&module=voucher">
+                    <i class='bx bx-receipt'></i>
+                    <span class="link-name">Voucher Management</span>
+                </a>
+            </li>
+            
+            <div class="logout-section">
+             <li class="logout-link">
+                <a href="#">
+                    <i class='bx bx-log-out'></i>
+                    <span class="link-name">Logout</span>
+                </a>
+            </li>
+        </div>
+        </div>
+        
     </ul>
-</div>
+</nav>
+<script>
+    const body = document.querySelector("body"),
+          sidebar = body.querySelector(".sidebar"),
+          toggle = body.querySelector("#btn-toggle");
+
+    toggle.addEventListener("click", () => {
+        sidebar.classList.toggle("close");
+    });
+
+    function handleResize() {
+        if (window.innerWidth <= 768) {
+            sidebar.classList.add("close");
+        } else {
+            sidebar.classList.remove("close");
+        }
+    }
+
+    // Run on page load
+    handleResize();
+
+    // Listen for resize event
+    window.addEventListener("resize", handleResize);
+</script>
