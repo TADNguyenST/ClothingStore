@@ -144,9 +144,6 @@
             <form action="${pageContext.request.contextPath}/sendInfoStaff" method="get" style="text-align:center; margin-top:20px;">
                 <input type="hidden" name="userId" value="${staffInfo.user.userId}" />
                 <input type="hidden" name="email" value="${staffInfo.user.email}" />
-                <button type="submit" class="send-btn">
-                    <i class="fa fa-envelope"></i> Send Mail
-                </button>
             </form>
         </c:if>
 

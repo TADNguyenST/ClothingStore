@@ -132,6 +132,13 @@
                             <tr><td class="info-label">Customer Created At</td><td>${customerInfo.customer.createdAt}</td></tr>
                         </tbody>
                     </table>
+                    <div style="text-align:center; margin-top:20px;">
+                        <a href="${pageContext.request.contextPath}/ViewCustomerOrderHistory?customerId=${customerInfo.customer.customerId}" 
+                           class="order-history-btn"
+                           style="display:inline-block; padding:10px 20px; background:#28a745; color:#fff; border-radius:5px; text-decoration:none;">
+                            <i class="fa fa-list"></i> View Order History
+                        </a>
+                    </div>
                 </c:if>
             </div>
         </div>
