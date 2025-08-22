@@ -25,121 +25,121 @@
         <!-- Custom CSS -->
         <link rel="stylesheet" href="${pageContext.request.contextPath}/admin-dashboard/css/admin-css.css">
         <style>
-    body {
-        background-color: #f8f9fa;
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        color: #2d3748;
-        margin: 0;
-        overflow-x: hidden;
-    }
-    .content-area {
-        position: relative;
-        margin-left: 260px;
-        padding: 1.5rem;
-        width: calc(100% - 260px);
-        transition: all 0.5s ease;
-        min-height: 100vh;
-    }
-    .sidebar.close ~ .content-area {
-        margin-left: 88px;
-        width: calc(100% - 88px);
-    }
-    .sidebar.hidden ~ .content-area {
-        margin-left: 0;
-        width: 100%;
-    }
-    .table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-    .table th, .table td {
-        text-align: center;
-        vertical-align: middle;
-        padding: 0.75rem;
-        border: 1px solid #dee2e6;
-    }
-    .table th {
-        background-color: #f9fafb;
-        font-weight: 600;
-        text-transform: uppercase;
-        font-size: 0.8rem;
-    }
-    .table img {
-        width: 80px;
-        height: 80px;
-        max-width: 80px;
-        max-height: 80px;
-        object-fit: cover;
-        border-radius: 4px;
-        border: 1px solid #ddd;
-        display: block;
-        margin: 0 auto;
-    }
-    .alert {
-        border-radius: 6px;
-        margin-bottom: 1rem;
-        font-size: 0.9rem;
-    }
-    .btn {
-        border-radius: 6px;
-        padding: 0.4rem 0.8rem;
-        font-size: 0.85rem;
-    }
-    .status-active {
-        background-color: #28a745;
-        color: white;
-        padding: 0.2rem 0.5rem;
-        border-radius: 4px;
-    }
-    .status-inactive {
-        background-color: #dc3545;
-        color: white;
-        padding: 0.2rem 0.5rem;
-        border-radius: 4px;
-    }
-    .search-filter-container {
-        display: flex;
-        gap: 1rem;
-        margin-bottom: 1.5rem;
-        align-items: center;
-        flex-wrap: wrap;
-        max-width: 100% !important; /* Đảm bảo container không giới hạn */
-    }
-    .search-bar {
-        max-width: 500px !important; /* Thanh tìm kiếm dài 900px */
-        width: 100%;
-    }
-    .search-bar .input-group {
-        max-width: 900px !important; /* Input bên trong dài 900px */
-        width: 100%;
-    }
-    .filter-select, .sort-select {
-        max-width: 200px;
-    }
-    @media (max-width: 768px) {
-        .content-area {
-            margin-left: 0;
-            width: 100%;
-        }
-        .sidebar.hidden ~ .content-area {
-            margin-left: 0;
-        }
-        .table img {
-            width: 50px;
-            height: 50px;
-            max-width: 50px;
-            max-height: 50px;
-            object-fit: cover;
-        }
-        .search-filter-container {
-            flex-direction: column;
-            align-items: stretch;
-        }
-        .search-bar, .filter-select, .sort-select {
-            max-width: 100% !important; /* Chiếm toàn bộ chiều rộng trên mobile */
-        }
-    }
-</style>
+            body {
+                background-color: #f8f9fa;
+                font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                color: #2d3748;
+                margin: 0;
+                overflow-x: hidden;
+            }
+            .content-area {
+                position: relative;
+                margin-left: 260px;
+                padding: 1.5rem;
+                width: calc(100% - 260px);
+                transition: all 0.5s ease;
+                min-height: 100vh;
+            }
+            .sidebar.close ~ .content-area {
+                margin-left: 88px;
+                width: calc(100% - 88px);
+            }
+            .sidebar.hidden ~ .content-area {
+                margin-left: 0;
+                width: 100%;
+            }
+            .table {
+                width: 100%;
+                border-collapse: collapse;
+            }
+            .table th, .table td {
+                text-align: center;
+                vertical-align: middle;
+                padding: 0.75rem;
+                border: 1px solid #dee2e6;
+            }
+            .table th {
+                background-color: #f9fafb;
+                font-weight: 600;
+                text-transform: uppercase;
+                font-size: 0.8rem;
+            }
+            .table img {
+                width: 80px;
+                height: 80px;
+                max-width: 80px;
+                max-height: 80px;
+                object-fit: cover;
+                border-radius: 4px;
+                border: 1px solid #ddd;
+                display: block;
+                margin: 0 auto;
+            }
+            .alert {
+                border-radius: 6px;
+                margin-bottom: 1rem;
+                font-size: 0.9rem;
+            }
+            .btn {
+                border-radius: 6px;
+                padding: 0.4rem 0.8rem;
+                font-size: 0.85rem;
+            }
+            .status-active {
+                background-color: #28a745;
+                color: white;
+                padding: 0.2rem 0.5rem;
+                border-radius: 4px;
+            }
+            .status-inactive {
+                background-color: #dc3545;
+                color: white;
+                padding: 0.2rem 0.5rem;
+                border-radius: 4px;
+            }
+            .search-filter-container {
+                display: flex;
+                gap: 1rem;
+                margin-bottom: 1.5rem;
+                align-items: center;
+                flex-wrap: wrap;
+                max-width: 100% !important; /* Đảm bảo container không giới hạn */
+            }
+            .search-bar {
+                max-width: 500px !important; /* Thanh tìm kiếm dài 900px */
+                width: 100%;
+            }
+            .search-bar .input-group {
+                max-width: 900px !important; /* Input bên trong dài 900px */
+                width: 100%;
+            }
+            .filter-select, .sort-select {
+                max-width: 200px;
+            }
+            @media (max-width: 768px) {
+                .content-area {
+                    margin-left: 0;
+                    width: 100%;
+                }
+                .sidebar.hidden ~ .content-area {
+                    margin-left: 0;
+                }
+                .table img {
+                    width: 50px;
+                    height: 50px;
+                    max-width: 50px;
+                    max-height: 50px;
+                    object-fit: cover;
+                }
+                .search-filter-container {
+                    flex-direction: column;
+                    align-items: stretch;
+                }
+                .search-bar, .filter-select, .sort-select {
+                    max-width: 100% !important; /* Chiếm toàn bộ chiều rộng trên mobile */
+                }
+            }
+        </style>
     </head>
     <body>
         <c:set var="currentAction" value="products" scope="request"/>
@@ -269,7 +269,7 @@
                                                     function confirmDelete(productId) {
                                                         Swal.fire({
                                                             title: 'Are you sure?',
-                                                            text: "You won't be able to revert this!",
+                                                            text: "Do you want to delete? This action cannot be undone!",
                                                             icon: 'warning',
                                                             showCancelButton: true,
                                                             confirmButtonColor: '#3085d6',

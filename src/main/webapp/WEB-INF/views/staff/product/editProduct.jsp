@@ -1,14 +1,13 @@
-
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
     <head>
         <meta charset="UTF-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Chỉnh sửa sản phẩm</title>
+        <title>Edit Product</title>
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -83,7 +82,7 @@
                 margin-left: 1rem;
             }
 
-            /* CSS CHO ẢNH XEM TRƯỚC */
+            /* CSS FOR IMAGE PREVIEW */
             .image-preview {
                 width: 80px;
                 height: 80px;
@@ -113,34 +112,34 @@
         <c:set var="pageTitle" value="Edit Product" scope="request"/>
         <jsp:include page="/WEB-INF/includes/admin-sidebar.jsp" />
         <div class="content-area">
-            <h2 style="text-align: center;">Chỉnh sửa sản phẩm</h2>
+            <h2 style="text-align: center;">Edit Product</h2>
             <c:if test="${not empty errorMessage}">
                 <div class="alert alert-danger"><c:out value="${errorMessage}"/></div>
             </c:if>
             <c:if test="${param.success == 'true'}">
-                <div class="alert alert-success">Cập nhật sản phẩm thành công!</div>
+                <div class="alert alert-success">Product updated successfully!</div>
             </c:if>
             <div class="form-container">
                 <form action="${pageContext.request.contextPath}/ProductEditAdmin" method="post" enctype="multipart/form-data">
                     <input type="hidden" name="productId" value="${product.productId}">
                     <div class="mb-3">
-                        <label for="name" class="form-label">Tên sản phẩm</label>
+                        <label for="name" class="form-label">Product Name</label>
                         <input type="text" class="form-control" id="name" name="name"
                                value="${product.name}" required>
                     </div>
                     <div class="mb-3">
-                        <label for="status" class="form-label">Trạng thái</label>
+                        <label for="status" class="form-label">Status</label>
                         <select class="form-select" id="status" name="status">
-                            <option value="Active" ${product.status == 'Active' ? 'selected' : ''}>Hoạt động</option>
-                            <option value="Inactive" ${product.status == 'Inactive' ? 'selected' : ''}>Không hoạt động</option>
+                            <option value="Active" ${product.status == 'Active' ? 'selected' : ''}>Active</option>
+                            <option value="Inactive" ${product.status == 'Inactive' ? 'selected' : ''}>Inactive</option>
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label for="categoryId" class="form-label">Danh mục <span class="text-danger">*</span></label>
+                        <label for="categoryId" class="form-label">Category <span class="text-danger">*</span></label>
                         <select class="form-select" id="categoryId" name="categoryId" required>
                             <option value="" disabled 
                                     <c:if test="${empty product.category || empty product.category.categoryId}">selected</c:if>>
-                                        Chọn danh mục
+                                        Select Category
                                     </option>
                             <c:forEach var="category" items="${categories}">
                                 <c:if test="${category != null && category.parentCategoryId != 0}">
@@ -159,9 +158,9 @@
                     </div>
 
                     <div class="mb-3">
-                        <label for="brandName" class="form-label">Thương hiệu <span class="text-danger">*</span></label>
+                        <label for="brandName" class="form-label">Brand <span class="text-danger">*</span></label>
                         <select class="form-select" id="brandName" name="brandName" required>
-                            <option value="" disabled>Chọn thương hiệu</option>
+                            <option value="" disabled>Select Brand</option>
                             <c:forEach var="brand" items="${brands}">
                                 <option value="${fn:escapeXml(brand.name)}" ${product.brand.name == brand.name ? 'selected' : ''}>
                                     <c:out value="${brand.name}"/>
@@ -170,25 +169,25 @@
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label for="material" class="form-label">Chất liệu</label>
+                        <label for="material" class="form-label">Material</label>
                         <input type="text" class="form-control" id="material" name="material" value="${product.material}">
                     </div>
                     <div class="mb-3">
-                        <label for="description" class="form-label">Mô tả</label>
+                        <label for="description" class="form-label">Description</label>
                         <textarea class="form-control" id="description" name="description" rows="4" required>${product.description}</textarea>
                     </div>
 
 
                     <div class="variant-container">
-                        <h5>Biến thể sản phẩm <span class="text-danger">*</span></h5>
+                        <h5>Product Variants <span class="text-danger">*</span></h5>
                         <div id="variants">
                             <c:forEach var="variant" items="${variants}">
                                 <div class="variant-row">
                                     <input type="hidden" name="variantId[]" value="${variant.variantId}">
                                     <div class="flex-grow-1">
-                                        <label class="form-label">Kích thước <span class="text-danger">*</span></label>
+                                        <label class="form-label">Size <span class="text-danger">*</span></label>
                                         <select class="form-select" name="size[]" required>
-                                            <option value="" disabled>Chọn kích thước</option>
+                                            <option value="" disabled>Select Size</option>
                                             <option value="S" ${variant.size == 'S' ? 'selected' : ''}>S</option>
                                             <option value="M" ${variant.size == 'M' ? 'selected' : ''}>M</option>
                                             <option value="L" ${variant.size == 'L' ? 'selected' : ''}>L</option>
@@ -197,9 +196,9 @@
                                         </select>
                                     </div>
                                     <div class="flex-grow-1">
-                                        <label class="form-label">Màu sắc <span class="text-danger">*</span></label>
+                                        <label class="form-label">Color <span class="text-danger">*</span></label>
                                         <select class="form-select" name="color[]" required>
-                                            <option value="" disabled>Chọn màu</option>
+                                            <option value="" disabled>Select Color</option>
                                             <option value="Red" ${variant.color == 'Red' ? 'selected' : ''}>Red</option>
                                             <option value="Blue" ${variant.color == 'Blue' ? 'selected' : ''}>Blue</option>
                                             <option value="Black" ${variant.color == 'Black' ? 'selected' : ''}>Black</option>
@@ -208,7 +207,7 @@
                                         </select>
                                     </div>
                                     <div class="flex-grow-1">
-                                        <label class="form-label">Giá điều chỉnh (VND)</label>
+                                        <label class="form-label">Price Modifier (VND)</label>
                                         <input type="number" class="form-control" name="priceModifier[]" 
                                                value="${variant.priceModifier != null ? variant.priceModifier.longValue() : ''}" 
                                                step="1000" min="0" required>
@@ -221,11 +220,11 @@
                                 </div>
                             </c:forEach>
                         </div>
-                        <button type="button" class="btn btn-primary mt-2" id="addVariant"><i class="bi bi-plus-circle"></i> Thêm biến thể</button>
+                        <button type="button" class="btn btn-primary mt-2" id="addVariant"><i class="bi bi-plus-circle"></i> Add Variant</button>
                     </div>
 
                     <div class="image-container">
-                        <h5>Hình ảnh sản phẩm <span class="text-danger">*</span></h5>
+                        <h5>Product Images <span class="text-danger">*</span></h5>
                         <div id="images">
                             <c:forEach var="image" items="${images}" varStatus="status">
                                 <div class="image-row p-2 mb-2 border rounded">
@@ -235,7 +234,7 @@
                                     <div class="form-check mx-3">
                                         <input class="form-check-input" type="radio" name="mainImage" id="mainImage${status.index}" value="${status.index}" ${image.main ? 'checked' : ''}>
                                         <label class="form-check-label" for="mainImage${status.index}">
-                                            Ảnh chính
+                                            Main Image
                                         </label>
                                     </div>
 
@@ -246,24 +245,24 @@
 
                             <div class="image-row new-image p-2 mb-2">
                                 <div class="flex-grow-1">
-                                    <label class="form-label">Thêm ảnh mới</label>
+                                    <label class="form-label">Add New Image</label>
                                     <input type="file" class="form-control" name="images[]" accept="image/*">
                                 </div>
                                 <div class="form-check mx-3">
                                     <input class="form-check-input" type="radio" name="mainImage" value="${fn:length(images)}">
-                                    <label class="form-check-label">Ảnh chính</label>
+                                    <label class="form-check-label">Main Image</label>
                                 </div>
                                 <div>
                                     <button type="button" class="btn btn-danger mt-4 remove-image"><i class="bi bi-trash"></i></button>
                                 </div>
                             </div>
                         </div>
-                        <button type="button" class="btn btn-primary mt-2" id="addImage"><i class="bi bi-plus-circle"></i> Thêm ảnh</button>
+                        <button type="button" class="btn btn-primary mt-2" id="addImage"><i class="bi bi-plus-circle"></i> Add Image</button>
                     </div>
 
                     <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-success"><i class="bi bi-save"></i> Lưu thay đổi</button>
-                        <a href="${pageContext.request.contextPath}/ProductListAdmin" class="btn btn-secondary"><i class="bi bi-x-circle"></i> Hủy</a>
+                        <button type="submit" class="btn btn-success"><i class="bi bi-save"></i> Save Changes</button>
+                        <a href="${pageContext.request.contextPath}/ProductListAdmin" class="btn btn-secondary"><i class="bi bi-x-circle"></i> Cancel</a>
                     </div>
                 </form>
             </div>
@@ -273,7 +272,7 @@
         <script src="${pageContext.request.contextPath}/admin-dashboard/js/admin-js.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
         <script>
-            // Các đoạn script JavaScript của bạn giữ nguyên
+            // JavaScript code remains unchanged
             document.getElementById('addVariant').addEventListener('click', function () {
                 const variantContainer = document.getElementById('variants');
                 const variantRow = variantContainer.querySelector('.variant-row').cloneNode(true);
@@ -281,7 +280,7 @@
                 variantRow.querySelector('input[name="priceModifier[]"]').value = 0;
                 variantRow.querySelectorAll('select').forEach(select => select.selectedIndex = 0);
                 variantRow.querySelector('.deleteVariant').value = '';
-                variantRow.querySelector('input[name="variantId[]"]').value = '0'; // Đánh dấu là variant mới
+                variantRow.querySelector('input[name="variantId[]"]').value = '0'; // Mark as new variant
                 variantContainer.appendChild(variantRow);
             });
             document.addEventListener('click', function (e) {
@@ -297,7 +296,7 @@
                             variantRow.remove();
                         }
                     } else {
-                        Swal.fire({icon: 'warning', title: 'Không thể xóa', text: 'Yêu cầu ít nhất một biến thể.'});
+                        Swal.fire({icon: 'warning', title: 'Cannot Delete', text: 'At least one variant is required.'});
                     }
                 }
             });
@@ -336,12 +335,12 @@
                             }
                         }
                     } else {
-                        Swal.fire({icon: 'warning', title: 'Không thể xóa', text: 'Yêu cầu ít nhất một hình ảnh.'});
+                        Swal.fire({icon: 'warning', title: 'Cannot Delete', text: 'At least one image is required.'});
                     }
                 }
             });
             document.querySelector('form').addEventListener('submit', function (e) {
-                // Form validation logic giữ nguyên
+                // Form validation logic remains unchanged
             });
         </script>
     </body>
