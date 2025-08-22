@@ -15,8 +15,8 @@
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
         <title>${requestScope.pageTitle != null ? requestScope.pageTitle : "Staff List"}</title>
 
         <%-- Link đến thư viện ngoài --%>
@@ -179,76 +179,78 @@
         <%-- Nhúng Sidebar --%>
         <jsp:include page="/WEB-INF/includes/admin-sidebar.jsp" />
 
-        
-           
 
-            <%-- Nội dung chính của trang Staff List --%>
-            <div class="content-area">
-                <div class="header-container">
-                    <h2>Staff List</h2>
-                    <div class="search-container">
-                        <form action="${pageContext.request.contextPath}/StaffManagement" method="get" style="display: inline;">
-                            <input type="text" name="keyword" class="search-input" placeholder="Enter name or email" value="${param.keyword}">
-                            <button type="submit" class="btn btn-search"><i class="fa fa-search"></i> Search</button>
-                            <a href="${pageContext.request.contextPath}/StaffManagement" class="btn btn-delete"><i class="fa fa-refresh"></i> Reset</a>
-                        </form>
-                    </div>
+
+
+        <%-- Nội dung chính của trang Staff List --%>
+        <div class="content-area">
+            <div class="header-container">
+                <h2>Staff List</h2>
+                <div class="search-container">
+                    <form action="${pageContext.request.contextPath}/StaffManagement" method="get" style="display: inline;">
+                        <input type="text" name="keyword" class="search-input" placeholder="Enter name or email" value="${param.keyword}">
+                        <button type="submit" class="btn btn-search"><i class="fa fa-search"></i> Search</button>
+                        <a href="${pageContext.request.contextPath}/StaffManagement" class="btn btn-delete"><i class="fa fa-refresh"></i> Reset</a>
+                    </form>
                 </div>
-                <c:if test="${not empty param.successMessage}">
-                    <div class="success">${param.successMessage}</div>
-                </c:if>
-                <c:if test="${not empty param.errorMessage}">
-                    <div class="error">${param.errorMessage}</div>
-                </c:if>
-                <div class="add-container">
-                    <a href="${pageContext.request.contextPath}/CreateAccount" class="btn btn-add">Add Staff</a>
-                </div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Staff ID</th>
-                            <th>Email</th>
-                            <th>Full Name</th>
-                            <th>Phone</th>
-                            <th>Position</th>
-                            <th>Status</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <c:choose>
-                            <c:when test="${not empty staffList}">
-                                <c:forEach var="staffInfo" items="${staffList}">
-                                    <tr>
-                                        <td>${staffInfo.staffId}</td>
-                                        <td>${staffInfo.user.email}</td>
-                                        <td>${staffInfo.user.fullName}</td>
-                                        <td>${staffInfo.user.phoneNumber}</td>
-                                        <td>${staffInfo.staff.position}</td>
-                                        <td>
-                                            <span class="status-indicator ${staffInfo.user.status == 'Active' ? 'status-active' : 'status-inactive'}"></span>
-                                            ${staffInfo.user.status}
-                                        </td>
-                                        <td>
-                                            <a href="${pageContext.request.contextPath}/viewStaff?userId=${staffInfo.user.userId}" class="btn btn-detail">Detail</a>
-                                            <a href="${pageContext.request.contextPath}/EditStaff?userId=${staffInfo.user.userId}" class="btn btn-edit">Edit</a>
-                                          <a href="${pageContext.request.contextPath}/deleteStaff?userId=${staffInfo.user.userId}" class="btn btn-delete" onclick="return confirm('Are you sure?')">Delete</a>
-                                        </td>
-                                    </tr>
-                                </c:forEach>
-                            </c:when>
-                            <c:otherwise>
-                                <tr><td colspan="7" class="no-data">No staff available to display</td></tr>
-                            </c:otherwise>
-                        </c:choose>
-                    </tbody>
-                </table>
             </div>
+            <c:if test="${not empty param.successMessage}">
+                <div class="success">${param.successMessage}</div>
+            </c:if>
+            <c:if test="${not empty param.errorMessage}">
+                <div class="error">${param.errorMessage}</div>
+            </c:if>
+            <div class="add-container">
+                <a href="${pageContext.request.contextPath}/CreateAccount" class="btn btn-add">Add Staff</a>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Staff ID</th>
+                        <th>Email</th>
+                        <th>Full Name</th>
+                        <th>Phone</th>
+                        <th>Position</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <c:choose>
+                        <c:when test="${not empty staffList}">
+                            <c:forEach var="staffInfo" items="${staffList}">
+                                <tr>
+                                    <td>${staffInfo.staffId}</td>
+                                    <td>${staffInfo.user.email}</td>
+                                    <td>${staffInfo.user.fullName}</td>
+                                    <td>${staffInfo.user.phoneNumber}</td>
+                                    <td>${staffInfo.staff.position}</td>
+                                    <td>
+                                        <span class="status-indicator ${staffInfo.user.status == 'Active' ? 'status-active' : 'status-inactive'}"></span>
+                                        ${staffInfo.user.status}
+                                    </td>
+                                    <td>
+                                        <a href="${pageContext.request.contextPath}/viewStaff?userId=${staffInfo.user.userId}" class="btn btn-detail">Detail</a>
+                                        <a href="${pageContext.request.contextPath}/EditStaff?userId=${staffInfo.user.userId}" class="btn btn-edit">Edit</a>
+                                        <a href="${pageContext.request.contextPath}/deleteStaff?userId=${staffInfo.user.userId}" class="btn btn-delete" onclick="return confirm('Are you sure?')">Delete</a>
+                                        <a href="${pageContext.request.contextPath}/sendMailStaff?userId=${staffInfo.user.userId}" 
+                                           class="btn btn-search"><i class="fa fa-envelope"></i> Send Mail</a>
+                                    </td>
+                                </tr>
+                            </c:forEach>
+                        </c:when>
+                        <c:otherwise>
+                            <tr><td colspan="7" class="no-data">No staff available to display</td></tr>
+                        </c:otherwise>
+                    </c:choose>
+                </tbody>
+            </table>
         </div>
+    </div>
 
-        <%-- Link đến file JS dùng chung --%>
-       <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+    <%-- Link đến file JS dùng chung --%>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
     <script src="${pageContext.request.contextPath}/admin-dashboard/js/admin-js.js"></script>
-    </body>
-   
+</body>
+
 </html>
