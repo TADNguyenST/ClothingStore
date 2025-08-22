@@ -14,6 +14,7 @@ import model.ProductImage;
 import util.DBContext;
 import java.math.BigDecimal;
 import java.sql.Statement;
+import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.Collections;
 
@@ -325,7 +326,7 @@ public class ProductDAO {
         return list;
     }
 
-    // XÃ³a sáº£n pháº©m
+    // Xoa san pham
     public int deleteProduct(long productId) {
         String sqlFavorites = "DELETE FROM product_favorites WHERE product_id = ?";
         String sqlViewHistory = "DELETE FROM product_view_history WHERE product_id = ?";
@@ -376,9 +377,9 @@ public class ProductDAO {
         }
     }
 
-    // ThÃªm sáº£n pháº©m má»›i(Admin)
+    // Them san pham(Admin)
     public long addProduct(Product product) throws SQLException {
-        String sql = "INSERT INTO products (name, price, status, category_id, brand_id, material, description) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO products (name, price, status, category_id, brand_id, material, description, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?,GETDATE(), GETDATE())";
         String sqlFindCategory = "SELECT category_id FROM categories WHERE name = ? AND is_active = 1";
         String sqlFindBrand = "SELECT brand_id FROM brands WHERE name = ? AND is_active = 1";
         try ( Connection conn = DBContext.getNewConnection()) {
@@ -458,7 +459,7 @@ public class ProductDAO {
         }
     }
 
-    // ThÃªm biáº¿n thá»ƒ sáº£n pháº©m
+    // Them bien the
     public long addProductVariant(ProductVariant variant) throws SQLException {
         String sql = "INSERT INTO product_variants (product_id, size, color, price_modifier, sku) VALUES (?, ?, ?, ?, ?)";
         try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -481,7 +482,7 @@ public class ProductDAO {
         }
     }
 
-    // Táº¡o SKU tá»± Ä‘á»™ng
+    // Lam sku tu dong
     private String generateSKU(ProductVariant variant) {
         String brand = variant.getBrand() != null ? variant.getBrand().replaceAll("\\s+", "") : "UNKNOWN";
         String productName = variant.getProductName() != null ? variant.getProductName().replaceAll("\\s+", "") : "PRODUCT";
@@ -490,7 +491,7 @@ public class ProductDAO {
         return String.format("%s-%s-%s-%s", brand, productName, size, color).toUpperCase();
     }
 
-    // ThÃªm tá»“n kho cho biáº¿n thá»ƒ
+    // Them so luong
     public void addInventory(long variantId) throws SQLException {
         String sql = "INSERT INTO inventory (variant_id, quantity) VALUES (?, 0)";
         try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -499,7 +500,7 @@ public class ProductDAO {
         }
     }
 
-    // ThÃªm áº£nh sáº£n pháº©m(Update)
+    // Chen anh(Update)
     public void insertProductImage(long productId, String url, boolean isMain) throws SQLException {
         String sql = "INSERT INTO product_images (product_id, image_url, is_main) VALUES (?, ?, ?)";
         try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -510,7 +511,7 @@ public class ProductDAO {
         }
     }
 
-    // ThÃªm áº£nh sáº£n pháº©m(create)
+    // Them anh moi(create)
     public void addProductImage(ProductImage image) throws SQLException {
         String sql = "INSERT INTO product_images (product_id, image_url, is_main, display_order) VALUES (?, ?, ?, ?)";
         try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -522,7 +523,7 @@ public class ProductDAO {
         }
     }
 
-    // Láº¥y danh sÃ¡ch thÆ°Æ¡ng hiá»‡u
+    // Lay brand
     public List<Brand> getBrands() throws SQLException {
         List<Brand> brands = new ArrayList<>();
         String sql = "SELECT brand_id, name FROM brands WHERE is_active = 1 ORDER BY name";
@@ -537,7 +538,7 @@ public class ProductDAO {
         return brands;
     }
 
-    // Láº¥y danh sÃ¡ch danh má»¥c
+    // Lay category
     public List<Category> getCategories() throws SQLException {
         List<Category> categories = new ArrayList<>();
         String sql = "SELECT c.category_id, c.name, c.parent_category_id, p.name AS parent_category_name "
@@ -558,7 +559,7 @@ public class ProductDAO {
         return categories;
     }
 
-    // Láº¥y danh sÃ¡ch kÃ­ch thÆ°á»›c
+    // size
     public List<String> getSizes() throws SQLException {
         List<String> sizes = new ArrayList<>();
         String sql = "SELECT DISTINCT CAST(size AS NVARCHAR(100)) AS size "
@@ -573,7 +574,7 @@ public class ProductDAO {
         return sizes;
     }
 
-    // Láº¥y danh sÃ¡ch mÃ u sáº¯c
+    // lay mau
     public List<String> getColors() throws SQLException {
         List<String> colors = new ArrayList<>();
         String sql = "SELECT DISTINCT CAST(color AS NVARCHAR(100)) AS color "
@@ -588,7 +589,7 @@ public class ProductDAO {
         return colors;
     }
 
-    // Láº¥y tÃªn thÆ°Æ¡ng hiá»‡u theo ID
+    // Lay brand name theo ID
     public String getBrandName(long brandId) throws SQLException {
         String sql = "SELECT name FROM brands WHERE brand_id = ? AND is_active = 1";
         try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -602,9 +603,10 @@ public class ProductDAO {
         }
     }
 
-    // Láº¥y sáº£n pháº©m theo ID
+    // Lay san pham theo ID
     public Product getProductById(long productId) throws SQLException {
         String sql = "SELECT p.product_id, p.name, p.price, p.status, p.material, p.description, "
+                + "p.created_at, p.updated_at, "
                 + "c.category_id, c.name AS category_name, c.parent_category_id, pc.name AS parent_category_name, "
                 + "b.brand_id, b.name AS brand_name "
                 + "FROM products p "
@@ -623,6 +625,18 @@ public class ProductDAO {
                     product.setStatus(rs.getString("status"));
                     product.setMaterial(rs.getString("material"));
                     product.setDescription(rs.getString("description"));
+
+                    // convert Timestamp từ DB (UTC) sang giờ VN
+                    Timestamp createdTs = rs.getTimestamp("created_at");
+                    if (createdTs != null) {
+                        product.setCreatedAt(new java.util.Date(createdTs.getTime() + 7 * 60 * 60 * 1000));
+                    }
+
+                    Timestamp updatedTs = rs.getTimestamp("updated_at");
+                    if (updatedTs != null) {
+                        product.setUpdatedAt(new java.util.Date(updatedTs.getTime() + 7 * 60 * 60 * 1000));
+                    }
+
                     Category category = null;
                     long categoryId = rs.getLong("category_id");
                     if (!rs.wasNull()) {
@@ -654,9 +668,12 @@ public class ProductDAO {
         }
     }
 
-    // Cáº­p nháº­t sáº£n pháº©m
+    // update san pham
     public void updateProduct(Product product) throws SQLException {
-        String sql = "UPDATE products SET name = ?, price = ?, status = ?, category_id = ?, brand_id = ?, material = ?, description = ? WHERE product_id = ?";
+        String sql = "UPDATE products "
+                + "SET name = ?, price = ?, status = ?, category_id = ?, brand_id = ?, "
+                + "material = ?, description = ?, updated_at = GETDATE() "
+                + "WHERE product_id = ?";
         String sqlFindBrand = "SELECT brand_id FROM brands WHERE name = ? AND is_active = 1";
         String sqlFindCategory = "SELECT category_id FROM categories WHERE name = ? AND is_active = 1";
         try ( Connection conn = DBContext.getNewConnection()) {
@@ -691,11 +708,14 @@ public class ProductDAO {
                 ps.setString(1, product.getName());
                 ps.setBigDecimal(2, product.getPrice());
                 ps.setString(3, product.getStatus());
-                ps.setObject(4, categoryId != null ? categoryId : product.getCategory() != null ? product.getCategory().getCategoryId() : null, Types.BIGINT);
-                ps.setObject(5, brandId != null ? brandId : product.getBrand() != null ? product.getBrand().getBrandId() : null, Types.BIGINT);
+                ps.setObject(4, categoryId != null ? categoryId
+                        : product.getCategory() != null ? product.getCategory().getCategoryId() : null, Types.BIGINT);
+                ps.setObject(5, brandId != null ? brandId
+                        : product.getBrand() != null ? product.getBrand().getBrandId() : null, Types.BIGINT);
                 ps.setString(6, product.getMaterial());
                 ps.setString(7, product.getDescription());
-                ps.setLong(8, product.getProductId());
+                ps.setLong(8, product.getProductId()); 
+
                 int affectedRows = ps.executeUpdate();
                 if (affectedRows == 0) {
                     conn.rollback();
@@ -706,7 +726,7 @@ public class ProductDAO {
         }
     }
 
-    // Cáº­p nháº­t áº£nh sáº£n pháº©m(Update)
+    // set anh chinh(Update)
     public void updateImageMainFlag(long imageId, boolean isMain) throws SQLException {
         String sql = "UPDATE product_images SET is_main = ? WHERE image_id = ?";
         try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -716,7 +736,7 @@ public class ProductDAO {
         }
     }
 
-    // Láº¥y danh sÃ¡ch biáº¿n thá»ƒ theo productId
+    // Lay bien the theo productId
     public List<ProductVariant> getProductVariantsByProductId(long productId) throws SQLException {
         List<ProductVariant> variants = new ArrayList<>();
         String sql = "SELECT pv.variant_id, pv.product_id, pv.size, pv.color, pv.price_modifier, pv.sku, "
@@ -842,7 +862,7 @@ public class ProductDAO {
         }
     }
 
-    // Láº¥y danh sÃ¡ch sáº£n pháº©m theo category_id (PRODUCT LIST)
+    // san pham theo category_id (PRODUCT LIST)
     public List<Product> getProductsByCategories(List<Long> categoryIds, int offset) throws SQLException {
         List<Product> products = new ArrayList<>();
         if (categoryIds == null || categoryIds.isEmpty()) {
@@ -904,7 +924,7 @@ public class ProductDAO {
         return products;
     }
 
-    // TÃ¬m kiáº¿m sáº£n pháº©m trÃªn trang chá»§
+    // search home page
     public List<Product> searchProductsForHomePage(String keyword) {
         List<Product> list = new ArrayList<>();
         String sql = "SELECT TOP 5 p.product_id, p.name, p.price, "
@@ -934,7 +954,7 @@ public class ProductDAO {
         }
     }
 
-    // Lá»�c sáº£n pháº©m trÃªn trang
+    // loc product
     public List<Product> filterProducts(List<Long> categoryIds, List<Long> brandIds, List<String> sizes, List<String> colors, BigDecimal minPrice, BigDecimal maxPrice, String sort) throws SQLException {
         List<Product> products = new ArrayList<>();
         if (categoryIds == null || categoryIds.isEmpty()) {
@@ -1067,7 +1087,7 @@ public class ProductDAO {
         return images;
     }
 
-    // Láº¥y sá»‘ lÆ°á»£ng tá»“n kho theo variantId (dat)
+    // lay so luong kho theo variantId (dat)
     public int getAvailableQuantityByVariantId(Long variantId) {
         if (variantId == null || variantId == 0) {
             return 0;
