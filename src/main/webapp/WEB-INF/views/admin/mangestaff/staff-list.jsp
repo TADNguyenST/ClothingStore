@@ -235,6 +235,11 @@
                                         <a href="${pageContext.request.contextPath}/deleteStaff?userId=${staffInfo.user.userId}" class="btn btn-delete" onclick="return confirm('Are you sure?')">Delete</a>
                                         <a href="${pageContext.request.contextPath}/sendMailStaff?userId=${staffInfo.user.userId}" 
                                            class="btn btn-search"><i class="fa fa-envelope"></i> Send Mail</a>
+                                        <a href="${pageContext.request.contextPath}/ChangeStatusStaffController?userId=${staffInfo.user.userId}" 
+                                           class="btn ${staffInfo.user.status == 'Active' ? 'btn-delete' : 'btn-add'}"
+                                           onclick="return confirm('Are you sure you want to ${staffInfo.user.status == 'Active' ? 'block' : 'unblock'} this staff?')">
+                                            ${staffInfo.user.status == 'Active' ? 'Block' : 'Unblock'}
+                                        </a>
                                     </td>
                                 </tr>
                             </c:forEach>
