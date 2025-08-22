@@ -166,16 +166,6 @@
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label>Status:</label>
-                        <select name="status">
-                            <option value="Active" ${staffInfo.user.status == 'Active' ? 'selected' : ''}>Active</option>
-                            <option value="Inactive" ${staffInfo.user.status == 'Inactive' ? 'selected' : ''}>Inactive</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
                         <label>Position:</label>
                         <input type="text" name="position" value="${staffInfo.staff.position}" required />
                     </div>
