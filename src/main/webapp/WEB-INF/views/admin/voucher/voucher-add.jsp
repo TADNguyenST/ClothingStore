@@ -1,4 +1,3 @@
-
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt" %>
@@ -72,6 +71,9 @@
             font-size: 12px;
             color: red;
             margin-top: 5px;
+            display: none;
+        }
+        .error-text.show {
             display: block;
         }
         .input-group {
@@ -79,6 +81,9 @@
             gap: 10px;
         }
         .input-group input { flex: 1; }
+        .invalid-field {
+            border: 1px solid red !important;
+        }
     </style>
 </head>
 <body>
@@ -101,86 +106,86 @@
             <c:if test="${not empty param.successMessage}">
                 <div class="success">${param.successMessage}</div>
             </c:if>
-            <c:if test="${not empty param.errorMessage}">
-                <div class="error">${param.errorMessage}</div>
+            <c:if test="${not empty requestScope.errorMessage}">
+                <div class="error">${requestScope.errorMessage}</div>
             </c:if>
             <div class="form-container">
                 <form action="${pageContext.request.contextPath}/addVoucher" method="post" id="voucherForm">
                     <div class="form-group">
                         <label for="code">Voucher Code <span style="color: red;">*</span></label>
                         <div class="input-group">
-                            <input type="text" id="code" name="code" required placeholder="e.g., SUMMER2025">
-                            <button type="button" class="btn btn-random" onclick="generateRandomCode()">Random</button>
+                            <input type="text" id="code" name="code" required placeholder="Example: SUMMER2025" value="${requestScope.formData.code != null ? requestScope.formData.code : ''}">
+                            <button type="button" class="btn btn-random" onclick="generateRandomCode()">Generate Random</button>
                         </div>
-                        <span class="help-text">Enter a unique code (e.g., SUMMER2025 or DISCOUNT10) or click Random to generate one.</span>
-                        <span class="error-text" id="codeError"></span>
+                        <span class="help-text">Enter a unique code (e.g., SUMMER2025 or DISCOUNT10) or click Generate Random to create one.</span>
+                        <span class="error-text" id="codeError">${requestScope.errors.code != null ? requestScope.errors.code : ''}</span>
                     </div>
                     <div class="form-group">
-                        <label for="name">Name <span style="color: red;">*</span></label>
-                        <input type="text" id="name" name="name" required placeholder="e.g., Summer Sale Voucher">
+                        <label for="name">Voucher Name <span style="color: red;">*</span></label>
+                        <input type="text" id="name" name="name" required placeholder="Example: Summer Discount Voucher" value="${requestScope.formData.name != null ? requestScope.formData.name : ''}">
                         <span class="help-text">Provide a descriptive name for the voucher.</span>
-                        <span class="error-text" id="nameError"></span>
+                        <span class="error-text" id="nameError">${requestScope.errors.name != null ? requestScope.errors.name : ''}</span>
                     </div>
                     <div class="form-group">
                         <label for="description">Description</label>
-                        <textarea id="description" name="description" placeholder="e.g., 10% off for orders above 50,000 VNĐ"></textarea>
-                        <span class="help-text">Optional: Describe the voucher's purpose or conditions.</span>
-                        <span class="error-text" id="descriptionError"></span>
+                        <textarea id="description" name="description" placeholder="Example: 10% off on orders above $50">${requestScope.formData.description != null ? requestScope.formData.description : ''}</textarea>
+                        <span class="help-text">Optional: Describe the purpose or conditions of the voucher.</span>
+                        <span class="error-text" id="descriptionError">${requestScope.errors.description != null ? requestScope.errors.description : ''}</span>
                     </div>
                     <div class="form-group">
                         <label for="discountType">Discount Type <span style="color: red;">*</span></label>
                         <select id="discountType" name="discountType" required>
-                            <option value="" disabled selected>Select a discount type</option>
-                            <option value="Percentage">Percentage</option>
-                            <option value="Fixed Amount">Fixed Amount</option>
+                            <option value="" disabled ${requestScope.formData.discountType == null ? 'selected' : ''}>Select discount type</option>
+                            <option value="Percentage" ${requestScope.formData.discountType == 'Percentage' ? 'selected' : ''}>Percentage</option>
+                            <option value="Fixed Amount" ${requestScope.formData.discountType == 'Fixed Amount' ? 'selected' : ''}>Fixed Amount</option>
                         </select>
-                        <span class="help-text">Choose whether the discount is a percentage or fixed amount.</span>
-                        <span class="error-text" id="discountTypeError"></span>
+                        <span class="help-text">Choose whether the discount is a percentage or a fixed amount.</span>
+                        <span class="error-text" id="discountTypeError">${requestScope.errors.discountType != null ? requestScope.errors.discountType : ''}</span>
                     </div>
                     <div class="form-group">
                         <label for="discountValue">Discount Value <span style="color: red;">*</span></label>
-                        <input type="number" id="discountValue" name="discountValue" step="0.01" min="0" required placeholder="e.g., 10 for Percentage or 1000 for Fixed Amount">
+                        <input type="number" id="discountValue" name="discountValue" step="0.01" min="0" required placeholder="Example: 10 for Percentage or 1000 for Fixed Amount" value="${requestScope.formData.discountValue != null ? requestScope.formData.discountValue : ''}">
                         <span class="help-text">Enter 1-90 for Percentage or 1000-10000000 for Fixed Amount.</span>
-                        <span class="error-text" id="discountValueError"></span>
+                        <span class="error-text" id="discountValueError">${requestScope.errors.discountValue != null ? requestScope.errors.discountValue : ''}</span>
                     </div>
                     <div class="form-group">
-                        <label for="minimumOrderAmount">Minimum Order Amount</label>
-                        <input type="number" id="minimumOrderAmount" name="minimumOrderAmount" step="0.01" min="0" placeholder="e.g., 50000">
-                        <span class="help-text">Optional: Minimum order value to apply the voucher (e.g., 50,000 VNĐ).</span>
-                        <span class="error-text" id="minimumOrderAmountError"></span>
+                        <label for="minimumOrderAmount">Minimum Order Amount <span style="color: red;">*</span></label>
+                        <input type="number" id="minimumOrderAmount" name="minimumOrderAmount" step="0.01" min="0" required placeholder="Example: 50000" value="${requestScope.formData.minimumOrderAmount != null ? requestScope.formData.minimumOrderAmount : ''}">
+                        <span class="help-text">Enter the minimum order value to apply the voucher (e.g., $50).</span>
+                        <span class="error-text" id="minimumOrderAmountError">${requestScope.errors.minimumOrderAmount != null ? requestScope.errors.minimumOrderAmount : ''}</span>
                     </div>
                     <div class="form-group">
-                        <label for="maximumDiscountAmount">Maximum Discount Amount</label>
-                        <input type="number" id="maximumDiscountAmount" name="maximumDiscountAmount" step="0.01" min="0" placeholder="e.g., 20000">
-                        <span class="help-text">Optional: Maximum discount cap for percentage-based vouchers (e.g., 20,000 VNĐ).</span>
-                        <span class="error-text" id="maximumDiscountAmountError"></span>
+                        <label for="maximumDiscountAmount">Maximum Discount Amount <span style="color: red;">*</span></label>
+                        <input type="number" id="maximumDiscountAmount" name="maximumDiscountAmount" step="0.01" min="0" required placeholder="Example: 20000" value="${requestScope.formData.maximumDiscountAmount != null ? requestScope.formData.maximumDiscountAmount : ''}">
+                        <span class="help-text">Enter the maximum discount amount for percentage-based vouchers (e.g., $20).</span>
+                        <span class="error-text" id="maximumDiscountAmountError">${requestScope.errors.maximumDiscountAmount != null ? requestScope.errors.maximumDiscountAmount : ''}</span>
                     </div>
                     <div class="form-group">
-                        <label for="usageLimit">Usage Limit</label>
-                        <input type="number" id="usageLimit" name="usageLimit" min="0" placeholder="e.g., 100">
-                        <span class="help-text">Optional: Maximum number of times the voucher can be used.</span>
-                        <span class="error-text" id="usageLimitError"></span>
+                        <label for="usageLimit">Usage Limit <span style="color: red;">*</span></label>
+                        <input type="number" id="usageLimit" name="usageLimit" min="0" required placeholder="Example: 100" value="${requestScope.formData.usageLimit != null ? requestScope.formData.usageLimit : ''}">
+                        <span class="help-text">Enter the maximum number of times the voucher can be used.</span>
+                        <span class="error-text" id="usageLimitError">${requestScope.errors.usageLimit != null ? requestScope.errors.usageLimit : ''}</span>
                     </div>
                     <div class="form-group">
                         <label for="expirationDate">Expiration Date <span style="color: red;">*</span></label>
-                        <input type="date" id="expirationDate" name="expirationDate" required placeholder="e.g., 2025-12-31">
-                        <span class="help-text">Enter the date when the voucher expires (YYYY-MM-DD).</span>
-                        <span class="error-text" id="expirationDateError"></span>
+                        <input type="date" id="expirationDate" name="expirationDate" required placeholder="Example: 2025-12-31" value="${requestScope.formData.expirationDate != null ? requestScope.formData.expirationDate : ''}">
+                        <span class="help-text">Enter the voucher's expiration date (YYYY-MM-DD).</span>
+                        <span class="error-text" id="expirationDateError">${requestScope.errors.expirationDate != null ? requestScope.errors.expirationDate : ''}</span>
                     </div>
                     <div class="form-group">
                         <label for="isActive">Active</label>
-                        <input type="checkbox" id="isActive" name="isActive" checked>
-                        <span class="help-text">Check to make the voucher active immediately.</span>
-                        <span class="error-text" id="isActiveError"></span>
+                        <input type="checkbox" id="isActive" name="isActive" ${requestScope.formData.isActive != null && requestScope.formData.isActive ? 'checked' : ''}>
+                        <span class="help-text">Check to activate the voucher immediately.</span>
+                        <span class="error-text" id="isActiveError">${requestScope.errors.isActive != null ? requestScope.errors.isActive : ''}</span>
                     </div>
                     <div class="form-group">
-                        <label for="visibility">Visibility <span style="color: red;">*</span></label>
-                        <select id="visibility" name="visibility" required>
-                            <option value="true">Visible</option>
-                            <option value="false" selected>Hidden</option>
+                        <label for="visibility">Visibility</label>
+                        <select id="visibility" name="visibility">
+                            <option value="true" ${requestScope.formData.visibility != null && requestScope.formData.visibility ? 'selected' : ''}>Visible</option>
+                            <option value="false" ${requestScope.formData.visibility == null || !requestScope.formData.visibility ? 'selected' : ''}>Hidden</option>
                         </select>
-                        <span class="help-text">Select whether the voucher is visible or hidden.</span>
-                        <span class="error-text" id="visibilityError"></span>
+                        <span class="help-text">Choose whether the voucher is visible or hidden.</span>
+                        <span class="error-text" id="visibilityError">${requestScope.errors.visibility != null ? requestScope.errors.visibility : ''}</span>
                     </div>
                     <div class="form-group">
                         <button type="submit" class="btn btn-submit">Save</button>
@@ -210,6 +215,7 @@
             if (codeInput) {
                 codeInput.value = randomCode;
                 console.log('Generated code:', randomCode);
+                validateField('code', randomCode);
             } else {
                 console.error('Code input element not found');
             }
@@ -245,12 +251,12 @@
             const fields = [
                 { id: 'code', validate: value => {
                     if (!value.trim()) return 'Voucher Code is required.';
-                    if (value.length < 3) return 'Voucher Code must be at least 3 characters.';
+                    if (value.length < 3) return 'Voucher Code must be at least 3 characters long.';
                     return '';
                 }},
                 { id: 'name', validate: value => {
-                    if (!value.trim()) return 'Name is required.';
-                    if (value.length < 3) return 'Name must be at least 3 characters.';
+                    if (!value.trim()) return 'Voucher Name is required.';
+                    if (value.length < 3) return 'Voucher Name must be at least 3 characters long.';
                     return '';
                 }},
                 { id: 'discountType', validate: value => {
@@ -272,15 +278,21 @@
                     return '';
                 }},
                 { id: 'minimumOrderAmount', validate: value => {
-                    if (value && parseFloat(value) < 0) return 'Minimum Order Amount cannot be negative.';
+                    if (!value) return 'Minimum Order Amount is required.';
+                    const numValue = parseFloat(value);
+                    if (isNaN(numValue) || numValue < 0) return 'Minimum Order Amount cannot be negative.';
                     return '';
                 }},
                 { id: 'maximumDiscountAmount', validate: value => {
-                    if (value && parseFloat(value) < 0) return 'Maximum Discount Amount cannot be negative.';
+                    if (!value) return 'Maximum Discount Amount is required.';
+                    const numValue = parseFloat(value);
+                    if (isNaN(numValue) || numValue < 0) return 'Maximum Discount Amount cannot be negative.';
                     return '';
                 }},
                 { id: 'usageLimit', validate: value => {
-                    if (value && parseInt(value) < 0) return 'Usage Limit cannot be negative.';
+                    if (!value) return 'Usage Limit is required.';
+                    const numValue = parseInt(value);
+                    if (isNaN(numValue) || numValue < 0) return 'Usage Limit cannot be negative.';
                     return '';
                 }},
                 { id: 'expirationDate', validate: value => {
@@ -289,31 +301,63 @@
                     return '';
                 }},
                 { id: 'visibility', validate: value => {
-                    if (!value) return 'Visibility is required.';
                     return '';
                 }}
             ];
 
+            function showTemporaryError(fieldId, message) {
+                const errorElement = document.getElementById(`${fieldId}Error`);
+                const fieldElement = document.getElementById(fieldId);
+                if (errorElement && fieldElement) {
+                    errorElement.innerText = message;
+                    errorElement.classList.add('show');
+                    fieldElement.classList.add('invalid-field');
+                    setTimeout(() => {
+                        errorElement.classList.remove('show');
+                        errorElement.innerText = '';
+                        fieldElement.classList.remove('invalid-field');
+                    }, 5000);
+                }
+            }
+
             function validateField(fieldId, value) {
                 const field = fields.find(f => f.id === fieldId);
                 if (!field) return true;
-                const errorElement = document.getElementById(`${fieldId}Error`);
                 const errorMessage = field.validate(value);
-                errorElement.innerText = errorMessage;
-                return !errorMessage;
+                const fieldElement = document.getElementById(fieldId);
+                const errorElement = document.getElementById(`${fieldId}Error`);
+                if (errorMessage) {
+                    showTemporaryError(fieldId, errorMessage);
+                    return false;
+                }
+                if (errorElement && fieldElement) {
+                    errorElement.classList.remove('show');
+                    errorElement.innerText = '';
+                    fieldElement.classList.remove('invalid-field');
+                }
+                return true;
             }
 
             function validateForm() {
                 let isValid = true;
+                let firstInvalidField = null;
                 fields.forEach(field => {
                     const element = document.getElementById(field.id);
                     const value = element.type === 'checkbox' ? element.checked : element.value;
-                    if (!validateField(field.id, value)) isValid = false;
+                    if (!validateField(field.id, value)) {
+                        isValid = false;
+                        if (!firstInvalidField) {
+                            firstInvalidField = element;
+                        }
+                    }
                 });
+                if (!isValid && firstInvalidField) {
+                    firstInvalidField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    firstInvalidField.focus();
+                }
                 return isValid;
             }
 
-            // Validate on form submission
             form.addEventListener('submit', function(e) {
                 if (!validateForm()) {
                     e.preventDefault();
@@ -321,7 +365,6 @@
                 }
             });
 
-            // Validate on input change
             fields.forEach(field => {
                 const element = document.getElementById(field.id);
                 element.addEventListener('input', function() {
@@ -332,9 +375,24 @@
                 });
             });
 
-            // Re-validate discountValue when discountType changes
             discountTypeSelect.addEventListener('change', function() {
                 validateField('discountValue', discountValueInput.value);
+            });
+
+            document.querySelectorAll('.error-text').forEach(errorElement => {
+                if (errorElement.innerText.trim()) {
+                    const fieldId = errorElement.id.replace('Error', '');
+                    const fieldElement = document.getElementById(fieldId);
+                    if (fieldElement) {
+                        errorElement.classList.add('show');
+                        fieldElement.classList.add('invalid-field');
+                        setTimeout(() => {
+                            errorElement.classList.remove('show');
+                            errorElement.innerText = '';
+                            fieldElement.classList.remove('invalid-field');
+                        }, 5000);
+                    }
+                }
             });
         });
     </script>

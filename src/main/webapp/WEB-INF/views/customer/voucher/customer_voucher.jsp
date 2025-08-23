@@ -55,60 +55,48 @@
         <c:if test="${not empty voucherList}">
             <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
                 <c:forEach var="voucher" items="${voucherList}">
-                    <c:set var="isAvailable" value="${not voucher.isUsed}"/>
-                    
-                    <!-- Voucher Card -->
-                    <div class="relative bg-white rounded-xl shadow-lg transition-transform duration-300 ease-in-out hover:scale-105 flex flex-col ${isAvailable ? '' : 'grayscale opacity-60'}">
-                        
-                        <!-- Main Content -->
-                        <div class="p-6">
-                            <div class="flex justify-between items-start">
-                                <h2 class="text-xl font-bold text-gray-800 pr-4">${voucher.voucherName}</h2>
-                                <span class="text-sm font-semibold py-1 px-3 rounded-full ${isAvailable ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-gray-600'}">
-                                    ${isAvailable ? 'Available' : 'Used'}
-                                </span>
-                            </div>
-                            
-                            <div class="flex items-center space-x-2 mt-4 text-sm text-gray-500">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                                <span>Sent on <fmt:formatDate value="${voucher.sentDate}" pattern="dd MMM, yyyy"/></span>
-                            </div>
-
-                            <c:if test="${not isAvailable and not empty voucher.usedDate}">
-                                <div class="flex items-center space-x-2 mt-2 text-sm text-gray-500">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
-                                    <span>Used on <fmt:formatDate value="${voucher.usedDate}" pattern="dd MMM, yyyy"/></span>
+                    <!-- Only display vouchers that are not used -->
+                    <c:if test="${not voucher.isUsed}">
+                        <div class="relative bg-white rounded-xl shadow-lg transition-transform duration-300 ease-in-out hover:scale-105 flex flex-col">
+                            <!-- Main Content -->
+                            <div class="p-6">
+                                <div class="flex justify-between items-start">
+                                    <h2 class="text-xl font-bold text-gray-800 pr-4">${voucher.voucherName}</h2>
+                                    <span class="text-sm font-semibold py-1 px-3 rounded-full bg-green-100 text-green-800">
+                                        Available
+                                    </span>
                                 </div>
-                            </c:if>
-
-                        </div>
-
-                        <!-- Dashed Separator with Cutouts -->
-                        <div class="relative px-6">
-                            <div class="border-t-2 border-dashed border-gray-200 w-full"></div>
-                            <div class="ticket-cutout-left"></div>
-                            <div class="ticket-cutout-right"></div>
-                        </div>
-
-                        <!-- Bottom Section with Code and Discount -->
-                        <div class="p-6 bg-gray-50 rounded-b-xl flex justify-between items-center">
-                            <div class="font-black text-2xl tracking-wider 
-                                <c:choose>
-                                    <c:when test="${isAvailable and voucher.discountType == 'Percentage'}">text-purple-600</c:when>
-                                    <c:when test="${isAvailable and voucher.discountType != 'Percentage'}">text-indigo-600</c:when>
-                                    <c:otherwise>text-gray-500</c:otherwise>
-                                </c:choose>">
-                                <c:choose>
-                                    <c:when test="${voucher.discountType == 'Percentage'}">
-                                        ${voucher.discountValue}% OFF
-                                    </c:when>
-                                    <c:otherwise>
-                                        <fmt:formatNumber value="${voucher.discountValue}" type="currency" currencyCode="VND" currencySymbol="₫"/>
-                                    </c:otherwise>
-                                </c:choose>
+                                
+                                <div class="flex items-center space-x-2 mt-4 text-sm text-gray-500">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                    <span>Sent on <fmt:formatDate value="${voucher.sentDate}" pattern="dd MMM, yyyy"/></span>
+                                </div>
                             </div>
 
-                            <c:if test="${isAvailable}">
+                            <!-- Dashed Separator with Cutouts -->
+                            <div class="relative px-6">
+                                <div class="border-t-2 border-dashed border-gray-200 w-full"></div>
+                                <div class="ticket-cutout-left"></div>
+                                <div class="ticket-cutout-right"></div>
+                            </div>
+
+                            <!-- Bottom Section with Code and Discount -->
+                            <div class="p-6 bg-gray-50 rounded-b-xl flex justify-between items-center">
+                                <div class="font-black text-2xl tracking-wider 
+                                    <c:choose>
+                                        <c:when test="${voucher.discountType == 'Percentage'}">text-purple-600</c:when>
+                                        <c:otherwise>text-indigo-600</c:otherwise>
+                                    </c:choose>">
+                                    <c:choose>
+                                        <c:when test="${voucher.discountType == 'Percentage'}">
+                                            ${voucher.discountValue}% OFF
+                                        </c:when>
+                                        <c:otherwise>
+                                            <fmt:formatNumber value="${voucher.discountValue}" type="currency" currencyCode="VND" currencySymbol="₫"/>
+                                        </c:otherwise>
+                                    </c:choose>
+                                </div>
+
                                 <button
                                     onclick="copyToClipboard(this, '${voucher.voucherCode}')"
                                     class="bg-gray-200 text-gray-700 font-bold py-2 px-4 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200"
@@ -118,12 +106,9 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                                     </svg>
                                 </button>
-                            </c:if>
-                            <c:if test="${not isAvailable}">
-                                <span class="text-sm font-mono text-gray-400 select-none">${voucher.voucherCode}</span>
-                            </c:if>
+                            </div>
                         </div>
-                    </div>
+                    </c:if>
                 </c:forEach>
             </div>
         </c:if>
@@ -161,7 +146,6 @@
                 buttonElement.classList.add('bg-green-500', 'text-white');
                 buttonElement.classList.remove('bg-gray-200', 'text-gray-700', 'hover:bg-gray-300');
 
-
                 // Revert after 2 seconds
                 setTimeout(() => {
                     copyTextElement.innerHTML = originalText;
@@ -175,6 +159,5 @@
             });
         }
     </script>
-
 </body>
 </html>
