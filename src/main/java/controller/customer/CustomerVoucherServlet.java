@@ -10,6 +10,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -40,6 +41,11 @@ public class CustomerVoucherServlet extends HttpServlet {
                 // Optionally, handle case where no customerId is provided
                 voucherList = customerVoucherDAO.getAllCustomerVouchers();
             }
+
+            // Filter out used vouchers
+            voucherList = voucherList.stream()
+                                    .filter(voucher -> !voucher.isIsUsed())
+                                    .collect(Collectors.toList());
 
             request.setAttribute("voucherList", voucherList);
         } catch (SQLException e) {
