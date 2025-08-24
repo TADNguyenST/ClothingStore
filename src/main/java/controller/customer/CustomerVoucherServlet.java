@@ -32,7 +32,6 @@ public class CustomerVoucherServlet extends HttpServlet {
             // Get customerId parameter
             String customerIdParam = request.getParameter("customerId");
             List<CustomerVoucher> voucherList;
-
             // Apply filter if customerId is provided
             if (customerIdParam != null && !customerIdParam.trim().isEmpty()) {
                 long customerId = Long.parseLong(customerIdParam);
@@ -41,21 +40,19 @@ public class CustomerVoucherServlet extends HttpServlet {
                 // Optionally, handle case where no customerId is provided
                 voucherList = customerVoucherDAO.getAllCustomerVouchers();
             }
-
             // Filter out used vouchers
             voucherList = voucherList.stream()
                                     .filter(voucher -> !voucher.isIsUsed())
                                     .collect(Collectors.toList());
-
             request.setAttribute("voucherList", voucherList);
         } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Error retrieving customer voucher list: {0}", e.getMessage());
-            request.setAttribute("errorMessage", "Lỗi khi lấy dữ liệu voucher của khách hàng: " + e.getMessage());
+            request.setAttribute("errorMessage", "Error retrieving customer voucher data: " + e.getMessage());
         } catch (NumberFormatException e) {
             LOGGER.log(Level.SEVERE, "Invalid customer ID format: {0}", e.getMessage());
-            request.setAttribute("errorMessage", "ID khách hàng không hợp lệ: " + e.getMessage());
+            request.setAttribute("errorMessage", "Invalid customer ID: " + e.getMessage());
         }
-        
+       
         // Forward to JSP
         request.getRequestDispatcher("WEB-INF/views/customer/voucher/customer_voucher.jsp").forward(request, response);
     }

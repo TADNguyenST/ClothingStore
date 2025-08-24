@@ -47,7 +47,7 @@ public class VoucherPublicServlet extends HttpServlet {
             request.setAttribute("voucherList", voucherList);
         } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Error retrieving public voucher list: {0}", e.getMessage());
-            request.setAttribute("errorMessage", "Lỗi khi lấy dữ liệu voucher công khai: " + e.getMessage());
+            request.setAttribute("errorMessage", "Error retrieving public voucher data: " + e.getMessage());
         }
         // Forward to JSP
         request.getRequestDispatcher("/WEB-INF/views/customer/voucher/public-voucher-list.jsp").forward(request, response);
@@ -62,37 +62,37 @@ public class VoucherPublicServlet extends HttpServlet {
         // Check if user is logged in
         if (userId == null) {
             LOGGER.log(Level.INFO, "Unauthorized save attempt to VoucherPublicServlet");
-            request.setAttribute("errorMessage", "Vui lòng đăng nhập để lưu voucher!");
+            request.setAttribute("errorMessage", "Please log in to save the voucher!");
             response.sendRedirect(request.getContextPath() + "/Login");
             return;
         }
         try {
             String voucherIdStr = request.getParameter("voucherId");
             if (voucherIdStr == null) {
-                request.setAttribute("errorMessage", "Vui lòng chọn voucher hợp lệ!");
+                request.setAttribute("errorMessage", "Please select a valid voucher!");
             } else {
                 long voucherId = Long.parseLong(voucherIdStr);
-               
+              
                 // Check if voucher is already saved by the customer
                 if (voucherDAO.isVoucherSavedByCustomer(voucherId, userId)) {
-                    request.setAttribute("errorMessage", "Bạn đã lưu voucher này rồi!");
+                    request.setAttribute("errorMessage", "You have already saved this voucher!");
                 } else {
                     boolean saved = voucherDAO.saveVoucherForCustomer(voucherId, userId);
                     if (saved) {
-                        request.setAttribute("successMessage", "Lưu voucher thành công!");
+                        request.setAttribute("successMessage", "Voucher saved successfully!");
                     } else {
-                        request.setAttribute("errorMessage", "Lỗi khi lưu voucher!");
+                        request.setAttribute("errorMessage", "Error saving voucher!");
                     }
                 }
             }
         } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Error saving voucher: {0}", e.getMessage());
-            request.setAttribute("errorMessage", "Lỗi khi lưu voucher: " + e.getMessage());
+            request.setAttribute("errorMessage", "Error saving voucher: " + e.getMessage());
         } catch (NumberFormatException e) {
             LOGGER.log(Level.SEVERE, "Invalid voucher ID format: {0}", e.getMessage());
-            request.setAttribute("errorMessage", "Mã voucher không hợp lệ!");
+            request.setAttribute("errorMessage", "Invalid voucher ID!");
         }
-       
+      
         // Refresh the voucher list after saving
         doGet(request, response);
     }

@@ -44,14 +44,13 @@
             <h1 class="text-4xl md:text-5xl font-extrabold text-gray-800 tracking-tight">Your Vouchers</h1>
             <p class="mt-2 text-lg text-gray-500">Here are all the special offers we've sent you.</p>
         </header>
-        
+       
         <c:if test="${not empty errorMessage}">
             <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-md shadow-md text-center" role="alert">
                 <p class="font-bold">Error</p>
                 <p>${errorMessage}</p>
             </div>
         </c:if>
-
         <c:if test="${not empty voucherList}">
             <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
                 <c:forEach var="voucher" items="${voucherList}">
@@ -66,23 +65,21 @@
                                         Available
                                     </span>
                                 </div>
-                                
+                               
                                 <div class="flex items-center space-x-2 mt-4 text-sm text-gray-500">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                                     <span>Sent on <fmt:formatDate value="${voucher.sentDate}" pattern="dd MMM, yyyy"/></span>
                                 </div>
                             </div>
-
                             <!-- Dashed Separator with Cutouts -->
                             <div class="relative px-6">
                                 <div class="border-t-2 border-dashed border-gray-200 w-full"></div>
                                 <div class="ticket-cutout-left"></div>
                                 <div class="ticket-cutout-right"></div>
                             </div>
-
                             <!-- Bottom Section with Code and Discount -->
                             <div class="p-6 bg-gray-50 rounded-b-xl flex justify-between items-center">
-                                <div class="font-black text-2xl tracking-wider 
+                                <div class="font-black text-2xl tracking-wider
                                     <c:choose>
                                         <c:when test="${voucher.discountType == 'Percentage'}">text-purple-600</c:when>
                                         <c:otherwise>text-indigo-600</c:otherwise>
@@ -92,11 +89,10 @@
                                             ${voucher.discountValue}% OFF
                                         </c:when>
                                         <c:otherwise>
-                                            <fmt:formatNumber value="${voucher.discountValue}" type="currency" currencyCode="VND" currencySymbol="₫"/>
+                                            <fmt:formatNumber value="${voucher.discountValue}" type="currency" currencyCode="VND" currencySymbol="₫" minFractionDigits="0" maxFractionDigits="0"/>
                                         </c:otherwise>
                                     </c:choose>
                                 </div>
-
                                 <button
                                     onclick="copyToClipboard(this, '${voucher.voucherCode}')"
                                     class="bg-gray-200 text-gray-700 font-bold py-2 px-4 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200"
@@ -112,7 +108,6 @@
                 </c:forEach>
             </div>
         </c:if>
-
         <c:if test="${empty voucherList and empty errorMessage}">
             <div class="text-center py-16">
                  <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
@@ -123,7 +118,6 @@
             </div>
         </c:if>
     </div>
-
     <script>
         function copyToClipboard(buttonElement, codeToCopy) {
             if (!navigator.clipboard) {
@@ -131,21 +125,19 @@
                 alert("Clipboard API not available. Please copy manually.");
                 return;
             }
-            
+           
             navigator.clipboard.writeText(codeToCopy).then(() => {
                 const copyTextElement = buttonElement.querySelector('.copy-text');
                 const copyIconElement = buttonElement.querySelector('.copy-icon');
-                
+               
                 // Store original content
                 const originalText = copyTextElement.innerHTML;
                 const originalIcon = copyIconElement.outerHTML;
-
                 // Change to "Copied!" state
                 copyTextElement.textContent = 'Copied!';
                 copyIconElement.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />`;
                 buttonElement.classList.add('bg-green-500', 'text-white');
                 buttonElement.classList.remove('bg-gray-200', 'text-gray-700', 'hover:bg-gray-300');
-
                 // Revert after 2 seconds
                 setTimeout(() => {
                     copyTextElement.innerHTML = originalText;
