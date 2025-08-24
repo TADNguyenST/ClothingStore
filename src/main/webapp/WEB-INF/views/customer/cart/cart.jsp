@@ -26,7 +26,6 @@
         color:var(--primary);
         margin-bottom:14px
     }
-
     .cart-wrap{
         display:grid;
         grid-template-columns:1fr 360px;
@@ -37,7 +36,6 @@
             grid-template-columns:1fr
         }
     }
-
     .card-like{
         background:#fff;
         border:1px solid var(--border);
@@ -51,7 +49,6 @@
         padding:14px 16px;
         border-bottom:1px solid #eef2ff
     }
-
     table.cart-table{
         width:100%;
         border-collapse:separate;
@@ -99,7 +96,6 @@
         border-color:#3b82f6;
         box-shadow:0 0 5px rgba(59,130,246,.4)
     }
-
     .stock-info{
         color:#1e3a8a;
         font-size:.9rem
@@ -123,7 +119,6 @@
         color:#6b7280
     }
 
-    /* Summary */
     .summary-card{
         padding:16px
     }
@@ -168,6 +163,24 @@
     .selected-item .badge{
         background:#e2e8f0;
         color:#0f172a
+    }
+
+    /* Voucher UI */
+    .voucher-box .form-control{
+        border-radius:10px
+    }
+    .voucher-box .btn{
+        border-radius:10px
+    }
+    .voucher-applied{
+        background:#f1f5ff;
+        border:1px dashed var(--border);
+        padding:.5rem .75rem;
+        border-radius:10px
+    }
+    .voucher-error{
+        color:#dc2626;
+        font-size:.9rem
     }
 </style>
 
@@ -238,7 +251,7 @@
                                 </td>
                                 <td>
                                     <a class="product-name"
-                                       href="${pageContext.request.contextPath}/ProductList/detail?productId=${item.productId}">
+                                       href="${pageContext.request.contextPath}/ProductDetail?productId=${item.productId}">
                                         ${item.productName}
                                     </a>
                                 </td>
@@ -288,6 +301,7 @@
                     <i class="fas fa-receipt me-2 text-primary"></i>
                     <div class="summary-title mb-0">Order Summary</div>
                 </div>
+
                 <div class="summary-row mt-2">
                     <div class="label">Items selected</div>
                     <div class="value" id="sumItems">0</div>
@@ -296,18 +310,63 @@
                     <div class="label">Selected subtotal</div>
                     <div class="value" id="sumSelected">0đ</div>
                 </div>
+
+                <!-- Voucher -->
+                <div class="voucher-box mt-3">
+                    <label class="form-label mb-1">Voucher</label>
+                    <div class="input-group">
+                        <input id="voucherCodeInput" type="text" class="form-control" placeholder="Enter code (e.g. SALE50)">
+                        <button id="applyVoucherBtn" class="btn btn-primary">Apply</button>
+                        <button id="clearVoucherBtn" class="btn btn-outline-secondary d-none">Remove</button>
+                    </div>
+
+                    <!-- BỎ hẳn link public voucher -->
+                    <small id="voucherStatus" class="text-muted mt-2 d-inline-block" aria-live="polite"></small>
+
+                    <div id="voucherApplied" class="voucher-applied mt-2 d-none">
+                        <div><strong id="vName"></strong> — <span class="text-muted">code:</span> <span id="vCode" class="font-monospace"></span></div>
+                        <div class="text-muted">Type: <span id="vType"></span>, Value: <span id="vValue"></span></div>
+                    </div>
+                    <div id="voucherError" class="voucher-error mt-2 d-none"></div>
+
+                    <!-- Ví voucher: saved vouchers -->
+                    <div class="mt-3">
+                        <button id="toggleWalletBtn" type="button" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-wallet me-1"></i> My saved vouchers
+                        </button>
+                        <div id="voucherWallet" class="mt-2 d-none">
+                            <div id="voucherWalletLoading" class="text-muted small">Loading...</div>
+                            <div id="voucherWalletError" class="text-danger small d-none"></div>
+                            <div id="voucherWalletList" class="row g-2"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="summary-row">
+                    <div class="label">Voucher discount</div>
+                    <div class="value text-danger" id="sumVoucherDiscount">-0đ</div>
+                </div>
+
                 <hr/>
+                <div class="summary-row">
+                    <div class="label fw-bold">Payable</div>
+                    <div class="value fw-bold" id="sumPayable">0đ</div>
+                </div>
+
                 <div class="mb-2 fw-semibold" style="color:#1e293b;">Selected items</div>
                 <div class="selected-list" id="selectedList">
                     <div class="text-muted small">No items selected.</div>
                 </div>
 
-                <!-- Checkout form: chỉ enable khi có hàng được chọn -->
+                <!-- Checkout -->
                 <form id="checkoutForm" class="d-grid gap-2 mt-3"
                       action="${pageContext.request.contextPath}/customer/checkout"
                       method="post">
                     <input type="hidden" name="action" value="checkoutSelected">
                     <input type="hidden" name="cartItemIds" id="checkoutIds" value="">
+                    <input type="hidden" name="voucherCode" id="voucherCodeHidden" value="">
+                    <input type="hidden" name="selectedSubtotal" id="selectedSubtotalHidden" value="">
+                    <input type="hidden" name="voucherDiscount"  id="voucherDiscountHidden"  value="">
                     <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                     <button id="checkoutBtn" type="submit" class="btn btn-primary btn-pill" disabled>
                         Proceed to Checkout
@@ -342,10 +401,18 @@
             var n = Math.round(Number(v) || 0).toString();
             return n.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + 'đ';
         }
-        function updateBadge(n) {
-            if (typeof window.updateCartCount === 'function') {
-                (typeof n === 'number') ? window.updateCartCount(n) : window.updateCartCount();
+        function displayVoucherValue(type, value) {
+            if (!type)
+                return '';
+            var t = String(type).trim();
+            if (/percentage/i.test(t)) {
+                var num = Number(value) || 0;
+                if (num > 0 && num <= 1)
+                    num = num * 100; // 0.12 -> 12
+                // làm gọn đến 2 chữ số thập phân nếu cần
+                return (Math.round(num * 100) / 100) + '%';
             }
+            return formatVNDdot(value);
         }
 
         function showEmptyState() {
@@ -365,7 +432,7 @@
                         + '<a href="${pageContext.request.contextPath}/ProductList" class="btn btn-outline-primary btn-pill">Continue Shopping</a>';
                 container.appendChild(div);
             }
-            // reset counters
+            // reset
             ['selectedCount', 'totalCount', 'sumItems'].forEach(function (id) {
                 var el = document.getElementById(id);
                 if (el)
@@ -374,16 +441,18 @@
             var ss = document.getElementById('sumSelected');
             if (ss)
                 ss.textContent = '0đ';
+            clearVoucher(true);
             var list = document.getElementById('selectedList');
             if (list)
                 list.innerHTML = '<div class="text-muted small">No items selected.</div>';
-            // disable checkout
             var cb = document.getElementById('checkoutBtn');
             if (cb)
                 cb.disabled = true;
             var ci = document.getElementById('checkoutIds');
             if (ci)
                 ci.value = '';
+            document.getElementById('sumVoucherDiscount').textContent = '-0đ';
+            document.getElementById('sumPayable').textContent = '0đ';
         }
 
         /* ===== Row total & selection ===== */
@@ -421,6 +490,20 @@
             all.checked = (checked === total && total > 0);
             all.indeterminate = (checked > 0 && checked < total);
         }
+        function getSelectedSubtotal() {
+            var checks = document.querySelectorAll('.row-check:checked');
+            var sum = 0;
+            for (var i = 0; i < checks.length; i++) {
+                var id = checks[i].getAttribute('data-id');
+                var row = document.querySelector('tr[data-cart-item-id="' + id + '"]');
+                if (!row)
+                    continue;
+                var lt = row.querySelector('.line-total');
+                var line = lt ? Number(lt.getAttribute('data-line-total') || 0) : recalcRowTotal(row);
+                sum += line;
+            }
+            return sum;
+        }
         function refreshSelectionSummary() {
             var checks = document.querySelectorAll('.row-check');
             var sel = [], i;
@@ -446,15 +529,7 @@
             }
             (el = document.getElementById('sumSelected')) && (el.textContent = formatVNDdot(subtotal));
 
-            // cập nhật hidden field cho checkout + enable/disable nút
-            var hid = document.getElementById('checkoutIds');
-            if (hid)
-                hid.value = ids.join(',');
-            var btn = document.getElementById('checkoutBtn');
-            if (btn)
-                btn.disabled = (selCount === 0);
-
-            // render danh sách selected
+            // selected list
             var list = document.getElementById('selectedList');
             if (list) {
                 list.innerHTML = '';
@@ -462,12 +537,9 @@
                     list.innerHTML = '<div class="text-muted small">No items selected.</div>';
                 } else {
                     for (i = 0; i < sel.length; i++) {
-                        var s = sel[i],
-                                name = s.getAttribute('data-name') || 'Product',
-                                size = s.getAttribute('data-size') || '',
-                                color = s.getAttribute('data-color') || '',
-                                qty = s.getAttribute('data-qty') || '1',
-                                meta = [];
+                        var s = sel[i], name = s.getAttribute('data-name') || 'Product',
+                                size = s.getAttribute('data-size') || '', color = s.getAttribute('data-color') || '',
+                                qty = s.getAttribute('data-qty') || '1', meta = [];
                         if (size)
                             meta.push('Size: ' + size);
                         if (color)
@@ -481,8 +553,18 @@
                     }
                 }
             }
-        }
 
+            // checkout ids + enable/disable
+            var hid = document.getElementById('checkoutIds');
+            if (hid)
+                hid.value = ids.join(',');
+            var btn = document.getElementById('checkoutBtn');
+            if (btn)
+                btn.disabled = (selCount === 0);
+
+            updatePayableUI(subtotal);
+            debounceRevalidate();
+        }
         function formatAllMoney() {
             var cells = document.querySelectorAll('.money');
             for (var i = 0; i < cells.length; i++) {
@@ -493,6 +575,244 @@
                 else if (lt != null)
                     cells[i].textContent = formatVNDdot(lt);
             }
+        }
+
+        /* ===== Voucher State & UI ===== */
+        var voucherState = {code: null, name: null, type: null, value: null, discount: 0, valid: false};
+        var revalTimer = null;
+
+        function setVoucherAppliedUI(resp) {
+            voucherState.code = (resp.voucher && resp.voucher.code) || voucherState.code;
+            voucherState.name = (resp.voucher && resp.voucher.name) || voucherState.name;
+            voucherState.type = (resp.voucher && resp.voucher.type) || voucherState.type;
+            voucherState.value = (resp.voucher && resp.voucher.value) || voucherState.value;
+            voucherState.discount = Number(resp.discount || 0);
+            voucherState.valid = !!resp.success;
+
+            document.getElementById('voucherError').classList.add('d-none');
+            document.getElementById('voucherApplied').classList.remove('d-none');
+            document.getElementById('vName').textContent = voucherState.name || 'Voucher';
+            document.getElementById('vCode').textContent = voucherState.code || '';
+            document.getElementById('vType').textContent = voucherState.type || '';
+            document.getElementById('vValue').textContent = displayVoucherValue(voucherState.type, voucherState.value);
+            document.getElementById('voucherStatus').textContent = resp.message || 'Applied.';
+            document.getElementById('applyVoucherBtn').textContent = 'Re-apply';
+            document.getElementById('clearVoucherBtn').classList.remove('d-none');
+            document.getElementById('voucherCodeInput').value = voucherState.code || '';
+            document.getElementById('voucherCodeHidden').value = voucherState.code || '';
+        }
+        function setVoucherErrorUI(msg) {
+            voucherState.discount = 0;
+            voucherState.valid = false;
+            document.getElementById('voucherApplied').classList.add('d-none');
+            document.getElementById('voucherError').classList.remove('d-none');
+            document.getElementById('voucherError').textContent = msg || 'Cannot apply voucher.';
+            document.getElementById('voucherStatus').textContent = '';
+            document.getElementById('voucherCodeHidden').value = '';
+        }
+        function clearVoucher(silent) {
+            voucherState = {code: null, name: null, type: null, value: null, discount: 0, valid: false};
+            document.getElementById('voucherCodeInput').value = '';
+            document.getElementById('voucherCodeHidden').value = '';
+            document.getElementById('voucherApplied').classList.add('d-none');
+            document.getElementById('voucherError').classList.add('d-none');
+            document.getElementById('voucherStatus').textContent = '';
+            document.getElementById('applyVoucherBtn').textContent = 'Apply';
+            document.getElementById('clearVoucherBtn').classList.add('d-none');
+            if (!silent)
+                updatePayableUI(getSelectedSubtotal());
+        }
+        function updatePayableUI(subtotal) {
+            var discount = voucherState.valid ? voucherState.discount : 0;
+            document.getElementById('sumVoucherDiscount').textContent = '-' + formatVNDdot(discount);
+            var payable = Math.max(0, subtotal - discount);
+            document.getElementById('sumPayable').textContent = formatVNDdot(payable);
+        }
+
+        function applyVoucherNow() {
+            var code = (document.getElementById('voucherCodeInput').value || '').trim();
+            var subtotal = getSelectedSubtotal();
+            if (!code) {
+                setVoucherErrorUI('Please enter voucher code.');
+                updatePayableUI(subtotal);
+                return;
+            }
+            if (subtotal <= 0) {
+                setVoucherErrorUI('Please select product before applying voucher.');
+                updatePayableUI(subtotal);
+                return;
+            }
+
+            document.getElementById('voucherStatus').textContent = 'Validating...';
+            console.log('[Voucher DEBUG] subtotalSent =', subtotal, 'code =', code);
+            fetch('${pageContext.request.contextPath}/customer/voucher/validate', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8', 'Accept': 'application/json'},
+                body: new URLSearchParams({code: code, subtotal: String(subtotal)})
+            })
+                    .then(function (res) {
+                        if (!res.ok)
+                            throw new Error('HTTP ' + res.status);
+                        return res.json();
+                    })
+                    .then(function (resp) {
+                        if (resp.success) {
+                            setVoucherAppliedUI(resp);
+                            document.getElementById('sumVoucherDiscount').textContent = '-' + formatVNDdot(resp.discount);
+                            document.getElementById('sumPayable').textContent = formatVNDdot(resp.newTotal);
+                            showToast(resp.message || 'Voucher applied.', true);
+                        } else {
+                            setVoucherErrorUI(resp.message || 'Cannot apply voucher.');
+                            updatePayableUI(subtotal);
+                            showToast(resp.message || 'Apply failed.', false);
+                        }
+                    })
+                    .catch(function () {
+                        setVoucherErrorUI('Network error. Please try again.');
+                        updatePayableUI(subtotal);
+                    });
+        }
+
+        function debounceRevalidate() {
+            if (!voucherState.code)
+                return;
+            if (revalTimer)
+                clearTimeout(revalTimer);
+            revalTimer = setTimeout(function () {
+                var subtotal = getSelectedSubtotal();
+                if (subtotal <= 0) {
+                    clearVoucher(true);
+                    updatePayableUI(0);
+                    return;
+                }
+                fetch('${pageContext.request.contextPath}/customer/voucher/validate', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8', 'Accept': 'application/json'},
+                    body: new URLSearchParams({code: voucherState.code, subtotal: String(subtotal)})
+                })
+                        .then(function (res) {
+                            if (!res.ok)
+                                throw new Error('HTTP ' + res.status);
+                            return res.json();
+                        })
+                        .then(function (resp) {
+                            if (resp.success) {
+                                setVoucherAppliedUI(resp);
+                                document.getElementById('sumVoucherDiscount').textContent = '-' + formatVNDdot(resp.discount);
+                                document.getElementById('sumPayable').textContent = formatVNDdot(resp.newTotal);
+                            } else {
+                                setVoucherErrorUI(resp.message || 'Voucher not valid for current selection.');
+                                updatePayableUI(subtotal);
+                            }
+                        })
+                        .catch(function () {/* giữ trạng thái cũ */
+                        });
+            }, 300);
+        }
+
+        /* ===== Saved Vouchers (Wallet) ===== */
+        var voucherWalletLoaded = false;
+
+        function renderWallet(vouchers) {
+            var list = document.getElementById('voucherWalletList');
+            list.innerHTML = '';
+            if (!vouchers || vouchers.length === 0) {
+                list.innerHTML = '<div class="text-muted small">No saved vouchers.</div>';
+                return;
+            }
+            vouchers.forEach(function (v) {
+                var col = document.createElement('div');
+                col.className = 'col-12';
+
+                var disabled = (v.isUsed === true) || (v.isExpired === true);
+                var btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'btn w-100 d-flex justify-content-between align-items-center '
+                        + (disabled ? 'btn-outline-secondary' : 'btn-outline-success');
+                btn.disabled = disabled;
+
+                var left = document.createElement('div');
+                left.className = 'text-start';
+                left.innerHTML =
+                        '<div class="fw-semibold">' + (v.name || 'Voucher') + '</div>' +
+                        '<div class="small text-muted">Code: <span class="font-monospace">' + (v.code || '') + '</span></div>';
+
+                var right = document.createElement('div');
+                right.className = 'text-end';
+                var valueLabel = displayVoucherValue(v.type, v.value);
+                right.innerHTML = '<span class="badge bg-light text-dark">' + valueLabel + '</span>';
+
+                btn.appendChild(left);
+                btn.appendChild(right);
+
+                if (!disabled) {
+                    btn.addEventListener('click', function () {
+                        document.getElementById('voucherCodeInput').value = v.code || '';
+                        applyVoucherNow();
+                        document.getElementById('voucherCodeInput').focus({preventScroll: false});
+                    });
+                } else {
+                    btn.title = v.isUsed ? 'Already used' : 'Expired';
+                }
+
+                col.appendChild(btn);
+                list.appendChild(col);
+            });
+        }
+
+        function loadSavedVouchers() {
+            var loading = document.getElementById('voucherWalletLoading');
+            var err = document.getElementById('voucherWalletError');
+            var list = document.getElementById('voucherWalletList');
+
+            loading.classList.remove('d-none');
+            err.classList.add('d-none');
+            err.textContent = '';
+            list.innerHTML = '';
+
+
+            fetch('${pageContext.request.contextPath}/customer/voucher/saved', {
+                method: 'GET',
+                headers: {'Accept': 'application/json'}
+            })
+                    .then(function (res) {
+                        if (!res.ok) {
+                            if (res.status === 401 || res.status === 403) {
+                                throw new Error('Please log in to view your saved vouchers.');
+                            }
+                            throw new Error('Failed to load vouchers. HTTP ' + res.status);
+                        }
+                        return res.json();
+                    })
+                    .then(function (json) {
+                        loading.classList.add('d-none');
+                        var vouchers = (json && (json.vouchers || json.data || [])) || [];
+                        renderWallet(vouchers);
+                        voucherWalletLoaded = true;
+                    })
+                    .catch(function (e) {
+                        loading.classList.add('d-none');
+                        err.classList.remove('d-none');
+                        err.textContent = e.message || 'Cannot load saved vouchers.';
+                    });
+        }
+
+        function bindVoucherWalletToggle() {
+            var btn = document.getElementById('toggleWalletBtn');
+            var wrap = document.getElementById('voucherWallet');
+            if (!btn || !wrap)
+                return;
+
+            btn.addEventListener('click', function () {
+                var isHidden = wrap.classList.contains('d-none');
+                if (isHidden) {
+                    wrap.classList.remove('d-none');
+                    if (!voucherWalletLoaded)
+                        loadSavedVouchers();
+                } else {
+                    wrap.classList.add('d-none');
+                }
+            });
         }
 
         /* ===== Binds ===== */
@@ -516,7 +836,7 @@
                     refreshSelectionSummary();
                     refreshSelectAllState();
                 });
-                // mặc định chọn hết để user thấy tổng
+                // mặc định: chọn hết
                 selectAll.checked = true;
                 selectAll.dispatchEvent(new Event('change'));
             }
@@ -556,32 +876,39 @@
                             method: 'POST',
                             body: body,
                             headers: {'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json', 'Cache-Control': 'no-cache'}
-                        }).then(function (res) {
-                            if (!res.ok)
-                                throw new Error('HTTP ' + res.status);
-                            return res.json();
-                        }).then(function (result) {
-                            if (result.message)
-                                showToast(result.message, !!result.success);
-                            if (result.success) {
-                                var row = input.closest('tr[data-row="cart-item"]');
-                                if (row) {
-                                    var chk = row.querySelector('.row-check');
-                                    if (chk)
-                                        chk.setAttribute('data-qty', String(quantity));
-                                    recalcRowTotal(row);
-                                }
-                                refreshSelectionSummary();
-                                refreshSelectAllState();
-                                updateBadge(result.cartCount);
-                            } else {
-                                input.value = input.defaultValue || '1';
-                            }
-                        }).catch(function (err) {
-                            console.error(err);
-                            showToast('Network error. Please try again.', false);
-                            input.value = input.defaultValue || '1';
-                        });
+                        })
+                                .then(function (res) {
+                                    if (!res.ok)
+                                        throw new Error('HTTP ' + res.status);
+                                    return res.json();
+                                })
+                                .then(function (result) {
+                                    if (result.message)
+                                        showToast(result.message, !!result.success);
+                                    if (result.success) {
+                                        var row = input.closest('tr[data-row="cart-item"]');
+                                        if (row) {
+                                            var chk = row.querySelector('.row-check');
+                                            if (chk)
+                                                chk.setAttribute('data-qty', String(quantity));
+                                            recalcRowTotal(row);
+                                        }
+                                        refreshSelectionSummary();
+                                        refreshSelectAllState();
+                                        if (typeof window.updateCartCount === 'function') {
+                                            if (typeof result.cartCount !== 'undefined')
+                                                window.updateCartCount(result.cartCount);
+                                            else
+                                                window.updateCartCount();
+                                        }
+                                    } else {
+                                        input.value = input.defaultValue || '1';
+                                    }
+                                })
+                                .catch(function () {
+                                    showToast('Network error. Please try again.', false);
+                                    input.value = input.defaultValue || '1';
+                                });
                     });
                 })(inputs[i]);
             }
@@ -606,36 +933,44 @@
                             method: 'POST',
                             body: new URLSearchParams(fd),
                             headers: {'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json', 'Cache-Control': 'no-cache'}
-                        }).then(function (res) {
-                            if (!res.ok)
-                                throw new Error('HTTP ' + res.status);
-                            return res.json();
-                        }).then(function (result) {
-                            if (result.message)
-                                showToast(result.message, !!result.success);
-                            if (result.success) {
-                                var row = form.closest('tr[data-row="cart-item"]');
-                                if (row && row.parentNode)
-                                    row.parentNode.removeChild(row);
+                        })
+                                .then(function (res) {
+                                    if (!res.ok)
+                                        throw new Error('HTTP ' + res.status);
+                                    return res.json();
+                                })
+                                .then(function (result) {
+                                    if (result.message)
+                                        showToast(result.message, !!result.success);
+                                    if (result.success) {
+                                        var row = form.closest('tr[data-row="cart-item"]');
+                                        if (row && row.parentNode)
+                                            row.parentNode.removeChild(row);
 
-                                var remain = document.querySelectorAll('tr[data-row="cart-item"]').length;
-                                var tc = document.getElementById('totalCount');
-                                if (tc)
-                                    tc.textContent = String(remain);
+                                        var remain = document.querySelectorAll('tr[data-row="cart-item"]').length;
+                                        var tc = document.getElementById('totalCount');
+                                        if (tc)
+                                            tc.textContent = String(remain);
 
-                                if (remain === 0) {
-                                    showEmptyState();
-                                } else {
-                                    refreshSelectionSummary();
-                                    refreshSelectAllState();
-                                    refreshRowHighlight();
-                                }
-                                updateBadge(typeof result.cartCount !== 'undefined' ? result.cartCount : undefined);
-                            }
-                        }).catch(function (err) {
-                            console.error(err);
-                            showToast('Network error. Please try again.', false);
-                        });
+                                        if (remain === 0) {
+                                            showEmptyState();
+                                        } else {
+                                            refreshSelectionSummary();
+                                            refreshSelectAllState();
+                                            refreshRowHighlight();
+                                        }
+
+                                        if (typeof window.updateCartCount === 'function') {
+                                            if (typeof result.cartCount !== 'undefined')
+                                                window.updateCartCount(result.cartCount);
+                                            else
+                                                window.updateCartCount();
+                                        }
+                                    }
+                                })
+                                .catch(function () {
+                                    showToast('Network error. Please try again.', false);
+                                });
                     });
                 })(forms[i]);
             }
@@ -663,7 +998,6 @@
                 var old = btn.textContent;
                 btn.textContent = 'Clearing...';
 
-                // xoá tuần tự cho chắc
                 var ids = [];
                 for (var i = 0; i < rows.length; i++)
                     ids.push(rows[i].getAttribute('data-cart-item-id'));
@@ -673,7 +1007,8 @@
                         btn.disabled = false;
                         btn.textContent = old;
                         showToast('Cart has been cleared.', true);
-                        updateBadge(); // refetch count
+                        if (typeof window.updateCartCount === 'function')
+                            window.updateCartCount();
                         showEmptyState();
                         return;
                     }
@@ -682,7 +1017,8 @@
                     body.append('cartItemId', ids[idx]);
                     body.append('csrfToken', csrf);
                     fetch('${pageContext.request.contextPath}/customer/cart', {
-                        method: 'POST', body: body, headers: {'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json', 'Cache-Control': 'no-cache'}
+                        method: 'POST', body: body,
+                        headers: {'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json', 'Cache-Control': 'no-cache'}
                     }).then(function () {
                         idx++;
                         next();
@@ -695,16 +1031,65 @@
             });
         }
 
-        // Bảo vệ: không gửi form nếu không có item được chọn (phòng khi browser bỏ qua disabled)
+        // Guard checkout
         function bindCheckoutGuard() {
             var form = document.getElementById('checkoutForm');
             if (!form)
                 return;
+
             form.addEventListener('submit', function (e) {
-                var ids = document.getElementById('checkoutIds')?.value || '';
+                var idsEl = document.getElementById('checkoutIds');
+                var ids = idsEl ? idsEl.value : '';
                 if (!ids) {
                     e.preventDefault();
                     showToast('Please select at least one item to checkout.', false);
+                    return;
+                }
+
+                // Đẩy subtotal & discount (raw number, không định dạng) sang server
+                var subtotal = getSelectedSubtotal();
+                var discount = (typeof voucherState !== 'undefined' && voucherState.valid)
+                        ? Number(voucherState.discount || 0)
+                        : 0;
+
+                document.getElementById('selectedSubtotalHidden').value = String(Math.max(0, Math.round(subtotal)));
+                document.getElementById('voucherDiscountHidden').value = String(Math.max(0, Math.round(discount)));
+                // voucherCodeHidden đã được set khi Apply/Clear voucher nên không cần đụng ở đây
+            });
+        }
+
+
+        function bindVoucherUI() {
+            document.getElementById('applyVoucherBtn').addEventListener('click', function (e) {
+                e.preventDefault();
+                applyVoucherNow();
+            });
+            document.getElementById('voucherCodeInput').addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    applyVoucherNow();
+                }
+            });
+            document.getElementById('clearVoucherBtn').addEventListener('click', function (e) {
+                e.preventDefault();
+                clearVoucher();
+            });
+        }
+
+        function bindVoucherWalletToggle() {
+            var btn = document.getElementById('toggleWalletBtn');
+            var wrap = document.getElementById('voucherWallet');
+            if (!btn || !wrap)
+                return;
+
+            btn.addEventListener('click', function () {
+                var isHidden = wrap.classList.contains('d-none');
+                if (isHidden) {
+                    wrap.classList.remove('d-none');
+                    if (!voucherWalletLoaded)
+                        loadSavedVouchers();
+                } else {
+                    wrap.classList.add('d-none');
                 }
             });
         }
@@ -712,7 +1097,6 @@
         /* ===== Init ===== */
         document.addEventListener('DOMContentLoaded', function () {
             formatAllMoney();
-            // set line totals once
             var rows = document.querySelectorAll('tr[data-row="cart-item"]');
             for (var i = 0; i < rows.length; i++)
                 recalcRowTotal(rows[i]);
@@ -722,10 +1106,13 @@
             bindRemoveSingle();
             bindClearCart();
             bindCheckoutGuard();
+            bindVoucherUI();
+            bindVoucherWalletToggle();
 
-            if (typeof window.updateCartCount === 'function') {
+            if (typeof window.updateCartCount === 'function')
                 window.updateCartCount();
-            }
+
+            updatePayableUI(getSelectedSubtotal()); // initial
         });
     })();
 </script>
