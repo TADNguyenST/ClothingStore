@@ -18,18 +18,10 @@ public class HomepageController extends HttpServlet {
             throws ServletException, IOException {
         try {
             List<Product> newArrivals = productDAO.getProductIsNew();
-            // List<Product> bestSellers = productDAO.getBestSellers(4); // Uncomment nếu cần
-
-            // Log để debug
-            System.out.println("HomepageController: Retrieved " + newArrivals.size() + " new products");
-            for (Product product : newArrivals) {
-                System.out.println("Homepage - New Arrival Product ID: " + product.getProductId() + 
-                                  ", Quantity: " + product.getQuantity() + 
-                                  ", Stock Status: " + product.getStockStatus());
-            }
-
+             List<Product> bestSellers = productDAO.getBestSellers(4); 
+           
             request.setAttribute("newProducts", newArrivals);
-            // request.setAttribute("bestSellers", bestSellers); // Uncomment nếu cần
+             request.setAttribute("bestSellers", bestSellers); // 
             request.setAttribute("pageTitle", "Homepage");
             request.getRequestDispatcher("/WEB-INF/views/public/home.jsp").forward(request, response);
         } catch (Exception e) {

@@ -23,91 +23,103 @@ import java.util.Collections;
  */
 public class ProductDAO {
 
-    // List san pham va sap xep(Admin)
-    public List<Product> getAll(String sort) {
-        List<Product> list = new ArrayList<>();
-        StringBuilder sql = new StringBuilder(
-                "SELECT p.product_id, p.name AS ProductName, p.price, p.status, "
-                + "pi.image_url AS ImageURL, c.category_id, c.name AS CategoryName, c.parent_category_id, "
-                + "pc.name AS ParentCategoryName, b.brand_id, b.name AS BrandName "
-                + "FROM products p "
-                + "LEFT JOIN product_images pi ON p.product_id = pi.product_id AND pi.is_main = 1 "
-                + "LEFT JOIN categories c ON p.category_id = c.category_id "
-                + "LEFT JOIN categories pc ON c.parent_category_id = pc.category_id "
-                + "LEFT JOIN brands b ON p.brand_id = b.brand_id "
-                + "WHERE b.is_active = 1 AND (c.is_active = 1 OR c.category_id IS NULL) AND (pc.is_active = 1 OR pc.category_id IS NULL) "
-        );
+    // List san pham va sap xep(Admin, home)
+public List<Product> getAll(String sort) {
+    List<Product> list = new ArrayList<>();
+    StringBuilder sql = new StringBuilder(
+        "SELECT p.product_id, p.name AS ProductName, p.price, p.status, "
+      + "pi.image_url AS ImageURL, c.category_id, c.name AS CategoryName, c.parent_category_id, "
+      + "pc.name AS ParentCategoryName, b.brand_id, b.name AS BrandName, "
+      + "(SELECT SUM(i.quantity) "
+      + " FROM inventory i "
+      + " JOIN product_variants pv2 ON i.variant_id = pv2.variant_id "
+      + " WHERE pv2.product_id = p.product_id) AS total_quantity "
+      + "FROM products p "
+      + "LEFT JOIN product_images pi ON p.product_id = pi.product_id AND pi.is_main = 1 "
+      + "LEFT JOIN categories c ON p.category_id = c.category_id "
+      + "LEFT JOIN categories pc ON c.parent_category_id = pc.category_id "
+      + "LEFT JOIN brands b ON p.brand_id = b.brand_id "
+      + "WHERE b.is_active = 1 "
+      + "AND (c.is_active = 1 OR c.category_id IS NULL) "
+      + "AND (pc.is_active = 1 OR pc.category_id IS NULL) "
+    );
 
-        if (sort != null) {
-            switch (sort) {
-                case "name_asc":
-                    sql.append("ORDER BY p.name ASC");
-                    break;
-                case "name_desc":
-                    sql.append("ORDER BY p.name DESC");
-                    break;
-                case "price_asc":
-                    sql.append("ORDER BY p.price ASC");
-                    break;
-                case "price_desc":
-                    sql.append("ORDER BY p.price DESC");
-                    break;
-                default:
-                    sql.append("ORDER BY p.product_id DESC");
-                    break;
-            }
-        } else {
-            sql.append("ORDER BY p.product_id DESC");
+    if (sort != null) {
+        switch (sort) {
+            case "name_asc":
+                sql.append("ORDER BY p.name ASC");
+                break;
+            case "name_desc":
+                sql.append("ORDER BY p.name DESC");
+                break;
+            case "price_asc":
+                sql.append("ORDER BY p.price ASC");
+                break;
+            case "price_desc":
+                sql.append("ORDER BY p.price DESC");
+                break;
+            default:
+                sql.append("ORDER BY p.product_id DESC");
+                break;
         }
-
-        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql.toString());  ResultSet rs = ps.executeQuery()) {
-            int rowCount = 0;
-            while (rs.next()) {
-                rowCount++;
-                Long productId = rs.getLong("product_id");
-                String productName = rs.getString("ProductName");
-                BigDecimal price = rs.getBigDecimal("price");
-                String status = rs.getString("status");
-                String imageUrl = rs.getString("ImageURL");
-                Long categoryId = rs.getLong("category_id");
-                if (rs.wasNull()) {
-                    categoryId = null;
-                }
-                String categoryName = rs.getString("CategoryName");
-                Long parentCategoryId = rs.getLong("parent_category_id");
-                if (rs.wasNull()) {
-                    parentCategoryId = null;
-                }
-                String parentCategoryName = rs.getString("ParentCategoryName");
-                Long brandId = rs.getLong("brand_id");
-                if (rs.wasNull()) {
-                    brandId = null;
-                }
-                String brandName = rs.getString("BrandName");
-                Category category = null;
-                if (categoryId != null && categoryName != null) {
-                    category = new Category();
-                    category.setCategoryId(categoryId);
-                    category.setName(categoryName);
-                    category.setParentCategoryId(parentCategoryId);
-                }
-                Brand brand = null;
-                if (brandId != null && brandName != null) {
-                    brand = new Brand();
-                    brand.setBrandId(brandId);
-                    brand.setName(brandName);
-                }
-                Product product = new Product(productId, productName, null, price,
-                        category, brand, null, status, null, null);
-                product.setImageUrl(imageUrl);
-                product.setParentCategoryName(parentCategoryName);
-                list.add(product);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return list;
+    } else {
+        sql.append("ORDER BY p.product_id DESC");
     }
+
+    try (Connection conn = DBContext.getNewConnection();
+         PreparedStatement ps = conn.prepareStatement(sql.toString());
+         ResultSet rs = ps.executeQuery()) {
+
+        while (rs.next()) {
+            Long productId = rs.getLong("product_id");
+            String productName = rs.getString("ProductName");
+            BigDecimal price = rs.getBigDecimal("price");
+            String status = rs.getString("status");
+            String imageUrl = rs.getString("ImageURL");
+            Long categoryId = rs.getLong("category_id");
+            if (rs.wasNull()) categoryId = null;
+            String categoryName = rs.getString("CategoryName");
+            Long parentCategoryId = rs.getLong("parent_category_id");
+            if (rs.wasNull()) parentCategoryId = null;
+            String parentCategoryName = rs.getString("ParentCategoryName");
+            Long brandId = rs.getLong("brand_id");
+            if (rs.wasNull()) brandId = null;
+            String brandName = rs.getString("BrandName");
+
+            // 👉 lấy tồn kho
+            int quantity = rs.getInt("total_quantity");
+            if (rs.wasNull()) quantity = 0;
+
+            Category category = null;
+            if (categoryId != null && categoryName != null) {
+                category = new Category();
+                category.setCategoryId(categoryId);
+                category.setName(categoryName);
+                category.setParentCategoryId(parentCategoryId);
+            }
+
+            Brand brand = null;
+            if (brandId != null && brandName != null) {
+                brand = new Brand();
+                brand.setBrandId(brandId);
+                brand.setName(brandName);
+            }
+
+            Product product = new Product(productId, productName, null, price,
+                    category, brand, null, status, null, null);
+            product.setImageUrl(imageUrl);
+            product.setParentCategoryName(parentCategoryName);
+            product.setQuantity(quantity);
+            product.setStockStatus(quantity > 0 ? "In Stock" : "Out of Stock");
+
+            list.add(product);
+        }
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+    return list;
+}
+
 
     // Search ten va bo loc (Admin)
     public List<Product> searchProductByNameAndFilter(String keyword, String filter) {
@@ -886,7 +898,7 @@ public class ProductDAO {
                 + "LEFT JOIN brands b ON p.brand_id = b.brand_id "
                 + "WHERE p.category_id IN (" + placeholders.toString() + ") AND p.status = 'Active' AND c.is_active = 1 AND b.is_active = 1 AND (pc.is_active = 1 OR pc.category_id IS NULL) "
                 + "ORDER BY p.product_id "
-                + "OFFSET ? ROWS FETCH NEXT 6 ROWS ONLY";
+                + "OFFSET ? ROWS FETCH NEXT 100 ROWS ONLY";
         try ( Connection conn = DBContext.getNewConnection();  PreparedStatement stmt = conn.prepareStatement(sql)) {
             for (int i = 0; i < categoryIds.size(); i++) {
                 stmt.setLong(i + 1, categoryIds.get(i));
@@ -1086,6 +1098,61 @@ public class ProductDAO {
         }
         return images;
     }
+    
+    // Lấy sản phẩm Best Seller (Frontend)
+public List<Product> getBestSellers(int limit) {
+    List<Product> list = new ArrayList<>();
+    String sql = "SELECT TOP (?) p.product_id, p.name, p.price, p.status, " +
+                 "       (SELECT TOP 1 image_url " +
+                 "        FROM product_images pi " +
+                 "        WHERE pi.product_id = p.product_id AND pi.is_main = 1) AS main_image, " +
+                 "       SUM(pod.quantity) AS total_sold, " +
+                 "       (SELECT SUM(i.quantity) " +
+                 "        FROM inventory i " +
+                 "        JOIN product_variants pv2 ON i.variant_id = pv2.variant_id " +
+                 "        WHERE pv2.product_id = p.product_id) AS total_quantity " +
+                 "FROM products p " +
+                 "JOIN product_variants pv ON p.product_id = pv.product_id " +
+                 "JOIN purchase_order_details pod ON pv.variant_id = pod.variant_id " +
+                 "JOIN brands b ON p.brand_id = b.brand_id " +
+                 "JOIN categories c ON p.category_id = c.category_id " +
+                 "LEFT JOIN categories pc ON c.parent_category_id = pc.category_id " +
+                 "WHERE p.status = 'Active' " +
+                 "  AND b.is_active = 1 " +
+                 "  AND c.is_active = 1 " +
+                 "  AND (pc.is_active = 1 OR pc.category_id IS NULL) " +
+                 "GROUP BY p.product_id, p.name, p.price, p.status " +
+                 "ORDER BY total_sold DESC";
+
+    try (Connection conn = DBContext.getNewConnection();
+         PreparedStatement ps = conn.prepareStatement(sql)) {
+        ps.setInt(1, limit);
+        ResultSet rs = ps.executeQuery();
+        while (rs.next()) {
+            Product product = new Product();
+            product.setProductId(rs.getLong("product_id"));
+            product.setName(rs.getString("name"));
+            product.setPrice(rs.getBigDecimal("price"));
+            product.setStatus(rs.getString("status"));
+            product.setImageUrl(rs.getString("main_image"));
+
+            int totalSold = rs.getInt("total_sold");
+            int totalQuantity = rs.getInt("total_quantity");
+
+            product.setQuantity(totalQuantity); // tồn kho thật
+            product.setStockStatus(totalQuantity > 0 ? "In Stock" : "Out of Stock");
+
+            product.setDescription("Đã bán " + totalSold);
+
+            list.add(product);
+        }
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+    return list;
+}
+
+
 
     // lay so luong kho theo variantId (dat)
     public int getAvailableQuantityByVariantId(Long variantId) {

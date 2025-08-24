@@ -423,8 +423,8 @@
                         String price = product.getPrice() != null ? currencyFormat.format(product.getPrice()) : "N/A";
                         Long variantId = product.getDefaultVariantId();
                         boolean hasVariant = variantId != null && variantId != 0;
-                        int available = (availableMap != null) ? availableMap.getOrDefault(product.getProductId(), 0) : 0;
-                        boolean hasStock = hasVariant && (available > 0);
+                        int available = product.getQuantity(); // lấy tồn kho trực tiếp từ DAO
+                        boolean hasStock = available > 0;      // nếu còn hàng thì true
                         String buttonTextCart = hasStock ? "Add to Cart" : "Out of Stock";
                         String buttonTextBuy = hasStock ? "Buy Now" : "Out of Stock";
             %>
