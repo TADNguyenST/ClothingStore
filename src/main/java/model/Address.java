@@ -10,29 +10,29 @@ public class Address {
     private String recipientName;
     private String phoneNumber;
     private String streetAddress;
+
     private long provinceId;
-    private long districtId;
     private long wardId;
+
     @SerializedName("default")
     private boolean isDefault;
     private Timestamp createdAt;
     private Timestamp updatedAt;
 
+    // display fields
     private String provinceName;
-    private String districtName;
     private String wardName;
     private String provinceCode;
-    private String districtCode;
     private String wardCode;
 
     public Address() {
     }
 
     public String getFullAddress() {
-        if (streetAddress == null || wardName == null || districtName == null || provinceName == null) {
+        if (streetAddress == null || wardName == null || provinceName == null) {
             return "";
         }
-        return String.join(", ", streetAddress, wardName, districtName, provinceName);
+        return String.join(", ", streetAddress, wardName, provinceName);
     }
 
     public long getAddressId() {
@@ -83,14 +83,6 @@ public class Address {
         this.provinceId = provinceId;
     }
 
-    public long getDistrictId() {
-        return districtId;
-    }
-
-    public void setDistrictId(long districtId) {
-        this.districtId = districtId;
-    }
-
     public long getWardId() {
         return wardId;
     }
@@ -103,8 +95,8 @@ public class Address {
         return isDefault;
     }
 
-    public void setDefault(boolean isDefault) {
-        this.isDefault = isDefault;
+    public void setDefault(boolean aDefault) {
+        isDefault = aDefault;
     }
 
     public Timestamp getCreatedAt() {
@@ -131,14 +123,6 @@ public class Address {
         this.provinceName = provinceName;
     }
 
-    public String getDistrictName() {
-        return districtName;
-    }
-
-    public void setDistrictName(String districtName) {
-        this.districtName = districtName;
-    }
-
     public String getWardName() {
         return wardName;
     }
@@ -153,14 +137,6 @@ public class Address {
 
     public void setProvinceCode(String provinceCode) {
         this.provinceCode = provinceCode;
-    }
-
-    public String getDistrictCode() {
-        return districtCode;
-    }
-
-    public void setDistrictCode(String districtCode) {
-        this.districtCode = districtCode;
     }
 
     public String getWardCode() {

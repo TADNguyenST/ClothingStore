@@ -10,6 +10,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -41,6 +42,11 @@ public class CustomerVoucherServlet extends HttpServlet {
                 voucherList = customerVoucherDAO.getAllCustomerVouchers();
             }
 
+            // Filter out used vouchers
+            voucherList = voucherList.stream()
+                                    .filter(voucher -> !voucher.isIsUsed())
+                                    .collect(Collectors.toList());
+
             request.setAttribute("voucherList", voucherList);
         } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Error retrieving customer voucher list: {0}", e.getMessage());
@@ -51,7 +57,7 @@ public class CustomerVoucherServlet extends HttpServlet {
         }
         
         // Forward to JSP
-        request.getRequestDispatcher("WEB-INF/views/customer/voucher/customer_voucher.jsp").forward(request, response);
+        request.getRequestDispatcher("/WEB-INF/views/customer/voucher/customer_voucher.jsp").forward(request, response);
     }
 
     @Override

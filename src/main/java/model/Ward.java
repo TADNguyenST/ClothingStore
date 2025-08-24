@@ -4,10 +4,19 @@ public class Ward {
 
     private long wardId;
     private String name;
-    private String code;
-    private long districtId;
+    private String code;       // mã theo API v2 (string)
+    private long provinceId;   // liên kết trực tiếp về tỉnh (không còn districtId)
 
-    // Getters and Setters
+    public Ward() {
+    }
+
+    public Ward(long wardId, String name, String code, long provinceId) {
+        this.wardId = wardId;
+        this.name = name;
+        this.code = code;
+        this.provinceId = provinceId;
+    }
+
     public long getWardId() {
         return wardId;
     }
@@ -32,11 +41,11 @@ public class Ward {
         this.code = code;
     }
 
-    public long getDistrictId() {
-        return districtId;
+    public long getProvinceId() {
+        return provinceId;
     }
 
-    public void setDistrictId(long districtId) {
-        this.districtId = districtId;
+    public void setProvinceId(long provinceId) {
+        this.provinceId = provinceId;
     }
 }

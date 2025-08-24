@@ -4,10 +4,17 @@ public class Province {
 
     private long provinceId;
     private String name;
-    private String code;
+    private String code; // mã theo API v2 (string)
 
-    // --- Getters and Setters ---
-    // Vấn đề nằm ở đây, bạn cần có ĐẦY ĐỦ các phương thức này
+    public Province() {
+    }
+
+    public Province(long provinceId, String name, String code) {
+        this.provinceId = provinceId;
+        this.name = name;
+        this.code = code;
+    }
+
     public long getProvinceId() {
         return provinceId;
     }

@@ -1,180 +1,271 @@
-<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ page contentType="text/html; charset=UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
-<html>
-<head>
-    <title>Customer Vouchers</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts: Inter -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
-    <style>
-        /* Applying the Inter font family */
-        body {
-            font-family: 'Inter', sans-serif;
-        }
-        /* Custom styles for the ticket-like appearance */
-        .ticket-cutout-left {
-            position: absolute;
-            top: 50%;
-            left: -15px;
-            transform: translateY(-50%);
-            width: 30px;
-            height: 30px;
-            background-color: #f0f4f8; /* Matches the body background */
-            border-radius: 50%;
-        }
-        .ticket-cutout-right {
-            position: absolute;
-            top: 50%;
-            right: -15px;
-            transform: translateY(-50%);
-            width: 30px;
-            height: 30px;
-            background-color: #f0f4f8; /* Matches the body background */
-            border-radius: 50%;
-        }
-    </style>
-</head>
-<body class="bg-gray-100" style="background-color: #f0f4f8;">
-    <div class="container mx-auto px-4 py-12">
-        <header class="text-center mb-10">
-            <h1 class="text-4xl md:text-5xl font-extrabold text-gray-800 tracking-tight">Your Vouchers</h1>
-            <p class="mt-2 text-lg text-gray-500">Here are all the special offers we've sent you.</p>
-        </header>
-        
-        <c:if test="${not empty errorMessage}">
-            <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-md shadow-md text-center" role="alert">
-                <p class="font-bold">Error</p>
-                <p>${errorMessage}</p>
-            </div>
-        </c:if>
 
-        <c:if test="${not empty voucherList}">
-            <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
-                <c:forEach var="voucher" items="${voucherList}">
-                    <c:set var="isAvailable" value="${not voucher.isUsed}"/>
-                    
-                    <!-- Voucher Card -->
-                    <div class="relative bg-white rounded-xl shadow-lg transition-transform duration-300 ease-in-out hover:scale-105 flex flex-col ${isAvailable ? '' : 'grayscale opacity-60'}">
-                        
-                        <!-- Main Content -->
-                        <div class="p-6">
-                            <div class="flex justify-between items-start">
-                                <h2 class="text-xl font-bold text-gray-800 pr-4">${voucher.voucherName}</h2>
-                                <span class="text-sm font-semibold py-1 px-3 rounded-full ${isAvailable ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-gray-600'}">
-                                    ${isAvailable ? 'Available' : 'Used'}
-                                </span>
-                            </div>
-                            
-                            <div class="flex items-center space-x-2 mt-4 text-sm text-gray-500">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                                <span>Sent on <fmt:formatDate value="${voucher.sentDate}" pattern="dd MMM, yyyy"/></span>
-                            </div>
+<c:set var="pageTitle" value="${empty pageTitle ? 'My Vouchers' : pageTitle}" />
+<jsp:include page="/WEB-INF/views/common/header.jsp" />
 
-                            <c:if test="${not isAvailable and not empty voucher.usedDate}">
-                                <div class="flex items-center space-x-2 mt-2 text-sm text-gray-500">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
-                                    <span>Used on <fmt:formatDate value="${voucher.usedDate}" pattern="dd MMM, yyyy"/></span>
+<style>
+    :root{
+        --primary:#1e3a8a;
+        --border:#e5e7eb;
+        --bg:#f8fafc;
+    }
+    .voucher-hero{
+        padding: 32px 0 12px;
+    }
+    .voucher-hero h1{
+        color: var(--primary);
+        font-weight: 800;
+        margin: 0;
+    }
+    .voucher-hero p{
+        color:#475569;
+        margin-top:6px;
+    }
+
+    .voucher-card{
+        position:relative;
+        border:1px solid var(--border);
+        border-radius:16px;
+        background:#fff;
+        box-shadow:0 10px 30px rgba(30,58,138,.08);
+        overflow:hidden;
+        transition:transform .2s ease, box-shadow .2s ease;
+    }
+    .voucher-card:hover{
+        transform: translateY(-2px);
+        box-shadow:0 14px 34px rgba(30,58,138,.12);
+    }
+    .voucher-card.dim{
+        filter: grayscale(1);
+        opacity:.65;
+    }
+
+    .voucher-card .card-top{
+        padding:16px 16px 10px;
+    }
+
+    .voucher-card .card-mid{
+        position:relative;
+        margin: 0 16px;
+        height:16px;
+    }
+    .voucher-card .card-mid:before{
+        content:"";
+        position:absolute;
+        left:0;
+        right:0;
+        top:7px;
+        border-top:2px dashed #e2e8f0;
+    }
+    .voucher-card .cutout-left, .voucher-card .cutout-right{
+        content:"";
+        position:absolute;
+        top:0;
+        bottom:0;
+        width:18px;
+        background: transparent;
+    }
+    .voucher-card .cutout-left{
+        left:-9px;
+        border-right: 9px solid transparent;
+    }
+    .voucher-card .cutout-right{
+        right:-9px;
+        border-left: 9px solid transparent;
+    }
+
+    .voucher-card .card-bottom{
+        background:#f8fafc;
+        padding:14px 16px;
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+    }
+    .voucher-name{
+        font-weight:800;
+        color:#0f172a;
+        margin-right:10px;
+    }
+
+    .discount-txt{
+        font-weight:900;
+        letter-spacing:.5px;
+    }
+    .discount-txt.percent{
+        color:#6d28d9;
+    }  /* tím */
+    .discount-txt.amount{
+        color:#1e3a8a;
+    }   /* primary */
+    .discount-txt.used{
+        color:#64748b;
+    }     /* gray */
+
+    .copy-btn.btn{
+        border-radius:10px;
+    }
+
+    .empty-wrap{
+        text-align:center;
+        padding:48px 16px;
+        border:2px dashed var(--border);
+        border-radius:16px;
+        background:#fff;
+        color:#64748b;
+    }
+</style>
+
+<section class="voucher-hero">
+    <div class="container">
+        <h1 class="display-6">${empty heroTitle ? 'My Vouchers' : heroTitle}</h1>
+        <p>${empty heroSubtitle ? 'All vouchers you’ve saved to your wallet.' : heroSubtitle}</p>
+    </div>
+</section>
+
+<div class="container pb-5">
+    <!-- Error -->
+    <c:if test="${not empty errorMessage}">
+        <div class="alert alert-danger" role="alert">
+            <strong>Error:</strong> ${errorMessage}
+        </div>
+    </c:if>
+
+    <!-- List -->
+    <c:if test="${not empty voucherList}">
+        <c:set var="showOnlyAvailable" value="${param.onlyAvailable == 'true' or requestScope.onlyAvailable}" />
+        <div class="row g-3">
+            <c:forEach var="voucher" items="${voucherList}">
+                <c:set var="isAvailable" value="${not voucher.isUsed}" />
+                <c:if test="${not showOnlyAvailable or isAvailable}">
+                    <div class="col-12 col-md-6 col-lg-4">
+                        <div class="voucher-card ${isAvailable ? '' : 'dim'}">
+                            <!-- top -->
+                            <div class="card-top">
+                                <div class="d-flex align-items-start justify-content-between">
+                                    <div class="pe-2">
+                                        <div class="voucher-name h5 mb-1">${voucher.voucherName}</div>
+                                        <div class="text-muted small">
+                                            <i class="fa-regular fa-paper-plane me-1"></i>
+                                            Sent on
+                                            <fmt:formatDate value="${voucher.sentDate}" pattern="dd MMM, yyyy" />
+                                        </div>
+                                        <c:if test="${not isAvailable and not empty voucher.usedDate}">
+                                            <div class="text-muted small mt-1">
+                                                <i class="fa-regular fa-circle-check me-1"></i>
+                                                Used on
+                                                <fmt:formatDate value="${voucher.usedDate}" pattern="dd MMM, yyyy" />
+                                            </div>
+                                        </c:if>
+                                    </div>
+                                    <span class="badge ${isAvailable ? 'bg-success-subtle text-success-emphasis' : 'bg-secondary-subtle text-secondary-emphasis'}">
+                                        ${isAvailable ? 'Available' : 'Used'}
+                                    </span>
                                 </div>
-                            </c:if>
-
-                        </div>
-
-                        <!-- Dashed Separator with Cutouts -->
-                        <div class="relative px-6">
-                            <div class="border-t-2 border-dashed border-gray-200 w-full"></div>
-                            <div class="ticket-cutout-left"></div>
-                            <div class="ticket-cutout-right"></div>
-                        </div>
-
-                        <!-- Bottom Section with Code and Discount -->
-                        <div class="p-6 bg-gray-50 rounded-b-xl flex justify-between items-center">
-                            <div class="font-black text-2xl tracking-wider 
-                                <c:choose>
-                                    <c:when test="${isAvailable and voucher.discountType == 'Percentage'}">text-purple-600</c:when>
-                                    <c:when test="${isAvailable and voucher.discountType != 'Percentage'}">text-indigo-600</c:when>
-                                    <c:otherwise>text-gray-500</c:otherwise>
-                                </c:choose>">
-                                <c:choose>
-                                    <c:when test="${voucher.discountType == 'Percentage'}">
-                                        ${voucher.discountValue}% OFF
-                                    </c:when>
-                                    <c:otherwise>
-                                        <fmt:formatNumber value="${voucher.discountValue}" type="currency" currencyCode="VND" currencySymbol="₫"/>
-                                    </c:otherwise>
-                                </c:choose>
                             </div>
 
-                            <c:if test="${isAvailable}">
-                                <button
-                                    onclick="copyToClipboard(this, '${voucher.voucherCode}')"
-                                    class="bg-gray-200 text-gray-700 font-bold py-2 px-4 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200"
-                                    title="Copy Code">
-                                    <span class="copy-text">${voucher.voucherCode}</span>
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block ml-2 -mt-1 copy-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                                    </svg>
-                                </button>
-                            </c:if>
-                            <c:if test="${not isAvailable}">
-                                <span class="text-sm font-mono text-gray-400 select-none">${voucher.voucherCode}</span>
-                            </c:if>
+                            <!-- dash -->
+                            <div class="card-mid">
+                                <span class="cutout-left"></span>
+                                <span class="cutout-right"></span>
+                            </div>
+
+                            <!-- bottom -->
+                            <div class="card-bottom">
+                                <div class="discount-txt
+                                     ${isAvailable ? (voucher.discountType == 'Percentage' ? 'percent' : 'amount') : 'used'} h4 mb-0">
+                                    <c:choose>
+                                        <c:when test="${voucher.discountType == 'Percentage'}">
+                                            ${voucher.discountValue}% OFF
+                                        </c:when>
+                                        <c:otherwise>
+                                            <fmt:formatNumber value="${voucher.discountValue}"
+                                                              type="currency" currencySymbol="₫"
+                                                              minFractionDigits="0" maxFractionDigits="0"/>
+                                        </c:otherwise>
+                                    </c:choose>
+                                </div>
+
+                                <c:if test="${isAvailable}">
+                                    <button class="btn btn-outline-primary copy-btn"
+                                            onclick="copyVoucherCode(this, '${voucher.voucherCode}')">
+                                        <span class="copy-text">${voucher.voucherCode}</span>
+                                        <i class="fa-regular fa-clone ms-1 copy-icon"></i>
+                                    </button>
+                                </c:if>
+                                <c:if test="${not isAvailable}">
+                                    <span class="text-muted small fw-semibold">${voucher.voucherCode}</span>
+                                </c:if>
+                            </div>
                         </div>
                     </div>
-                </c:forEach>
-            </div>
-        </c:if>
+                </c:if>
+            </c:forEach>
+        </div>
+    </c:if>
 
-        <c:if test="${empty voucherList and empty errorMessage}">
-            <div class="text-center py-16">
-                 <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                    <path vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-                </svg>
-                <h3 class="mt-2 text-lg font-medium text-gray-900">No Vouchers Found</h3>
-                <p class="mt-1 text-sm text-gray-500">It looks like you don't have any vouchers yet. Keep an eye out for new offers!</p>
-            </div>
-        </c:if>
-    </div>
+    <!-- Empty -->
+    <c:if test="${empty voucherList and empty errorMessage}">
+        <div class="empty-wrap">
+            <i class="fa-solid fa-ticket fa-2x mb-3" style="color:var(--primary)"></i>
+            <h5 class="mb-1">No vouchers found</h5>
+            <div class="small">Save public vouchers to your wallet to use them here.</div>
+        </div>
+    </c:if>
+</div>
 
-    <script>
-        function copyToClipboard(buttonElement, codeToCopy) {
-            if (!navigator.clipboard) {
-                // Fallback for older browsers
-                alert("Clipboard API not available. Please copy manually.");
-                return;
+<script>
+    function copyVoucherCode(btn, code) {
+        if (!code)
+            return;
+        if (!navigator.clipboard) {
+            try {
+                const ta = document.createElement('textarea');
+                ta.value = code;
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+                afterCopyUI(btn);
+            } catch (_) {
+                alert('Clipboard not available. Please copy manually.');
             }
-            
-            navigator.clipboard.writeText(codeToCopy).then(() => {
-                const copyTextElement = buttonElement.querySelector('.copy-text');
-                const copyIconElement = buttonElement.querySelector('.copy-icon');
-                
-                // Store original content
-                const originalText = copyTextElement.innerHTML;
-                const originalIcon = copyIconElement.outerHTML;
-
-                // Change to "Copied!" state
-                copyTextElement.textContent = 'Copied!';
-                copyIconElement.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />`;
-                buttonElement.classList.add('bg-green-500', 'text-white');
-                buttonElement.classList.remove('bg-gray-200', 'text-gray-700', 'hover:bg-gray-300');
-
-
-                // Revert after 2 seconds
-                setTimeout(() => {
-                    copyTextElement.innerHTML = originalText;
-                    copyIconElement.outerHTML = originalIcon;
-                    buttonElement.classList.remove('bg-green-500', 'text-white');
-                    buttonElement.classList.add('bg-gray-200', 'text-gray-700', 'hover:bg-gray-300');
-                }, 2000);
-            }).catch(err => {
-                console.error('Failed to copy text: ', err);
-                alert("Failed to copy. Please try again.");
-            });
+            return;
         }
-    </script>
+        navigator.clipboard.writeText(code).then(function () {
+            afterCopyUI(btn);
+        }).catch(function () {
+            alert('Failed to copy. Please try again.');
+        });
+    }
+    function afterCopyUI(btn) {
+        var textEl = btn.querySelector('.copy-text');
+        var iconEl = btn.querySelector('.copy-icon');
+        var oldText = textEl ? textEl.textContent : null;
 
-</body>
-</html>
+        if (textEl)
+            textEl.textContent = 'Copied!';
+        if (iconEl) {
+            iconEl.classList.remove('fa-clone');
+            iconEl.classList.add('fa-check');
+        }
+
+        try {
+            if (window.showToast)
+                window.showToast('Voucher code copied.', true);
+        } catch (_) {
+        }
+
+        setTimeout(function () {
+            if (textEl && oldText)
+                textEl.textContent = oldText;
+            if (iconEl) {
+                iconEl.classList.remove('fa-check');
+                iconEl.classList.add('fa-clone');
+            }
+        }, 1500);
+    }
+</script>
+
+<jsp:include page="/WEB-INF/views/common/footer.jsp" />

@@ -87,6 +87,7 @@
     .product-card .product-image {
         overflow: hidden;
         margin-bottom: 0.8rem;
+        position: relative; /* for OOS badge */
     }
     .product-card img {
         width: 100%;
@@ -118,11 +119,6 @@
         font-size: 0.95rem;
         font-weight: 600;
         color: #111;
-        margin-bottom: 8px;
-    }
-    .product-card .stock-status {
-        font-size: 0.9rem;
-        color: #666;
         margin-bottom: 8px;
     }
     .product-card .btn-container {
@@ -157,10 +153,7 @@
         transition: all 0.3s ease;
         box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
-    .wishlist-icon-circle:hover {
-        border-color: #ff4d4f;
-        color: #ff4d4f;
-    }
+    .wishlist-icon-circle:hover,
     .wishlist-icon-circle.active {
         border-color: #ff4d4f;
         color: #ff4d4f;
@@ -171,16 +164,16 @@
         margin-top: 20px;
         text-align: center;
     }
-    .toast-container {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        z-index: 1050;
-    }
-    .alert {
-        border-radius: 6px;
-        margin-bottom: 1rem;
-        font-size: 0.9rem;
+    /* Out of stock badge */
+    .oos-badge{
+        position:absolute;
+        top:10px;
+        left:10px;
+        background:rgba(17,17,17,.9);
+        color:#fff;
+        padding:4px 8px;
+        border-radius:6px;
+        font-size:.75rem;
     }
 </style>
 
@@ -188,9 +181,11 @@
     <div class="text-center">
         <h2 class="section-title"><%= categoryName %></h2>
     </div>
+
     <% if (request.getAttribute("categoryError") != null) { %>
     <div class="alert alert-danger text-center"><%= request.getAttribute("categoryError") %></div>
     <% } %>
+
     <div class="row">
         <%
             List<Product> products = (List<Product>) request.getAttribute("products");
@@ -200,40 +195,47 @@
                     String name = product.getName() != null ? product.getName() : "Unknown Product";
                     String price = product.getPrice() != null ? currencyFormat.format(product.getPrice()) : "N/A";
                     boolean hasStock = product.getQuantity() > 0;
-                    String buttonTextCart = hasStock ? "Add to Cart" : "Out of Stock";
-                    String buttonTextBuy = hasStock ? "Buy Now" : "Out of Stock";
         %>
         <div class="col-lg-3 col-md-6 col-sm-6 col-12">
             <div class="product-card">
+                <!-- Wishlist -->
                 <div class="wishlist-icon">
                     <form action="<%= request.getContextPath()%>/wishlist" method="post">
                         <input type="hidden" name="action" value="add">
                         <input type="hidden" name="productId" value="<%= product.getProductId()%>">
-                        <button type="submit" class="wishlist-icon-circle <%= (wishlistProductIds != null && wishlistProductIds.contains(product.getProductId().intValue())) ? "active" : ""%>">
+                        <button type="submit"
+                                class="wishlist-icon-circle <%= (wishlistProductIds != null && wishlistProductIds.contains(product.getProductId().intValue())) ? "active" : ""%>">
                             <i class="fas fa-heart"></i>
                         </button>
                     </form>
                 </div>
+
+                <!-- Image + OOS badge -->
                 <div class="product-image">
                     <a href="<%= request.getContextPath()%>/ProductDetail?productId=<%= product.getProductId()%>">
                         <img src="<%= imageUrl%>" alt="<%= name%>">
                     </a>
+                    <% if (!hasStock) { %>
+                    <span class="oos-badge">Out of stock</span>
+                    <% } %>
                 </div>
+
+                <!-- Title & price -->
                 <a href="<%= request.getContextPath()%>/ProductDetail?productId=<%= product.getProductId()%>" class="product-title"><%= name%></a>
                 <p class="product-price"><%= price%></p>
-                <div class="btn-container" id="cartButtons-<%= product.getProductId()%>">
-                    <form id="addToCartForm-<%= product.getProductId()%>" data-product-id="<%= product.getProductId()%>" data-has-stock="<%= hasStock%>">
-                        <input type="hidden" name="action" value="add">
-                        <input type="hidden" name="productId" value="<%= product.getProductId()%>">
-                        <input type="hidden" name="quantity" value="1">
-                        <button type="button" class="btn btn-dark btn-custom-sm add-to-cart-btn" <%= !hasStock ? "disabled" : ""%>><%= buttonTextCart%></button>
-                    </form>
-                    <form action="<%= request.getContextPath()%>/customer/checkout" method="post">
-                        <input type="hidden" name="action" value="buy">
-                        <input type="hidden" name="productId" value="<%= product.getProductId()%>">
-                        <input type="hidden" name="quantity" value="1">
-                        <button type="submit" class="btn btn-primary btn-custom-sm" <%= !hasStock ? "disabled" : ""%>><%= buttonTextBuy%></button>
-                    </form>
+
+                <!-- Buttons: match Home behavior -->
+                <div class="btn-container">
+                    <% if (hasStock) { %>
+                    <a href="<%= request.getContextPath()%>/ProductDetail?productId=<%= product.getProductId()%>"
+                       class="btn btn-primary btn-custom-sm">
+                        View details
+                    </a>
+                    <% } else { %>
+                    <button class="btn btn-outline-secondary btn-custom-sm" disabled>
+                        Out of stock
+                    </button>
+                    <% } %>
                 </div>
             </div>
         </div>
@@ -250,69 +252,4 @@
     </div>
 </div>
 
-<div class="toast-container"></div>
 <jsp:include page="/WEB-INF/views/common/footer.jsp" />
-
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const showToast = function (message, isSuccess) {
-            const toast = document.createElement('div');
-            toast.className = `toast align-items-center text-white ${isSuccess ? 'bg-success' : 'bg-danger'} border-0`;
-            toast.setAttribute('role', 'alert');
-            toast.setAttribute('aria-live', 'assertive');
-            toast.setAttribute('aria-atomic', 'true');
-            toast.innerHTML = `
-                <div class="d-flex">
-                    <div class="toast-body">${message}</div>
-                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-                </div>
-            `;
-            document.querySelector('.toast-container').appendChild(toast);
-            new bootstrap.Toast(toast, {delay: 3000}).show();
-        };
-
-        document.querySelectorAll('.add-to-cart-btn').forEach(button => {
-            button.addEventListener('click', function (e) {
-                e.preventDefault();
-                const form = this.closest('form');
-                const productId = form.getAttribute('data-product-id');
-                const hasStock = form.getAttribute('data-has-stock') === 'true';
-                if (!hasStock) {
-                    showToast('This product is out of stock.', false);
-                    return;
-                }
-                fetch('${pageContext.request.contextPath}/customer/cart', {
-                    method: 'POST',
-                    body: new URLSearchParams({
-                        action: 'add',
-                        productId: productId,
-                        quantity: form.querySelector('input[name="quantity"]').value
-                    }),
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                        'Accept': 'application/json'
-                    }
-                })
-                        .then(response => {
-                            if (!response.ok)
-                                throw new Error('Network response was not ok: ' + response.statusText);
-                            return response.json();
-                        })
-                        .then(result => {
-                            if (result.success) {
-                                showToast(result.message, true);
-                                setTimeout(() => {
-                                    window.location.href = '${pageContext.request.contextPath}/customer/cart';
-                                }, 1000);
-                            } else {
-                                showToast(result.message || 'Failed to add to cart.', false);
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Error adding to cart:', error);
-                            showToast('An error occurred while adding to cart: ' + error.message, false);
-                        });
-            });
-        });
-    });
-</script>
