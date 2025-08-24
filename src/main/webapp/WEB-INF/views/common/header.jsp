@@ -186,7 +186,7 @@
                                 <input type="text" id="searchInput" class="form-control" placeholder="Search products...">
                                 <div id="suggestions" class="position-absolute w-100"></div>
                             </div>
-
+                        
                             <a href="${pageContext.request.contextPath}/wishlist?action=view" class="nav-link me-3">
                                 <i class="fas fa-heart"></i>
                             </a>
@@ -255,35 +255,32 @@
                     }
 
                     // 2) Search autocomplete
-                    var searchInput = document.getElementById('searchInput');
-                    var suggestions = document.getElementById('suggestions');
-                    if (searchInput && suggestions) {
-                        searchInput.addEventListener('input', function () {
-                            var keyword = (searchInput.value || '').trim();
-                            if (keyword.length >= 1) {
-                                fetch('${pageContext.request.contextPath}/ProductList?action=autocomplete&keyword=' + encodeURIComponent(keyword))
-                                        .then(function (res) {
-                                            if (!res.ok)
-                                                throw new Error('HTTP ' + res.status);
-                                            return res.text();
-                                        })
-                                        .then(function (html) {
-                                            suggestions.innerHTML = html;
-                                            suggestions.style.display = 'block';
-                                        })
-                                        .catch(function () {
-                                            suggestions.style.display = 'none';
-                                        });
-                            } else {
-                                suggestions.style.display = 'none';
-                            }
-                        });
-                        document.addEventListener('click', function (e) {
-                            if (!e.target.closest('#searchInput') && !e.target.closest('#suggestions')) {
-                                suggestions.style.display = 'none';
-                            }
-                        });
-                    }
+                $(document).ready(function () {
+                    $("#searchInput").on("input", function () {
+                        var keyword = $(this).val().trim();
+                        if (keyword.length >= 1) {
+                            $.ajax({
+                                url: "${pageContext.request.contextPath}/ProductAutocomplete",
+                                type: "GET",
+                                data: {action: "autocomplete", keyword: keyword},
+                                success: function (data) {
+                                    $("#suggestions").show().html(data);
+                                },
+                                error: function () {
+                                    $("#suggestions").hide();
+                                }
+                            });
+                        } else {
+                            $("#suggestions").hide();
+                        }
+                    });
+                    $(document).click(function (e) {
+                        if (!$(e.target).closest('#searchInput, #suggestions').length) {
+                            $("#suggestions").hide();
+                        }
+                    });
+                });
+
 
                     // 3) Toast helpers (có thể gọi từ trang con)
                     var toastSuccess = document.getElementById('successToast') ? new bootstrap.Toast(document.getElementById('successToast'), {delay: 3000}) : null;

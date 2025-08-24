@@ -83,6 +83,22 @@
             .sort-icon.active {
                 color: #333;
             }
+               .content-area {
+        position: relative;
+        margin-left: 260px;
+        padding: 1.5rem;
+        width: calc(100% - 260px);
+        transition: all 0.5s ease;
+        min-height: 100vh;
+    }
+    .sidebar.close ~ .content-area {
+        margin-left: 88px;
+        width: calc(100% - 88px);
+    }
+    .sidebar.hidden ~ .content-area {
+        margin-left: 0;
+        width: 100%;
+    }
         </style>
     </head>
     <body>
@@ -90,7 +106,7 @@
         <jsp:include page="/WEB-INF/includes/admin-sidebar.jsp"/>
 
         <div class="main-content-wrapper">
-            <jsp:include page="/WEB-INF/includes/admin-header.jsp"/>
+            
 
             <main class="content-area">
                 <div class="page-header">

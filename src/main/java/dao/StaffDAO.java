@@ -307,4 +307,32 @@ public class StaffDAO extends DBContext {
         }
         return null;
     }
+    //ChangeStaffStatus
+
+    public String getStaffStatusByUserId(long userId) {
+        String status = null;
+        String sql = "SELECT status FROM users WHERE user_id = ? AND role = 'Staff'";
+        try ( Connection conn = getConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, userId);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                status = rs.getString("status");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return status;
+    }
+
+    public boolean updateStaffStatus(long userId, String newStatus) {
+        String sql = "UPDATE users SET status = ? WHERE user_id = ? AND role = 'Staff'";
+        try ( Connection conn = getConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, newStatus);
+            ps.setLong(2, userId);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
 }
