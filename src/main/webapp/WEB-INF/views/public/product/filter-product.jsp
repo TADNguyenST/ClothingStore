@@ -209,8 +209,10 @@
                             <div class="filter-section">
                                 <label class="filter-label">Price Range (VNĐ)</label>
                                 <div id="priceSlider"></div>
-                                <input type="hidden" name="minPrice" id="minPrice" value="<%= minPrice %>">
-                                <input type="hidden" name="maxPrice" id="maxPrice" value="<%= maxPrice %>">
+                                <input type="hidden" name="minPrice" id="minPrice" 
+                                       value="<%= (minPriceParam != null && !minPriceParam.isEmpty()) ? minPriceParam : "" %>">
+                                <input type="hidden" name="maxPrice" id="maxPrice" 
+                                       value="<%= (maxPriceParam != null && !maxPriceParam.isEmpty()) ? maxPriceParam : "" %>">
                                 <div class="d-flex justify-content-between mt-2">
                                     <span>Min: 0</span>
                                     <span>Max: 10.000.000</span>
