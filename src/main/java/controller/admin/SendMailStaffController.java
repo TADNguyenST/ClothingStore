@@ -71,8 +71,8 @@ public class SendMailStaffController extends HttpServlet {
                         + "<p>Hello <b>" + escape(user.getFullName()) + "</b>,</p>"
                         + "<p>Your staff account information:</p>"
                         + "<p><b>Email:</b> " + escape(user.getEmail()) + "</p>"
-                        + "<p><b>New password:</b> " + escape(newPlainPassword) + "</p>"
-                        + "<p>Please login and change your password immediately.</p>"
+                        + "<p><b>Password:</b> " + escape(newPlainPassword) + "</p>"
+                        + "<p>Please log in and do not share this information with anyone.</p>"
                         + "<br/><p>— ClothingStore Team</p>"
                         + "</div>";
 
