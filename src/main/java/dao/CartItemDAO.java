@@ -96,6 +96,90 @@ public class CartItemDAO {
     }
 
     /**
+     * ========== MỚI: Upsert cho BUY NOW ========== Đặt đúng số lượng (không
+     * cộng dồn), chốt unit_price tại thời điểm bấm Buy Now. Trả về cart_item_id
+     * của dòng được dùng cho checkout.
+     */
+    public long upsertForBuyNow(long customerId, long variantId, int quantity) throws SQLException {
+        String sqlAvailable = "SELECT ISNULL(quantity,0) - ISNULL(reserved_quantity,0) AS available FROM inventory WHERE variant_id = ?";
+        String sqlExisting = "SELECT cart_item_id FROM cart_items WHERE customer_id = ? AND variant_id = ?";
+        String sqlFinalPrice = "SELECT ISNULL(pv.price_modifier, p.price) AS final_price "
+                + "FROM product_variants pv JOIN products p ON pv.product_id = p.product_id WHERE pv.variant_id = ?";
+        String sqlUpdate = "UPDATE cart_items SET quantity = ?, unit_price = ? WHERE cart_item_id = ?";
+        String sqlInsert = "INSERT INTO cart_items (customer_id, variant_id, quantity, unit_price) VALUES (?, ?, ?, ?)";
+
+        try ( Connection conn = DBContext.getNewConnection()) {
+            conn.setAutoCommit(false);
+
+            int available = 0;
+            try ( PreparedStatement ps = conn.prepareStatement(sqlAvailable)) {
+                ps.setLong(1, variantId);
+                try ( ResultSet rs = ps.executeQuery()) {
+                    available = rs.next() ? rs.getInt("available") : 0;
+                }
+            }
+            if (available <= 0) {
+                conn.rollback();
+                throw new SQLException("Variant out of stock");
+            }
+
+            BigDecimal finalPrice = BigDecimal.ZERO;
+            try ( PreparedStatement ps = conn.prepareStatement(sqlFinalPrice)) {
+                ps.setLong(1, variantId);
+                try ( ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        finalPrice = rs.getBigDecimal("final_price");
+                        if (finalPrice == null) {
+                            finalPrice = BigDecimal.ZERO;
+                        }
+                    }
+                }
+            }
+
+            int qty = Math.max(1, Math.min(quantity, available));
+
+            Long existingId = null;
+            try ( PreparedStatement ps = conn.prepareStatement(sqlExisting)) {
+                ps.setLong(1, customerId);
+                ps.setLong(2, variantId);
+                try ( ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        existingId = rs.getLong("cart_item_id");
+                    }
+                }
+            }
+
+            if (existingId != null) {
+                try ( PreparedStatement ps = conn.prepareStatement(sqlUpdate)) {
+                    ps.setInt(1, qty);
+                    ps.setBigDecimal(2, finalPrice);
+                    ps.setLong(3, existingId);
+                    ps.executeUpdate();
+                }
+                conn.commit();
+                return existingId;
+            } else {
+                try ( PreparedStatement ps = conn.prepareStatement(sqlInsert, Statement.RETURN_GENERATED_KEYS)) {
+                    ps.setLong(1, customerId);
+                    ps.setLong(2, variantId);
+                    ps.setInt(3, qty);
+                    ps.setBigDecimal(4, finalPrice);
+                    ps.executeUpdate();
+                    try ( ResultSet rs = ps.getGeneratedKeys()) {
+                        if (rs.next()) {
+                            long id = rs.getLong(1);
+                            conn.commit();
+                            return id;
+                        }
+                    }
+                }
+                conn.rollback();
+                throw new SQLException("Insert cart item failed");
+            }
+        }
+    }
+
+    /**
      * Lấy cart đầy đủ thông tin hiển thị
      */
     public List<CartItem> getCartItems(long customerId) throws SQLException {
@@ -275,7 +359,7 @@ public class CartItemDAO {
 
     /* =================== TIỆN ÍCH CHO CHECKOUT =================== */
     /**
-     * Lọc các dòng đã chọn theo danh sách cartItemIds (dựa trên getCartItems)
+     * Lọc các dòng đã chọn theo danh sách cartItemIds
      */
     public List<CartItem> findSelectedForCustomer(long customerId, List<Long> cartItemIds) throws SQLException {
         if (cartItemIds == null || cartItemIds.isEmpty()) {
