@@ -217,6 +217,7 @@
                                         <c:when test="${not empty sessionScope.user}">
                                             <li><h6 class="dropdown-header">Hi, ${sessionScope.user.fullName}</h6></li>
                                             <li><a class="dropdown-item" href="${pageContext.request.contextPath}/Profile">My Account</a></li>
+
                                             <li><a class="dropdown-item" href="${pageContext.request.contextPath}/customer/orders">My Orders</a></li>
                                             <li>
                                                 <a class="dropdown-item"

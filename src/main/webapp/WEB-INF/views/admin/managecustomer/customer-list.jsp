@@ -219,6 +219,8 @@
                                         <td>
                                             <a href="${pageContext.request.contextPath}/viewCustomer?userId=${info.user.userId}" 
                                                class="btn btn-detail">Detail</a>
+                                            <a href="${pageContext.request.contextPath}/CustomerOrderHistoryController?customerId=${info.customer.customerId}" 
+                                               class="btn btn-detail">Order History</a>
 
                                             <c:choose>
                                                 <c:when test="${info.user.status eq 'Active'}">

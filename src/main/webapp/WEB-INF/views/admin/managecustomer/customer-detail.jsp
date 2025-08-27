@@ -90,6 +90,34 @@
             .back-link:hover {
                 background-color: #138496;
             }
+
+            .avatar-container {
+                text-align: center;
+                padding: 20px 0 30px 0;
+                margin-bottom: 20px;
+            }
+
+            .avatar-image {
+                width: 150px;
+                height: 150px;
+                border-radius: 50%;
+                object-fit: cover;
+                border: 4px solid #007bff;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            }
+
+            .no-avatar {
+                display: inline-block;
+                width: 150px;
+                height: 150px;
+                border-radius: 50%;
+                background-color: #f0f0f0;
+                border: 4px solid #ddd;
+                line-height: 150px;
+                text-align: center;
+                color: #888;
+                font-style: italic;
+            }
             
         </style>
     </head>
@@ -106,6 +134,16 @@
                 <h2>Customer Information</h2>
 
                 <c:if test="${not empty customerInfo}">
+                    <!-- Avatar Section -->
+                    <div class="avatar-container">
+                        <c:if test="${not empty customerInfo.customer.avatarUrl}">
+                            <img src="${customerInfo.customer.avatarUrl}" alt="Customer Avatar" class="avatar-image">
+                        </c:if>
+                        <c:if test="${empty customerInfo.customer.avatarUrl}">
+                            <div class="no-avatar">No avatar</div>
+                        </c:if>
+                    </div>
+
                     <table class="info-table">
                         <tbody>
                             <tr><th colspan="2">Customer Account Details</th></tr>
@@ -120,26 +158,9 @@
                             <tr><td class="info-label">Loyalty Points</td><td>${customerInfo.customer.loyaltyPoints}</td></tr>
                             <tr><td class="info-label">Birth Date</td><td>${customerInfo.customer.birthDate}</td></tr>
                             <tr><td class="info-label">Gender</td><td>${customerInfo.customer.gender}</td></tr>
-                            <tr><td class="info-label">Avatar URL</td>
-                                <td>
-                                    <c:if test="${not empty customerInfo.customer.avatarUrl}">
-                                        <img src="${customerInfo.customer.avatarUrl}" alt="Avatar" style="max-height: 100px; border-radius: 5px;">
-                                    </c:if>
-                                    <c:if test="${empty customerInfo.customer.avatarUrl}">
-                                        <em>No avatar provided</em>
-                                    </c:if>
-                                </td>
-                            </tr>
                             <tr><td class="info-label">Customer Created At</td><td>${customerInfo.customer.createdAt}</td></tr>
                         </tbody>
                     </table>
-                    <div style="text-align:center; margin-top:20px;">
-                        <a href="${pageContext.request.contextPath}/ViewCustomerOrderHistory?customerId=${customerInfo.customer.customerId}" 
-                           class="order-history-btn"
-                           style="display:inline-block; padding:10px 20px; background:#28a745; color:#fff; border-radius:5px; text-decoration:none;">
-                            <i class="fa fa-list"></i> View Order History
-                        </a>
-                    </div>
                 </c:if>
             </div>
         </div>

@@ -1,5 +1,5 @@
 /*
- * Click nbfs://nbhost/SystemFileSystem/Templates/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/JSP_Servlet/Servlet.java to edit this template
  */
 
@@ -7,13 +7,13 @@ package controller.admin;
 
 import dao.StaffDAO;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.List;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
 /**
  *
@@ -32,6 +32,13 @@ public class StaffManagementController extends HttpServlet {
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
     throws ServletException, IOException {
         response.setContentType("text/html;charset=UTF-8");
+
+        // 🔒 Kiểm tra session admin
+        HttpSession session = request.getSession(false); // không tạo mới session
+        if (session == null || session.getAttribute("admin") == null) {
+            response.sendRedirect(request.getContextPath() + "/AdminLogin");
+            return;
+        }
 
         // Bắt đầu xử lý lấy danh sách nhân viên
         StaffDAO dao = new StaffDAO();
