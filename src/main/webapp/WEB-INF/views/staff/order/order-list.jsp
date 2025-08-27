@@ -246,7 +246,6 @@
 
         <!-- Header + Content -->
         <div class="main-content">
-            <jsp:include page="/WEB-INF/views/staff/staff-header.jsp" />
 
             <div class="card">
                 <div class="head">

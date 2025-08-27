@@ -149,7 +149,6 @@
 
 <!-- Sidebar + Header -->
 <jsp:include page="/WEB-INF/views/staff/staff-sidebar.jsp" />
-<jsp:include page="/WEB-INF/views/staff/staff-header.jsp" />
 
 <div class="wrap">
     <div class="crumb">

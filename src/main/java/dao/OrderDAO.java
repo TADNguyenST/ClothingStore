@@ -14,29 +14,17 @@ import java.util.List;
 public class OrderDAO {
 
     // ===================== FEEDBACK QUERIES (merged in) =====================
-    // Chỉ lấy đơn đã COMPLETED & PAID và CHƯA có feedback nào của chính customer đó
     private static final String GET_ORDERS_FOR_FEEDBACK
             = "SELECT o.order_id, o.customer_id, o.order_date, o.total_price, o.status "
             + "FROM orders o "
-            + "WHERE o.customer_id = ? "
-            + "  AND o.status = 'COMPLETED' "
-            + "  AND o.payment_status = 'PAID' "
-            + "  AND NOT EXISTS ("
-            + "      SELECT 1 FROM feedbacks f "
-            + "      WHERE f.order_id = o.order_id AND f.customer_id = o.customer_id"
-            + "  )";
+            + "WHERE o.customer_id = ? AND o.status = 'COMPLETED' "
+            + "AND NOT EXISTS (SELECT 1 FROM feedbacks f WHERE f.order_id = o.order_id AND f.customer_id = o.customer_id)";
 
-    // Lấy các đơn đã COMPLETED & PAID và ĐÃ có feedback (của chính customer đó)
     private static final String GET_ORDERS_WITH_FEEDBACK
             = "SELECT o.order_id, o.customer_id, o.order_date, o.total_price, o.status "
             + "FROM orders o "
             + "WHERE o.customer_id = ? "
-            + "  AND o.status = 'COMPLETED' "
-            + "  AND o.payment_status = 'PAID' "
-            + "  AND EXISTS ("
-            + "      SELECT 1 FROM feedbacks f "
-            + "      WHERE f.order_id = o.order_id AND f.customer_id = o.customer_id"
-            + "  )";
+            + "AND EXISTS (SELECT 1 FROM feedbacks f WHERE f.order_id = o.order_id AND f.customer_id = o.customer_id)";
 
     private static final String GET_ORDER_ITEMS
             = "SELECT oi.order_item_id, oi.quantity, p.name AS product_name, pv.size, pv.color, p.product_id "
@@ -47,7 +35,7 @@ public class OrderDAO {
 
     private static final String GET_FEEDBACKS_FOR_ORDER_ITEM
             = "SELECT f.feedback_id, f.product_id, f.customer_id, f.order_id, f.rating, f.comments, f.creation_date, f.visibility, f.is_verified, "
-            + "       fr.content AS reply_content "
+            + "fr.content AS reply_content "
             + "FROM feedbacks f "
             + "LEFT JOIN feedback_replies fr ON f.feedback_id = fr.feedback_id "
             + "WHERE f.order_id = ? AND f.product_id = ? AND f.customer_id = ?";
@@ -55,8 +43,7 @@ public class OrderDAO {
     // ===================== ORDER CORE =====================
     /**
      * Tạo đơn + ghi chi tiết + (tuỳ chọn) mark voucher used + xoá cart items —
-     * tất cả trong 1 transaction. LƯU Ý: KHÔNG reserve tồn ở bước này. Reserve
-     * CHỈ thực hiện khi payment_status chuyển sang PAID.
+     * tất cả trong 1 transaction. KHÔNG reserve tồn ở bước này.
      */
     public long createOrderAndClearCart(
             long customerId,
@@ -141,14 +128,13 @@ public class OrderDAO {
                     psi.setLong(i++, it.getVariantId());
                     psi.setInt(i++, qty);
                     psi.setBigDecimal(i++, unit);
-                    psi.setBigDecimal(i++, BigDecimal.ZERO);
+                    psi.setBigDecimal(i++, BigDecimal.ZERO);   // discount_amount per-line (nếu cần thì tính và set ở đây)
                     psi.setBigDecimal(i++, lineTotal);
                     psi.addBatch();
                 }
                 psi.executeBatch();
             }
 
-            // KHÔNG reserve ở đây.
             // Xoá cart items
             if (cartItemIds != null && !cartItemIds.isEmpty()) {
                 StringBuilder sb = new StringBuilder("DELETE FROM cart_items WHERE customer_id = ? AND cart_item_id IN (");
@@ -230,7 +216,7 @@ public class OrderDAO {
                 psIns.setLong(2, variantId);
                 psIns.setInt(3, q);
                 psIns.setBigDecimal(4, unit);
-                psIns.setBigDecimal(5, BigDecimal.ZERO);
+                psIns.setBigDecimal(5, BigDecimal.ZERO); // nếu có khuyến mãi theo dòng, set ở đây
                 psIns.setBigDecimal(6, line);
                 psIns.executeUpdate();
             }
@@ -325,9 +311,8 @@ public class OrderDAO {
     }
 
     /**
-     * Mark PAID – reserve kho NGAY TRONG transaction này, KHÔNG ghi log
-     * 'Reserved'. - Không set PAID nếu đơn đã CANCELED hoặc đã PAID. - Nếu
-     * reserve thiếu tồn hoặc trạng thái thay đổi giữa chừng: rollback.
+     * Mark PAID – reserve kho, KHÔNG ghi log 'Reserved'. Sau khi commit →
+     * consumeVoucherIfAny(orderId) để đánh dấu voucher đã dùng.
      */
     public void markOrderPaid(long orderId, BigDecimal ignored) throws SQLException {
         final String sel = "SELECT status, payment_status FROM orders WITH (UPDLOCK, ROWLOCK) WHERE order_id=?";
@@ -396,6 +381,13 @@ public class OrderDAO {
 
             c.commit();
         }
+
+        // Đánh dấu voucher đã dùng sau khi thanh toán thành công (ngoài transaction chính).
+        try {
+            consumeVoucherIfAny(orderId);
+        } catch (SQLException ignore) {
+            // không làm fail thanh toán; có thể log nếu bạn có logger
+        }
     }
 
     /**
@@ -460,7 +452,6 @@ public class OrderDAO {
     // ====== Danh sách đơn khách — ẨN toàn bộ UNPAID ======
     public List<model.OrderHeader> listOrdersForCustomer(long customerId, String statusFilter, int offset, int limit)
             throws SQLException {
-
         String base = "SELECT o.order_id, o.customer_id, o.total_price, o.status, o.payment_status, o.created_at, "
                 + "       COUNT(oi.order_item_id) AS item_count "
                 + "FROM orders o "
@@ -586,7 +577,7 @@ public class OrderDAO {
     }
 
     /**
-     * Xuất kho khi staff hoàn tất (COMPLETED) — GHI movement 'Out' (số âm).
+     * Xuất kho khi COMPLETED — ghi movement 'Out' (số âm).
      */
     public void commitStockAfterPaid(long orderId) throws SQLException {
         String q = "SELECT variant_id, quantity FROM order_items WHERE order_id=?";
@@ -663,9 +654,6 @@ public class OrderDAO {
     // ========= HỦY ĐƠN (KHÁCH) =========
     /**
      * Khách tự hủy đơn khi đang PENDING.
-     *
-     * @return 1 = UNPAID → CANCELED + release ngay 2 = PAID → CANCELED +
-     * REFUND_PENDING (giữ reserve; nhả khi REFUNDED) 0 = không hủy được
      */
     public int cancelPendingByCustomer(long orderId, long customerId, String reason) throws SQLException {
         String sel = "SELECT status, payment_status FROM orders WHERE order_id=? AND customer_id=?";
@@ -732,16 +720,14 @@ public class OrderDAO {
 
             c.commit();
 
-            // Chỉ nhả khi UNPAID; PAID->REFUND_PENDING giữ reserve, sẽ nhả khi markRefundedByStaff()
-            if (result == 1) {
+            if (result == 1) { // UNPAID → nhả ngay
                 releaseReservation(orderId, "Release after customer cancel (UNPAID)");
             }
             return result;
         }
     }
 
-    // ===================== CÁC HÀM MỚI CHO STAFF =====================
-    // ===================== STAFF LIST (hide DRAFT; hide UNPAID/FAILED) =====================
+    // ===================== CÁC HÀM CHO STAFF =====================
     public List<model.OrderHeader> listOrdersForStaff(String q, String status, String pay, int offset, int limit)
             throws SQLException {
 
@@ -1006,8 +992,7 @@ public class OrderDAO {
     }
 
     /**
-     * Staff: đánh dấu REFUNDED chỉ khi đơn đã CANCELED (do customer) và đang
-     * REFUND_PENDING). Khi chuyển sang REFUNDED → nhả reserve (KHÔNG log).
+     * Staff: đánh dấu REFUNDED khi đã CANCELED & REFUND_PENDING → nhả reserve
      */
     public void markRefundedByStaff(long orderId, String reason) throws SQLException {
         String sql = "UPDATE orders SET payment_status='REFUNDED', "
@@ -1028,7 +1013,7 @@ public class OrderDAO {
         String pay = payment == null ? "" : payment.toUpperCase();
 
         if ("CANCELED".equals(cur) || "COMPLETED".equals(cur) || "DRAFT".equals(cur)) {
-            return next; // locked
+            return next;
         }
         if ("PENDING".equals(cur)) {
             next.add("PROCESSING");

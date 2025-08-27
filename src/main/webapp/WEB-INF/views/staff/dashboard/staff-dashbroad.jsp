@@ -32,8 +32,6 @@
         <jsp:include page="/WEB-INF/views/staff/staff-sidebar.jsp" />
 
         <div class="main-content-wrapper">
-            <!-- Header dành cho nhân viên -->
-            <jsp:include page="/WEB-INF/views/staff/staff-header.jsp" />
 
             <!-- Nội dung chính -->
             <div class="content-area">

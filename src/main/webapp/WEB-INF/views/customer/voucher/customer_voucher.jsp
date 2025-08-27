@@ -5,6 +5,8 @@
 <c:set var="pageTitle" value="${empty pageTitle ? 'My Vouchers' : pageTitle}" />
 <jsp:include page="/WEB-INF/views/common/header.jsp" />
 
+<jsp:useBean id="now" class="java.util.Date" />
+
 <style>
     :root{
         --primary:#1e3a8a;
@@ -34,11 +36,11 @@
         transition:transform .2s ease, box-shadow .2s ease;
     }
     .voucher-card:hover{
-        transform: translateY(-2px);
+        transform:translateY(-2px);
         box-shadow:0 14px 34px rgba(30,58,138,.12);
     }
     .voucher-card.dim{
-        filter: grayscale(1);
+        filter:grayscale(1);
         opacity:.65;
     }
 
@@ -104,7 +106,6 @@
     .copy-btn.btn{
         border-radius:10px;
     }
-
     .empty-wrap{
         text-align:center;
         padding:48px 16px;
@@ -116,6 +117,12 @@
     .mini-meta{
         color:#64748b;
         font-size:.875rem;
+    }
+    .filter-bar{
+        display:flex;
+        gap:8px;
+        align-items:center;
+        margin-bottom:12px;
     }
 </style>
 
@@ -134,13 +141,30 @@
         </div>
     </c:if>
 
+    <!-- Filter (mặc định chỉ hiện Available) -->
+    <c:set var="showOnlyAvailable"
+           value="${param.onlyAvailable == null or param.onlyAvailable == 'true' or requestScope.onlyAvailable}" />
+    <div class="filter-bar">
+        <a class="btn btn-sm ${showOnlyAvailable ? 'btn-primary' : 'btn-outline-primary'}"
+           href="?onlyAvailable=true">Available only</a>
+        <a class="btn btn-sm ${!showOnlyAvailable ? 'btn-primary' : 'btn-outline-primary'}"
+           href="?onlyAvailable=false">Show all</a>
+    </div>
+
     <!-- List -->
     <c:if test="${not empty voucherList}">
-        <c:set var="showOnlyAvailable" value="${param.onlyAvailable == 'true' or requestScope.onlyAvailable}" />
         <div class="row g-3">
             <c:forEach var="voucher" items="${voucherList}">
-                <!-- Có thể tinh chỉnh điều kiện 'available' theo nhu cầu (ví dụ kiểm tra ngày hiệu lực) -->
-                <c:set var="isAvailable" value="${not voucher.isUsed and voucher.active}" />
+
+                <!-- Tính trạng thái hiệu lực theo thời gian + active -->
+                <c:set var="notStarted" value="${not empty voucher.startDate and voucher.startDate gt now}" />
+                <c:set var="expired" value="${not empty voucher.expirationDate and voucher.expirationDate lt now}" />
+                <c:set var="timeValid" value="${(empty voucher.startDate or voucher.startDate le now) and (empty voucher.expirationDate or voucher.expirationDate ge now)}" />
+                <c:set var="effectiveActive" value="${voucher.active and timeValid}" />
+
+                <!-- Available = chưa dùng + đang active + trong thời gian hiệu lực -->
+                <c:set var="isAvailable" value="${not voucher.isUsed and effectiveActive}" />
+
                 <c:if test="${not showOnlyAvailable or isAvailable}">
                     <div class="col-12 col-md-6 col-lg-4">
                         <div class="voucher-card ${isAvailable ? '' : 'dim'}">
@@ -155,15 +179,19 @@
                                             Sent on <fmt:formatDate value="${voucher.sentDate}" pattern="dd MMM, yyyy"/>
                                         </div>
 
-                                        <div class="mini-meta mt-1">
-                                            <i class="fa-regular fa-calendar me-1"></i>
-                                            Valid from <fmt:formatDate value="${voucher.startDate}" pattern="dd MMM, yyyy"/>
-                                        </div>
+                                        <c:if test="${not empty voucher.startDate}">
+                                            <div class="mini-meta mt-1">
+                                                <i class="fa-regular fa-calendar me-1"></i>
+                                                Valid from <fmt:formatDate value="${voucher.startDate}" pattern="dd MMM, yyyy"/>
+                                            </div>
+                                        </c:if>
 
-                                        <div class="mini-meta mt-1">
-                                            <i class="fa-regular fa-calendar-xmark me-1"></i>
-                                            Expires on <fmt:formatDate value="${voucher.expirationDate}" pattern="dd MMM, yyyy"/>
-                                        </div>
+                                        <c:if test="${not empty voucher.expirationDate}">
+                                            <div class="mini-meta mt-1">
+                                                <i class="fa-regular fa-calendar-xmark me-1"></i>
+                                                Expires on <fmt:formatDate value="${voucher.expirationDate}" pattern="dd MMM, yyyy"/>
+                                            </div>
+                                        </c:if>
 
                                         <c:if test="${voucher.isUsed and not empty voucher.usedDate}">
                                             <div class="mini-meta mt-1">
@@ -173,9 +201,16 @@
                                         </c:if>
                                     </div>
 
+                                    <!-- Badge trạng thái -->
                                     <c:choose>
                                         <c:when test="${voucher.isUsed}">
                                             <span class="badge bg-secondary-subtle text-secondary-emphasis">Used</span>
+                                        </c:when>
+                                        <c:when test="${expired}">
+                                            <span class="badge bg-danger-subtle text-danger-emphasis">Expired</span>
+                                        </c:when>
+                                        <c:when test="${notStarted}">
+                                            <span class="badge bg-warning-subtle text-warning-emphasis">Not started</span>
                                         </c:when>
                                         <c:when test="${not voucher.active}">
                                             <span class="badge bg-danger-subtle text-danger-emphasis">Inactive</span>
@@ -258,11 +293,13 @@
             }
             return;
         }
-        navigator.clipboard.writeText(code).then(function () {
-            afterCopyUI(btn);
-        }).catch(function () {
-            alert('Failed to copy. Please try again.');
-        });
+        navigator.clipboard.writeText(code)
+                .then(function () {
+                    afterCopyUI(btn);
+                })
+                .catch(function () {
+                    alert('Failed to copy. Please try again.');
+                });
     }
     function afterCopyUI(btn) {
         var textEl = btn.querySelector('.copy-text');
@@ -274,12 +311,6 @@
         if (iconEl) {
             iconEl.classList.remove('fa-clone');
             iconEl.classList.add('fa-check');
-        }
-
-        try {
-            if (window.showToast)
-                window.showToast('Voucher code copied.', true);
-        } catch (_) {
         }
 
         setTimeout(function () {
