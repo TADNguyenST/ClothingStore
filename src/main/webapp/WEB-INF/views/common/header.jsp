@@ -22,7 +22,7 @@
 <html lang="en">
     <head>
         <meta charset="UTF-8">
-        <title>ClothingStore - ${pageTitle}</title>
+        <title>ClothingStore</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
         <!-- CSS -->
@@ -158,7 +158,7 @@
                                            && selectedParentCategoryId.equals(String.valueOf(parentCategory.getCategoryId()))) ? "active" : "";
                             %>
                             <li class="nav-item dropdown <%= selected %>">
-                                <a class="nav-link dropdown-toggle" href="#" role="button"
+                                <a class="nav-link dropdown-toggle" role="button"
                                    data-bs-toggle="dropdown" data-bs-auto-close="outside"
                                    aria-expanded="false">
                                     <%= parentCategory.getName() %>

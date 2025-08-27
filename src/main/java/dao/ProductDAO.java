@@ -66,7 +66,9 @@ public class ProductDAO {
             sql.append("ORDER BY p.product_id DESC");
         }
 
-        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql.toString());  ResultSet rs = ps.executeQuery()) {
+        try (Connection conn = DBContext.getNewConnection();
+             PreparedStatement ps = conn.prepareStatement(sql.toString());
+             ResultSet rs = ps.executeQuery()) {
 
             while (rs.next()) {
                 Long productId = rs.getLong("product_id");
@@ -75,26 +77,17 @@ public class ProductDAO {
                 String status = rs.getString("status");
                 String imageUrl = rs.getString("ImageURL");
                 Long categoryId = rs.getLong("category_id");
-                if (rs.wasNull()) {
-                    categoryId = null;
-                }
+                if (rs.wasNull()) categoryId = null;
                 String categoryName = rs.getString("CategoryName");
                 Long parentCategoryId = rs.getLong("parent_category_id");
-                if (rs.wasNull()) {
-                    parentCategoryId = null;
-                }
+                if (rs.wasNull()) parentCategoryId = null;
                 String parentCategoryName = rs.getString("ParentCategoryName");
                 Long brandId = rs.getLong("brand_id");
-                if (rs.wasNull()) {
-                    brandId = null;
-                }
+                if (rs.wasNull()) brandId = null;
                 String brandName = rs.getString("BrandName");
 
-                // 👉 lấy tồn kho
                 int quantity = rs.getInt("total_quantity");
-                if (rs.wasNull()) {
-                    quantity = 0;
-                }
+                if (rs.wasNull()) quantity = 0;
 
                 Category category = null;
                 if (categoryId != null && categoryName != null) {
@@ -145,15 +138,14 @@ public class ProductDAO {
             }
         }
         sql.append(" ORDER BY p.product_id DESC");
-        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+        try (Connection conn = DBContext.getNewConnection();
+             PreparedStatement ps = conn.prepareStatement(sql.toString())) {
             ps.setString(1, "%" + (keyword != null ? keyword.toLowerCase() : "") + "%");
             if (filter != null && (filter.equals("Active") || filter.equals("Discontinued"))) {
                 ps.setString(2, filter);
             }
-            try ( ResultSet rs = ps.executeQuery()) {
-                int rowCount = 0;
+            try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    rowCount++;
                     Long productId = rs.getLong("product_id");
                     String productName = rs.getString("ProductName");
                     String description = rs.getString("description");
@@ -161,20 +153,15 @@ public class ProductDAO {
                     String productStatus = rs.getString("status");
                     String imageUrl = rs.getString("ImageURL");
                     Long categoryId = rs.getLong("category_id");
-                    if (rs.wasNull()) {
-                        categoryId = null;
-                    }
+                    if (rs.wasNull()) categoryId = null;
                     String categoryName = rs.getString("CategoryName");
                     Long parentCategoryId = rs.getLong("parent_category_id");
-                    if (rs.wasNull()) {
-                        parentCategoryId = null;
-                    }
+                    if (rs.wasNull()) parentCategoryId = null;
                     String parentCategoryName = rs.getString("ParentCategoryName");
                     Long brandId = rs.getLong("brand_id");
-                    if (rs.wasNull()) {
-                        brandId = null;
-                    }
+                    if (rs.wasNull()) brandId = null;
                     String brandName = rs.getString("BrandName");
+
                     Category category = null;
                     if (categoryId != null && categoryName != null) {
                         category = new Category();
@@ -193,7 +180,6 @@ public class ProductDAO {
                     product.setImageUrl(imageUrl);
                     product.setParentCategoryName(parentCategoryName);
                     list.add(product);
-                    System.out.println("ProductDAO.searchProductByNameAndFilter: Added product ID " + productId + ", Image URL: " + (imageUrl != null ? imageUrl : "null"));
                 }
             }
         } catch (SQLException e) {
@@ -217,12 +203,11 @@ public class ProductDAO {
                 + "LEFT JOIN brands b ON p.brand_id = b.brand_id "
                 + "WHERE p.status = ? AND b.is_active = 1 AND (c.is_active = 1 OR c.category_id IS NULL) AND (pc.is_active = 1 OR pc.category_id IS NULL) "
                 + "ORDER BY p.product_id DESC";
-        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = DBContext.getNewConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, status);
-            try ( ResultSet rs = ps.executeQuery()) {
-                int rowCount = 0;
+            try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    rowCount++;
                     Long productId = rs.getLong("product_id");
                     String productName = rs.getString("ProductName");
                     String description = rs.getString("description");
@@ -230,20 +215,15 @@ public class ProductDAO {
                     String productStatus = rs.getString("status");
                     String imageUrl = rs.getString("ImageURL");
                     Long categoryId = rs.getLong("category_id");
-                    if (rs.wasNull()) {
-                        categoryId = null;
-                    }
+                    if (rs.wasNull()) categoryId = null;
                     String categoryName = rs.getString("CategoryName");
                     Long parentCategoryId = rs.getLong("parent_category_id");
-                    if (rs.wasNull()) {
-                        parentCategoryId = null;
-                    }
+                    if (rs.wasNull()) parentCategoryId = null;
                     String parentCategoryName = rs.getString("ParentCategoryName");
                     Long brandId = rs.getLong("brand_id");
-                    if (rs.wasNull()) {
-                        brandId = null;
-                    }
+                    if (rs.wasNull()) brandId = null;
                     String brandName = rs.getString("BrandName");
+
                     Category category = null;
                     if (categoryId != null && categoryName != null) {
                         category = new Category();
@@ -284,14 +264,14 @@ public class ProductDAO {
                 + "LEFT JOIN categories c ON p.category_id = c.category_id "
                 + "LEFT JOIN categories pc ON c.parent_category_id = pc.category_id "
                 + "LEFT JOIN brands b ON p.brand_id = b.brand_id "
-                + "WHERE DATEDIFF(day, p.created_at, GETDATE()) <= 30 "
+                + "WHERE DATEDIFF(day, p.created_at, SYSUTCDATETIME()) <= 30 "
                 + "AND p.status = 'Active' AND b.is_active = 1 AND (c.is_active = 1 OR c.category_id IS NULL) AND (pc.is_active = 1 OR pc.category_id IS NULL) "
                 + "ORDER BY p.product_id DESC "
                 + "OFFSET 0 ROWS FETCH NEXT 8 ROWS ONLY";
-        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql);  ResultSet rs = ps.executeQuery()) {
-            int rowCount = 0;
+        try (Connection conn = DBContext.getNewConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
-                rowCount++;
                 Long productId = rs.getLong("product_id");
                 String productName = rs.getString("ProductName");
                 String description = rs.getString("description");
@@ -299,21 +279,16 @@ public class ProductDAO {
                 String status = rs.getString("status");
                 String imageUrl = rs.getString("ImageURL");
                 Long categoryId = rs.getLong("category_id");
-                if (rs.wasNull()) {
-                    categoryId = null;
-                }
+                if (rs.wasNull()) categoryId = null;
                 String categoryName = rs.getString("CategoryName");
                 Long parentCategoryId = rs.getLong("parent_category_id");
-                if (rs.wasNull()) {
-                    parentCategoryId = null;
-                }
+                if (rs.wasNull()) parentCategoryId = null;
                 String parentCategoryName = rs.getString("ParentCategoryName");
                 Long brandId = rs.getLong("brand_id");
-                if (rs.wasNull()) {
-                    brandId = null;
-                }
+                if (rs.wasNull()) brandId = null;
                 String brandName = rs.getString("BrandName");
                 int quantity = rs.getInt("total_quantity");
+
                 Category category = null;
                 if (categoryId != null && categoryName != null) {
                     category = new Category();
@@ -352,33 +327,33 @@ public class ProductDAO {
         String sqlPurchaseOrderDetails = "DELETE FROM purchase_order_details WHERE variant_id IN (SELECT variant_id FROM product_variants WHERE product_id = ?)";
         String sqlProductVariants = "DELETE FROM product_variants WHERE product_id = ?";
         String sqlProduct = "DELETE FROM products WHERE product_id = ?";
-        try ( Connection conn = DBContext.getNewConnection()) {
+        try (Connection conn = DBContext.getNewConnection()) {
             conn.setAutoCommit(false);
-            try ( PreparedStatement ps = conn.prepareStatement(sqlFavorites)) {
+            try (PreparedStatement ps = conn.prepareStatement(sqlFavorites)) {
                 ps.setLong(1, productId);
-                int rowsAffected = ps.executeUpdate();
+                ps.executeUpdate();
             }
-            try ( PreparedStatement ps = conn.prepareStatement(sqlViewHistory)) {
+            try (PreparedStatement ps = conn.prepareStatement(sqlViewHistory)) {
                 ps.setLong(1, productId);
-                int rowsAffected = ps.executeUpdate();
+                ps.executeUpdate();
             }
-            try ( PreparedStatement ps = conn.prepareStatement(sqlFeedbacks)) {
+            try (PreparedStatement ps = conn.prepareStatement(sqlFeedbacks)) {
                 ps.setLong(1, productId);
-                int rowsAffected = ps.executeUpdate();
+                ps.executeUpdate();
             }
-            try ( PreparedStatement ps = conn.prepareStatement(sqlCartItems)) {
+            try (PreparedStatement ps = conn.prepareStatement(sqlCartItems)) {
                 ps.setLong(1, productId);
-                int rowsAffected = ps.executeUpdate();
+                ps.executeUpdate();
             }
-            try ( PreparedStatement ps = conn.prepareStatement(sqlPurchaseOrderDetails)) {
+            try (PreparedStatement ps = conn.prepareStatement(sqlPurchaseOrderDetails)) {
                 ps.setLong(1, productId);
-                int rowsAffected = ps.executeUpdate();
+                ps.executeUpdate();
             }
-            try ( PreparedStatement ps = conn.prepareStatement(sqlProductVariants)) {
+            try (PreparedStatement ps = conn.prepareStatement(sqlProductVariants)) {
                 ps.setLong(1, productId);
-                int rowsAffected = ps.executeUpdate();
+                ps.executeUpdate();
             }
-            try ( PreparedStatement ps = conn.prepareStatement(sqlProduct)) {
+            try (PreparedStatement ps = conn.prepareStatement(sqlProduct)) {
                 ps.setLong(1, productId);
                 int num = ps.executeUpdate();
                 if (num > 0) {
@@ -396,17 +371,18 @@ public class ProductDAO {
 
     // Them san pham(Admin)
     public long addProduct(Product product) throws SQLException {
-        String sql = "INSERT INTO products (name, price, status, category_id, brand_id, material, description, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?,GETDATE(), GETDATE())";
+        String sql = "INSERT INTO products (name, price, status, category_id, brand_id, material, description, created_at, updated_at) "
+                   + "VALUES (?, ?, ?, ?, ?, ?, ?, SYSUTCDATETIME(), SYSUTCDATETIME())";
         String sqlFindCategory = "SELECT category_id FROM categories WHERE name = ? AND is_active = 1";
         String sqlFindBrand = "SELECT brand_id FROM brands WHERE name = ? AND is_active = 1";
-        try ( Connection conn = DBContext.getNewConnection()) {
+        try (Connection conn = DBContext.getNewConnection()) {
             conn.setAutoCommit(false);
             Long categoryId = null;
             if (product.getCategory() != null) {
                 if (product.getCategory().getCategoryId() != null) {
                     categoryId = product.getCategory().getCategoryId();
                 } else if (product.getCategory().getName() != null && !product.getCategory().getName().isEmpty()) {
-                    try ( PreparedStatement psFindCategory = conn.prepareStatement(sqlFindCategory)) {
+                    try (PreparedStatement psFindCategory = conn.prepareStatement(sqlFindCategory)) {
                         psFindCategory.setString(1, product.getCategory().getName());
                         ResultSet rs = psFindCategory.executeQuery();
                         if (rs.next()) {
@@ -423,7 +399,7 @@ public class ProductDAO {
                 if (product.getBrand().getBrandId() != null) {
                     brandId = product.getBrand().getBrandId();
                 } else if (product.getBrand().getName() != null && !product.getBrand().getName().isEmpty()) {
-                    try ( PreparedStatement psFindBrand = conn.prepareStatement(sqlFindBrand)) {
+                    try (PreparedStatement psFindBrand = conn.prepareStatement(sqlFindBrand)) {
                         psFindBrand.setString(1, product.getBrand().getName());
                         ResultSet rs = psFindBrand.executeQuery();
                         if (rs.next()) {
@@ -435,7 +411,7 @@ public class ProductDAO {
                     }
                 }
             }
-            try ( PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
                 ps.setString(1, product.getName());
                 ps.setBigDecimal(2, product.getPrice());
                 ps.setString(3, product.getStatus() != null ? product.getStatus() : "Active");
@@ -448,7 +424,7 @@ public class ProductDAO {
                     conn.rollback();
                     throw new SQLException("Cannot add product.");
                 }
-                try ( ResultSet rs = ps.getGeneratedKeys()) {
+                try (ResultSet rs = ps.getGeneratedKeys()) {
                     if (rs.next()) {
                         long productId = rs.getLong(1);
                         conn.commit();
@@ -465,9 +441,10 @@ public class ProductDAO {
     // Check trung ten san pham (Admin)
     public boolean isProductNameExists(String name) throws SQLException {
         String sql = "SELECT COUNT(*) FROM products WHERE name = ? AND status = 'Active'";
-        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = DBContext.getNewConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, name);
-            try ( ResultSet rs = ps.executeQuery()) {
+            try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     return rs.getInt(1) > 0;
                 }
@@ -479,7 +456,8 @@ public class ProductDAO {
     // Them bien the
     public long addProductVariant(ProductVariant variant) throws SQLException {
         String sql = "INSERT INTO product_variants (product_id, size, color, price_modifier, sku) VALUES (?, ?, ?, ?, ?)";
-        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+        try (Connection conn = DBContext.getNewConnection();
+             PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setLong(1, variant.getProductId());
             ps.setString(2, variant.getSize());
             ps.setString(3, variant.getColor());
@@ -489,7 +467,7 @@ public class ProductDAO {
             if (affectedRows == 0) {
                 throw new SQLException("Unable to add product variations.");
             }
-            try ( ResultSet rs = ps.getGeneratedKeys()) {
+            try (ResultSet rs = ps.getGeneratedKeys()) {
                 if (rs.next()) {
                     return rs.getLong(1);
                 } else {
@@ -508,10 +486,11 @@ public class ProductDAO {
         return String.format("%s-%s-%s-%s", brand, productName, size, color).toUpperCase();
     }
 
-    // Them so luong
+    // Them so luong (inventory record khởi tạo = 0)
     public void addInventory(long variantId) throws SQLException {
         String sql = "INSERT INTO inventory (variant_id, quantity) VALUES (?, 0)";
-        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = DBContext.getNewConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setLong(1, variantId);
             ps.executeUpdate();
         }
@@ -520,7 +499,8 @@ public class ProductDAO {
     // Chen anh(Update)
     public void insertProductImage(long productId, String url, boolean isMain) throws SQLException {
         String sql = "INSERT INTO product_images (product_id, image_url, is_main) VALUES (?, ?, ?)";
-        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = DBContext.getNewConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setLong(1, productId);
             ps.setString(2, url);
             ps.setBoolean(3, isMain);
@@ -531,7 +511,8 @@ public class ProductDAO {
     // Them anh moi(create)
     public void addProductImage(ProductImage image) throws SQLException {
         String sql = "INSERT INTO product_images (product_id, image_url, is_main, display_order) VALUES (?, ?, ?, ?)";
-        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = DBContext.getNewConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setLong(1, image.getProductId());
             ps.setString(2, image.getImageUrl());
             ps.setBoolean(3, image.isMain());
@@ -544,7 +525,9 @@ public class ProductDAO {
     public List<Brand> getBrands() throws SQLException {
         List<Brand> brands = new ArrayList<>();
         String sql = "SELECT brand_id, name FROM brands WHERE is_active = 1 ORDER BY name";
-        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql);  ResultSet rs = ps.executeQuery()) {
+        try (Connection conn = DBContext.getNewConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
                 Brand brand = new Brand();
                 brand.setBrandId(rs.getLong("brand_id"));
@@ -563,7 +546,9 @@ public class ProductDAO {
                 + "LEFT JOIN categories p ON c.parent_category_id = p.category_id "
                 + "WHERE c.is_active = 1 AND (p.is_active = 1 OR p.category_id IS NULL) "
                 + "ORDER BY COALESCE(p.name, ''), c.name";
-        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql);  ResultSet rs = ps.executeQuery()) {
+        try (Connection conn = DBContext.getNewConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
                 Category category = new Category();
                 category.setCategoryId(rs.getLong("category_id"));
@@ -583,7 +568,9 @@ public class ProductDAO {
                 + "FROM product_variants "
                 + "WHERE size IS NOT NULL "
                 + "ORDER BY CAST(size AS NVARCHAR(100))";
-        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql);  ResultSet rs = ps.executeQuery()) {
+        try (Connection conn = DBContext.getNewConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
                 sizes.add(rs.getString("size"));
             }
@@ -598,7 +585,9 @@ public class ProductDAO {
                 + "FROM product_variants "
                 + "WHERE color IS NOT NULL "
                 + "ORDER BY CAST(color AS NVARCHAR(100))";
-        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql);  ResultSet rs = ps.executeQuery()) {
+        try (Connection conn = DBContext.getNewConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
                 colors.add(rs.getString("color"));
             }
@@ -609,9 +598,10 @@ public class ProductDAO {
     // Lay brand name theo ID
     public String getBrandName(long brandId) throws SQLException {
         String sql = "SELECT name FROM brands WHERE brand_id = ? AND is_active = 1";
-        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = DBContext.getNewConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setLong(1, brandId);
-            try ( ResultSet rs = ps.executeQuery()) {
+            try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     return rs.getString("name");
                 }
@@ -631,9 +621,10 @@ public class ProductDAO {
                 + "LEFT JOIN categories pc ON c.parent_category_id = pc.category_id "
                 + "LEFT JOIN brands b ON p.brand_id = b.brand_id "
                 + "WHERE p.product_id = ? AND b.is_active = 1 AND (c.is_active = 1 OR c.category_id IS NULL) AND (pc.is_active = 1 OR pc.category_id IS NULL)";
-        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = DBContext.getNewConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setLong(1, productId);
-            try ( ResultSet rs = ps.executeQuery()) {
+            try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     Product product = new Product();
                     product.setProductId(rs.getLong("product_id"));
@@ -689,15 +680,15 @@ public class ProductDAO {
     public void updateProduct(Product product) throws SQLException {
         String sql = "UPDATE products "
                 + "SET name = ?, price = ?, status = ?, category_id = ?, brand_id = ?, "
-                + "material = ?, description = ?, updated_at = GETDATE() "
+                + "material = ?, description = ?, updated_at = SYSUTCDATETIME() "
                 + "WHERE product_id = ?";
         String sqlFindBrand = "SELECT brand_id FROM brands WHERE name = ? AND is_active = 1";
         String sqlFindCategory = "SELECT category_id FROM categories WHERE name = ? AND is_active = 1";
-        try ( Connection conn = DBContext.getNewConnection()) {
+        try (Connection conn = DBContext.getNewConnection()) {
             conn.setAutoCommit(false);
             Long brandId = null;
             if (product.getBrand() != null && product.getBrand().getName() != null && !product.getBrand().getName().isEmpty()) {
-                try ( PreparedStatement psFindBrand = conn.prepareStatement(sqlFindBrand)) {
+                try (PreparedStatement psFindBrand = conn.prepareStatement(sqlFindBrand)) {
                     psFindBrand.setString(1, product.getBrand().getName());
                     ResultSet rs = psFindBrand.executeQuery();
                     if (rs.next()) {
@@ -710,7 +701,7 @@ public class ProductDAO {
             }
             Long categoryId = null;
             if (product.getCategory() != null && product.getCategory().getName() != null && !product.getCategory().getName().isEmpty()) {
-                try ( PreparedStatement psFindCategory = conn.prepareStatement(sqlFindCategory)) {
+                try (PreparedStatement psFindCategory = conn.prepareStatement(sqlFindCategory)) {
                     psFindCategory.setString(1, product.getCategory().getName());
                     ResultSet rs = psFindCategory.executeQuery();
                     if (rs.next()) {
@@ -721,7 +712,7 @@ public class ProductDAO {
                     }
                 }
             }
-            try ( PreparedStatement ps = conn.prepareStatement(sql)) {
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setString(1, product.getName());
                 ps.setBigDecimal(2, product.getPrice());
                 ps.setString(3, product.getStatus());
@@ -746,7 +737,8 @@ public class ProductDAO {
     // set anh chinh(Update)
     public void updateImageMainFlag(long imageId, boolean isMain) throws SQLException {
         String sql = "UPDATE product_images SET is_main = ? WHERE image_id = ?";
-        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = DBContext.getNewConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setBoolean(1, isMain);
             ps.setLong(2, imageId);
             ps.executeUpdate();
@@ -760,9 +752,10 @@ public class ProductDAO {
                 + "(SELECT i.quantity FROM inventory i WHERE i.variant_id = pv.variant_id) AS quantity "
                 + "FROM product_variants pv "
                 + "WHERE pv.product_id = ?";
-        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = DBContext.getNewConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setLong(1, productId);
-            try ( ResultSet rs = ps.executeQuery()) {
+            try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     ProductVariant variant = new ProductVariant();
                     variant.setVariantId(rs.getLong("variant_id"));
@@ -775,9 +768,6 @@ public class ProductDAO {
                     variant.setQuantity(quantity);
                     variant.setStockStatus(quantity > 0 ? "In Stock" : "Out of Stock");
                     variants.add(variant);
-                    System.out.println("ProductDAO.getProductVariantsByProductId: Variant ID " + variant.getVariantId()
-                            + ", Quantity: " + quantity
-                            + ", Stock Status: " + variant.getStockStatus());
                 }
             }
         } catch (SQLException e) {
@@ -786,10 +776,11 @@ public class ProductDAO {
         return variants;
     }
 
-    // Cáº­p nháº­t biáº¿n thá»ƒ sáº£n pháº©m
+    // Cập nhật biến thể sản phẩm
     public void updateProductVariant(ProductVariant variant) throws SQLException {
         String sql = "UPDATE product_variants SET size = ?, color = ?, price_modifier = ?, sku = ? WHERE variant_id = ?";
-        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = DBContext.getNewConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, variant.getSize());
             ps.setString(2, variant.getColor());
             ps.setBigDecimal(3, variant.getPriceModifier());
@@ -806,14 +797,15 @@ public class ProductDAO {
         String sql = "SELECT COUNT(*) FROM product_variants "
                 + "WHERE product_id = ? AND size = ? AND color = ? "
                 + (excludeVariantId != null ? "AND variant_id <> ?" : "");
-        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = DBContext.getNewConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setLong(1, productId);
             ps.setString(2, size);
             ps.setString(3, color);
             if (excludeVariantId != null) {
                 ps.setLong(4, excludeVariantId);
             }
-            try ( ResultSet rs = ps.executeQuery()) {
+            try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     return rs.getInt(1) > 0; // true
                 }
@@ -822,14 +814,14 @@ public class ProductDAO {
         return false;
     }
 
-    // XÃ³a biáº¿n thá»ƒ sáº£n pháº©m
+    // Xóa biến thể sản phẩm
     public void deleteProductVariant(long variantId) throws SQLException {
         String sqlCheckInventory = "SELECT quantity FROM inventory WHERE variant_id = ?";
         String sqlInventory = "DELETE FROM inventory WHERE variant_id = ?";
         String sqlVariant = "DELETE FROM product_variants WHERE variant_id = ?";
-        try ( Connection conn = DBContext.getNewConnection()) {
+        try (Connection conn = DBContext.getNewConnection()) {
             conn.setAutoCommit(false);
-            try ( PreparedStatement psCheck = conn.prepareStatement(sqlCheckInventory)) {
+            try (PreparedStatement psCheck = conn.prepareStatement(sqlCheckInventory)) {
                 psCheck.setLong(1, variantId);
                 ResultSet rs = psCheck.executeQuery();
                 if (rs.next() && rs.getInt("quantity") > 0) {
@@ -837,11 +829,11 @@ public class ProductDAO {
                     throw new SQLException("Cannot delete variant because it is still in stock.");
                 }
             }
-            try ( PreparedStatement psInventory = conn.prepareStatement(sqlInventory)) {
+            try (PreparedStatement psInventory = conn.prepareStatement(sqlInventory)) {
                 psInventory.setLong(1, variantId);
                 psInventory.executeUpdate();
             }
-            try ( PreparedStatement psVariant = conn.prepareStatement(sqlVariant)) {
+            try (PreparedStatement psVariant = conn.prepareStatement(sqlVariant)) {
                 psVariant.setLong(1, variantId);
                 psVariant.executeUpdate();
             }
@@ -849,13 +841,14 @@ public class ProductDAO {
         }
     }
 
-    // Láº¥y danh sÃ¡ch áº£nh theo productId
+    // Lấy danh sách ảnh theo productId
     public List<ProductImage> getProductImagesByProductId(long productId) throws SQLException {
         List<ProductImage> images = new ArrayList<>();
         String sql = "SELECT image_id, product_id, image_url, is_main, display_order FROM product_images WHERE product_id = ?";
-        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = DBContext.getNewConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setLong(1, productId);
-            try ( ResultSet rs = ps.executeQuery()) {
+            try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     ProductImage image = new ProductImage();
                     image.setImageId(rs.getLong("image_id"));
@@ -870,10 +863,11 @@ public class ProductDAO {
         return images;
     }
 
-    // XÃ³a áº£nh sáº£n pháº©m
+    // Xóa ảnh sản phẩm
     public void deleteProductImage(long imageId) throws SQLException {
         String sql = "DELETE FROM product_images WHERE image_id = ?";
-        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = DBContext.getNewConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setLong(1, imageId);
             ps.executeUpdate();
         }
@@ -904,12 +898,13 @@ public class ProductDAO {
                 + "WHERE p.category_id IN (" + placeholders.toString() + ") AND p.status = 'Active' AND c.is_active = 1 AND b.is_active = 1 AND (pc.is_active = 1 OR pc.category_id IS NULL) "
                 + "ORDER BY p.product_id "
                 + "OFFSET ? ROWS FETCH NEXT 100 ROWS ONLY";
-        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection conn = DBContext.getNewConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
             for (int i = 0; i < categoryIds.size(); i++) {
                 stmt.setLong(i + 1, categoryIds.get(i));
             }
             stmt.setInt(categoryIds.size() + 1, offset);
-            try ( ResultSet rs = stmt.executeQuery()) {
+            try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
                     Product product = new Product();
                     product.setProductId(rs.getLong("product_id"));
@@ -951,9 +946,10 @@ public class ProductDAO {
                 + "LEFT JOIN categories pc ON c.parent_category_id = pc.category_id "
                 + "LEFT JOIN brands b ON p.brand_id = b.brand_id "
                 + "WHERE p.status = 'Active' AND LOWER(p.name) LIKE LOWER(?) AND b.is_active = 1 AND (c.is_active = 1 OR c.category_id IS NULL) AND (pc.is_active = 1 OR pc.category_id IS NULL)";
-        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = DBContext.getNewConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, "%" + keyword + "%");
-            try ( ResultSet rs = ps.executeQuery()) {
+            try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     Product product = new Product();
                     product.setProductId(rs.getLong("product_id"));
@@ -1023,7 +1019,8 @@ public class ProductDAO {
             sql += " ORDER BY p.product_id DESC";
         }
 
-        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = DBContext.getNewConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
 
             int idx = 1;
             for (Long cid : categoryIds) {
@@ -1051,7 +1048,7 @@ public class ProductDAO {
                 ps.setBigDecimal(idx++, maxPrice);
             }
 
-            try ( ResultSet rs = ps.executeQuery()) {
+            try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     Product p = new Product();
                     p.setProductId(rs.getLong("product_id"));
@@ -1087,9 +1084,9 @@ public class ProductDAO {
         List<ProductImage> images = new ArrayList<>();
         String sql = "SELECT image_id, product_id, image_url, is_main, display_order "
                 + "FROM product_images WHERE product_id = ?";
-        try ( PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setLong(1, productId);
-            try ( ResultSet rs = ps.executeQuery()) {
+            try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     ProductImage image = new ProductImage();
                     image.setImageId(rs.getLong("image_id"));
@@ -1104,21 +1101,22 @@ public class ProductDAO {
         return images;
     }
 
-    // Lấy sản phẩm Best Seller (Frontend)
+    // Lấy sản phẩm Best Seller (Frontend) - 30 ngày gần nhất
     public List<Product> getBestSellers(int limit) {
         List<Product> list = new ArrayList<>();
         String sql = "SELECT TOP (?) p.product_id, p.name, p.price, p.status, "
                 + "       (SELECT TOP 1 image_url "
                 + "        FROM product_images pi "
                 + "        WHERE pi.product_id = p.product_id AND pi.is_main = 1) AS main_image, "
-                + "       SUM(pod.quantity) AS total_sold, "
+                + "       SUM(oi.quantity) AS total_sold, "
                 + "       (SELECT SUM(i.quantity) "
                 + "        FROM inventory i "
                 + "        JOIN product_variants pv2 ON i.variant_id = pv2.variant_id "
                 + "        WHERE pv2.product_id = p.product_id) AS total_quantity "
                 + "FROM products p "
                 + "JOIN product_variants pv ON p.product_id = pv.product_id "
-                + "JOIN purchase_order_details pod ON pv.variant_id = pod.variant_id "
+                + "JOIN order_items oi ON pv.variant_id = oi.variant_id "
+                + "JOIN orders o ON oi.order_id = o.order_id "
                 + "JOIN brands b ON p.brand_id = b.brand_id "
                 + "JOIN categories c ON p.category_id = c.category_id "
                 + "LEFT JOIN categories pc ON c.parent_category_id = pc.category_id "
@@ -1126,10 +1124,13 @@ public class ProductDAO {
                 + "  AND b.is_active = 1 "
                 + "  AND c.is_active = 1 "
                 + "  AND (pc.is_active = 1 OR pc.category_id IS NULL) "
+                + "  AND o.status IN ('SHIPPED', 'COMPLETED') "
+                + "  AND o.created_at >= DATEADD(MONTH, -1, SYSUTCDATETIME()) "
                 + "GROUP BY p.product_id, p.name, p.price, p.status "
                 + "ORDER BY total_sold DESC";
 
-        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = DBContext.getNewConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, limit);
             ResultSet rs = ps.executeQuery();
             while (rs.next()) {
@@ -1143,10 +1144,9 @@ public class ProductDAO {
                 int totalSold = rs.getInt("total_sold");
                 int totalQuantity = rs.getInt("total_quantity");
 
-                product.setQuantity(totalQuantity); // tồn kho thật
+                product.setQuantity(totalQuantity);
                 product.setStockStatus(totalQuantity > 0 ? "In Stock" : "Out of Stock");
-
-                product.setDescription("Đã bán " + totalSold);
+                product.setDescription("Đã bán " + totalSold + " (30 ngày gần nhất)");
 
                 list.add(product);
             }
@@ -1162,9 +1162,10 @@ public class ProductDAO {
             return 0;
         }
         String sql = "SELECT quantity FROM inventory WHERE variant_id = ?";
-        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = DBContext.getNewConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setLong(1, variantId);
-            try ( ResultSet rs = ps.executeQuery()) {
+            try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     return rs.getInt("quantity");
                 }
@@ -1175,15 +1176,16 @@ public class ProductDAO {
         }
         return 0;
     }
-    // Giá cuối cùng của 1 biến thể: pv.price_modifier nếu có, ngược lại p.price (dat)
 
+    // Giá cuối cùng của 1 biến thể: pv.price_modifier nếu có, ngược lại p.price (dat)
     public java.math.BigDecimal getFinalPriceByVariantId(long variantId) throws SQLException {
         String sql = "SELECT COALESCE(pv.price_modifier, p.price) AS price "
                 + "FROM product_variants pv JOIN products p ON pv.product_id = p.product_id "
                 + "WHERE pv.variant_id = ?";
-        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = DBContext.getNewConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setLong(1, variantId);
-            try ( ResultSet rs = ps.executeQuery()) {
+            try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     java.math.BigDecimal bd = rs.getBigDecimal("price");
                     return bd != null ? bd : java.math.BigDecimal.ZERO;

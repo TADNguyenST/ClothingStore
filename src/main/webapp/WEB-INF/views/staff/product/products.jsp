@@ -170,6 +170,7 @@
                         <option value="Active" ${param.filter == 'Active' ? 'selected' : ''}>Active</option>
                         <option value="Inactive" ${param.filter == 'Inactive' ? 'selected' : ''}>Inactive</option>
                         <option value="New" ${param.filter == 'New' ? 'selected' : ''}>New</option>
+                        <option value="BestSeller" ${param.filter == 'BestSeller' ? 'selected' : ''}>Best Sellers</option>
                     </select>
                 </form>
                 <form action="${pageContext.request.contextPath}/ProductListAdmin" method="get" class="sort-select">
