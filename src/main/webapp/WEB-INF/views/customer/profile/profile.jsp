@@ -195,7 +195,7 @@
                     <a href="${pageContext.request.contextPath}/customer/address" class="list-group-item list-group-item-action">
                         <i class="fas fa-address-book me-2"></i> Address Book
                     </a>
-                    <a href="${pageContext.request.contextPath}/orders" class="list-group-item list-group-item-action ${param.action == 'orders' ? 'active' : ''}">
+                    <a href="${pageContext.request.contextPath}/customer/orders" class="list-group-item list-group-item-action ${param.action == 'orders' ? 'active' : ''}">
                         <i class="fas fa-box-open me-2"></i> My Orders
                     </a>
                     <a href="${pageContext.request.contextPath}/Logout" class="list-group-item list-group-item-action text-danger ${param.action == 'logout' ? 'active' : ''}">

@@ -300,7 +300,38 @@
 
 <!-- Categories -->
 <div class="category-section">
-    <!-- ... giữ nguyên code categories ... -->
+    <div class="container">
+        <h2 class="section-title">Shop by Category</h2>
+        <div class="row g-4">
+            <% if (showMenCategory) { %>
+            <div class="col-md-6">
+                <div class="category-card">
+                    <img src="https://images.unsplash.com/photo-1532453288672-3a27e9be9efd?q=80&w=2070&auto=format&fit=crop" alt="Men's Collection">
+                    <div class="content">
+                        <h3>Men's Collection</h3>
+                        <a href="<%= request.getContextPath()%>/ProductList?parentCategoryId=<%= menCategoryId%>" class="btn btn-outline-light">Explore Men</a>
+                    </div>
+                </div>
+            </div>
+            <% } %>
+            <% if (showWomenCategory) { %>
+            <div class="col-md-6">
+                <div class="category-card">
+                    <img src="https://images.unsplash.com/photo-1529139574466-a303027c1d8b?q=80&w=2070&auto=format&fit=crop" alt="Women's Collection">
+                    <div class="content">
+                        <h3>Women's Collection</h3>
+                        <a href="<%= request.getContextPath()%>/ProductList?parentCategoryId=<%= womenCategoryId%>" class="btn btn-outline-light">Explore Women</a>
+                    </div>
+                </div>
+            </div>
+            <% } %>
+            <% if (!showMenCategory && !showWomenCategory && categoryError != null) { %>
+            <div class="col-12">
+                <p class="error-message"><%= categoryError %></p>
+            </div>
+            <% } %>
+        </div>
+    </div>
 </div>
 
 <!-- New Arrivals -->
