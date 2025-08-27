@@ -11,6 +11,15 @@ public class CombinedReportDTO {
     private Map<String, Object> systemKpis;
     private Map<String, BigDecimal> systemRevenueChartData;
     private List<Map<String, Object>> ordersReportData;
+    private List<CustomerSummaryDTO> customerSummary;
+
+    public List<CustomerSummaryDTO> getCustomerSummary() {
+        return customerSummary;
+    }
+
+    public void setCustomerSummary(List<CustomerSummaryDTO> customerSummary) {
+        this.customerSummary = customerSummary;
+    }
 
     public Map<String, Object> getProductKpis() {
         return productKpis;

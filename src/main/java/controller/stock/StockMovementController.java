@@ -10,15 +10,10 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
-import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.text.SimpleDateFormat;
+import java.io.PrintWriter;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import model.Users;
@@ -26,114 +21,289 @@ import model.Users;
 @WebServlet(name = "StockMovementController", urlPatterns = {"/StockMovement"})
 public class StockMovementController extends HttpServlet {
 
-    private StockMovementDAO stockMovementDAO;
+    private StockMovementDAO dao;
     private Gson gson;
+
+    // yyyy-MM-dd để khớp input type="date"
+    private static final DateTimeFormatter ISO = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
     @Override
     public void init() throws ServletException {
-        stockMovementDAO = new StockMovementDAO();
-        GsonBuilder gsonBuilder = new GsonBuilder();
-        gson = gsonBuilder.create();
+        dao = new StockMovementDAO();
+        gson = new GsonBuilder().create();
     }
 
-    private void formatTimestampInGroupedMap(Map<String, List<Map<String, Object>>> groupedMap) {
-        for (List<Map<String, Object>> list : groupedMap.values()) {
-            formatTimestampInList(list);
+    private int safeInt(String s, int def) {
+        try { return Integer.parseInt(s); } catch (Exception e) { return def; }
+    }
+
+    private void respondJson(HttpServletResponse resp, Map<String, Object> body) throws IOException {
+        resp.setStatus(HttpServletResponse.SC_OK);
+        resp.setCharacterEncoding("UTF-8");
+        resp.setContentType("application/json");
+        try (PrintWriter out = resp.getWriter()) {
+            out.write(gson.toJson(body));
         }
     }
 
-    private void formatTimestampInList(List<Map<String, Object>> list) {
-        SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss dd/MM/yyyy");
-        for (Map<String, Object> map : list) {
-            if (map.get("createdAt") instanceof Timestamp) {
-                Timestamp ts = (Timestamp) map.get("createdAt");
-                map.put("createdAtFormatted", sdf.format(ts));
-                map.remove("createdAt"); // Xóa object timestamp gốc
-            }
-        }
+    /* -------------------- DATE HELPERS -------------------- */
+
+    private static boolean isBlankCompat(String s) {
+        return s == null || s.trim().isEmpty(); // thay cho String.isBlank() (Java 8 compatible)
     }
+
+    /** Quick range -> [start, end] (yyyy-MM-dd)
+     *  Hỗ trợ: "7", "30", "365", "ytd", "year"/"thisyear".
+     *  Nếu là số n bất kỳ -> hiểu là n ngày gần đây.
+     */
+    private String[] resolveQuickRange(String quick) {
+        if (isBlankCompat(quick)) return null;
+
+        String q = quick.trim().toLowerCase();
+        LocalDate today = LocalDate.now();
+        LocalDate start;
+        LocalDate end = today;
+
+        switch (q) {
+            case "7":
+            case "7d":
+                start = today.minusDays(6);
+                break;
+            case "30":
+            case "30d":
+                start = today.minusDays(29);
+                break;
+            case "365":
+            case "365d":
+                start = today.minusDays(364);
+                break;
+            case "ytd":
+            case "year":
+            case "thisyear":
+                start = LocalDate.of(today.getYear(), 1, 1);
+                break;
+            default:
+                // nếu là số -> N ngày gần đây
+                try {
+                    int n = Integer.parseInt(q);
+                    if (n <= 1) start = today;
+                    else start = today.minusDays(n - 1L);
+                } catch (NumberFormatException ex) {
+                    return null; // không hiểu quick
+                }
+        }
+        return new String[]{ start.format(ISO), end.format(ISO) };
+    }
+
+    /** Mặc định 30 ngày: nếu không có quick
+     *  - Thiếu cả hai: end = hôm nay, start = end-29
+     *  - Thiếu một đầu: suy ra đầu còn lại sao cho đủ 30 ngày (không vượt quá hôm nay)
+     *  - start > end: hoán đổi
+     */
+    private String[] resolveDateRange30(String startDate, String endDate) {
+        LocalDate today = LocalDate.now();
+        LocalDate start = null, end = null;
+
+        try { if (!isBlankCompat(startDate)) start = LocalDate.parse(startDate.trim(), ISO); } catch (Exception ignore) {}
+        try { if (!isBlankCompat(endDate))   end   = LocalDate.parse(endDate.trim(), ISO);   } catch (Exception ignore) {}
+
+        if (start == null && end == null) {
+            end = today;
+            start = end.minusDays(29);
+        } else if (start == null) {
+            start = end.minusDays(29);
+        } else if (end == null) {
+            end = start.plusDays(29);
+            if (end.isAfter(today)) end = today;
+        }
+
+        if (start.isAfter(end)) { LocalDate t = start; start = end; end = t; }
+        return new String[]{ start.format(ISO), end.format(ISO) };
+    }
+
+    /** Ưu tiên QUICK nếu có; nếu không, dùng dải 30 ngày */
+    private String[] resolveDateRange(String startDate, String endDate, String quick) {
+        String[] byQuick = resolveQuickRange(quick);
+        if (byQuick != null) return byQuick;
+        return resolveDateRange30(startDate, endDate);
+    }
+
+    /* -------------------- /DATE HELPERS -------------------- */
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+
+        // ---- Auth (admin/staff) ----
         HttpSession session = request.getSession();
         Users currentUser = (Users) session.getAttribute("admin");
-        if (currentUser == null) {
-            currentUser = (Users) session.getAttribute("staff");
-        }
-
+        if (currentUser == null) currentUser = (Users) session.getAttribute("staff");
         if (currentUser == null) {
             response.sendRedirect(request.getContextPath() + "/AdminLogin");
             return;
         }
+
         try {
-            // Lấy tất cả các tham số
-            String startDate = request.getParameter("startDate");
-            String endDate = request.getParameter("endDate");
-            String filterType = request.getParameter("filterType");
+            // ---- Params ----
+            String startDate  = request.getParameter("startDate");
+            String endDate    = request.getParameter("endDate");
             String searchTerm = request.getParameter("searchTerm");
-            String groupBy = request.getParameter("groupBy");
-            if (groupBy == null || groupBy.isEmpty()) {
-                groupBy = "all_references"; // Đặt giá trị mặc định
-            }
-            String isAjaxRequest = request.getParameter("ajax");
-            String pageStr = request.getParameter("page");
-            if ((startDate == null || startDate.isEmpty()) && (endDate == null || endDate.isEmpty())) {
-                DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-                LocalDate today = LocalDate.now();
-                startDate = today.format(dtf);
-                endDate = today.format(dtf);
-            }
-            int page = (pageStr == null || pageStr.isEmpty()) ? 1 : Integer.parseInt(pageStr);
-            int limit = 15;
-            int offset = (page - 1) * limit;
+            String groupBy    = request.getParameter("groupBy");      // purchase_order | sale_order | adjustment | none
+            String viewMode   = request.getParameter("viewMode");      // list | grouped | product
+            String isAjax     = request.getParameter("ajax");
 
-            Object resultData;
-            boolean isGroupedView = groupBy != null && !groupBy.equals("none");
+            // QUICK: chấp nhận "quick" hoặc "range"
+            String quick      = request.getParameter("quick");
+            if (isBlankCompat(quick)) quick = request.getParameter("range");
 
-            if (isGroupedView) {
-                Map<String, List<Map<String, Object>>> groupedData = stockMovementDAO.getGroupedMovements(startDate, endDate, filterType, searchTerm, groupBy);
-                formatTimestampInGroupedMap(groupedData); // Format thời gian
-                resultData = groupedData;
-            } else {
-                List<Map<String, Object>> movementList = stockMovementDAO.getFilteredAndPaginatedStockMovements(startDate, endDate, filterType, searchTerm, offset, limit);
-                formatTimestampInList(movementList); // Format thời gian
-                resultData = movementList;
+            int page          = safeInt(request.getParameter("page"), 1);
+            int limit         = 15;
+            int offset        = (page - 1) * limit;
+
+            // ---- Dải ngày (ưu tiên QUICK) ----
+            String[] range = resolveDateRange(startDate, endDate, quick);
+            startDate = range[0];
+            endDate   = range[1];
+
+            if (isBlankCompat(viewMode)) viewMode = "grouped";
+            if ("grouped".equals(viewMode) && (isBlankCompat(groupBy) || "none".equals(groupBy))) {
+                groupBy = "purchase_order";
             }
 
-            int totalRecords = stockMovementDAO.getTotalFilteredStockMovements(startDate, endDate, filterType, searchTerm);
-            int totalPages = (int) Math.ceil((double) totalRecords / limit);
+            switch (viewMode) {
+                case "product": {
+                    Map<String, Object> sum = dao.getProductMovementSummary(startDate, endDate, searchTerm);
+                    @SuppressWarnings("unchecked")
+                    List<Map<String, Object>> fullRows = (List<Map<String, Object>>) sum.get("rows");
+                    if (fullRows == null) fullRows = Collections.emptyList();
 
-            if ("true".equals(isAjaxRequest)) {
-                response.setContentType("application/json");
-                response.setCharacterEncoding("UTF-8");
-                Map<String, Object> jsonResponse = new HashMap<>();
-                jsonResponse.put("data", resultData);
-                jsonResponse.put("totalPages", totalPages);
-                jsonResponse.put("currentPage", page);
-                jsonResponse.put("totalRecords", totalRecords);
-                jsonResponse.put("viewMode", isGroupedView ? "grouped" : "list");
-                response.getWriter().write(gson.toJson(jsonResponse));
-            } else {
-                if (isGroupedView) {
-                    request.setAttribute("groupedData", resultData);
-                } else {
-                    request.setAttribute("movementList", resultData);
+                    int totalRecords = fullRows.size();
+                    int totalPages   = (int) Math.ceil(totalRecords / (double) limit);
+                    if (page > totalPages && totalPages > 0) {
+                        page = totalPages;
+                        offset = (page - 1) * limit;
+                    }
+                    int to = Math.min(offset + limit, totalRecords);
+                    List<Map<String, Object>> pageData =
+                        (totalRecords == 0) ? Collections.emptyList() : fullRows.subList(offset, to);
+
+                    if ("true".equalsIgnoreCase(isAjax)) {
+                        Map<String, Object> json = new HashMap<>();
+                        json.put("viewMode", "product");
+                        json.put("data", pageData);
+                        Map<String, Object> totals = new HashMap<>();
+                        totals.put("totalIn", sum.get("totalIn"));
+                        totals.put("totalOut", sum.get("totalOut"));
+                        totals.put("net", sum.get("net"));
+                        json.put("totals", totals);
+                        json.put("totalRecords", totalRecords);
+                        json.put("totalPages", totalPages);
+                        json.put("currentPage", page);
+                        json.put("limit", limit);
+                        json.put("startDate", startDate);
+                        json.put("endDate", endDate);
+                        if (!isBlankCompat(quick)) json.put("quick", quick);
+                        respondJson(response, json);
+                        return;
+                    }
+
+                    request.setAttribute("viewMode", "product");
+                    request.setAttribute("productSummary", pageData);
+                    request.setAttribute("totalRecords", totalRecords);
+                    request.setAttribute("totalPages", totalPages);
+                    request.setAttribute("currentPage", page);
+                    request.setAttribute("startDate", startDate);
+                    request.setAttribute("endDate", endDate);
+                    request.setAttribute("searchTerm", searchTerm);
+                    request.setAttribute("quick", quick);
+                    request.getRequestDispatcher("/WEB-INF/views/staff/stock/stock-movements.jsp").forward(request, response);
+                    return;
                 }
-                request.setAttribute("totalPages", totalPages);
-                request.setAttribute("currentPage", page);
-                request.setAttribute("totalRecords", totalRecords);
-                request.setAttribute("startDate", startDate);
-                request.setAttribute("endDate", endDate);
-                request.setAttribute("filterType", filterType);
-                request.setAttribute("searchTerm", searchTerm);
-                request.setAttribute("groupBy", groupBy);
-                request.getRequestDispatcher("/WEB-INF/views/staff/stock/stock-movements.jsp").forward(request, response);
+
+                case "grouped": {
+                    Map<String, List<Map<String, Object>>> grouped =
+                            dao.getGroupedMovements(startDate, endDate, null, searchTerm, groupBy);
+
+                    int totalRecords = (grouped == null) ? 0 : grouped.values().stream().mapToInt(List::size).sum();
+
+                    if ("true".equalsIgnoreCase(isAjax)) {
+                        Map<String, Object> json = new HashMap<>();
+                        json.put("viewMode", "grouped");
+                        json.put("data", grouped);
+                        json.put("totalRecords", totalRecords);
+                        json.put("totalPages", 1);
+                        json.put("currentPage", 1);
+                        json.put("startDate", startDate);
+                        json.put("endDate", endDate);
+                        if (!isBlankCompat(quick)) json.put("quick", quick);
+                        respondJson(response, json);
+                        return;
+                    }
+
+                    request.setAttribute("viewMode", "grouped");
+                    request.setAttribute("groupedData", grouped);
+                    request.setAttribute("totalRecords", totalRecords);
+                    request.setAttribute("totalPages", 1);
+                    request.setAttribute("currentPage", 1);
+                    request.setAttribute("startDate", startDate);
+                    request.setAttribute("endDate", endDate);
+                    request.setAttribute("searchTerm", searchTerm);
+                    request.setAttribute("groupBy", groupBy);
+                    request.setAttribute("quick", quick);
+                    request.getRequestDispatcher("/WEB-INF/views/staff/stock/stock-movements.jsp").forward(request, response);
+                    return;
+                }
+
+                case "list":
+                default: {
+                    List<Map<String, Object>> rows =
+                            dao.getFilteredAndPaginatedStockMovements(startDate, endDate, null, searchTerm, offset, limit);
+                    int totalRecords = dao.getTotalFilteredStockMovements(startDate, endDate, null, searchTerm);
+                    int totalPages   = (int) Math.ceil(totalRecords / (double) limit);
+
+                    if ("true".equalsIgnoreCase(isAjax)) {
+                        Map<String, Object> json = new HashMap<>();
+                        json.put("viewMode", "list");
+                        json.put("data", rows);
+                        json.put("totalRecords", totalRecords);
+                        json.put("totalPages", totalPages);
+                        json.put("currentPage", page);
+                        json.put("startDate", startDate);
+                        json.put("endDate", endDate);
+                        if (!isBlankCompat(quick)) json.put("quick", quick);
+                        respondJson(response, json);
+                        return;
+                    }
+
+                    request.setAttribute("viewMode", "list");
+                    request.setAttribute("movementList", rows);
+                    request.setAttribute("totalRecords", totalRecords);
+                    request.setAttribute("totalPages", totalPages);
+                    request.setAttribute("currentPage", page);
+                    request.setAttribute("startDate", startDate);
+                    request.setAttribute("endDate", endDate);
+                    request.setAttribute("searchTerm", searchTerm);
+                    request.setAttribute("quick", quick);
+                    request.getRequestDispatcher("/WEB-INF/views/staff/stock/stock-movements.jsp").forward(request, response);
+                }
             }
 
-        } catch (Exception e) {
-            Logger.getLogger(StockMovementController.class.getName()).log(Level.SEVERE, "Error in StockMovementController", e);
-            // Xử lý lỗi
+        } catch (Exception ex) {
+            Logger.getLogger(StockMovementController.class.getName())
+                  .log(Level.SEVERE, "Error in StockMovementController", ex);
+
+            if ("true".equalsIgnoreCase(request.getParameter("ajax"))) {
+                response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                response.setCharacterEncoding("UTF-8");
+                response.setContentType("application/json");
+                try (PrintWriter out = response.getWriter()) {
+                    Map<String, Object> err = new HashMap<>();
+                    err.put("error", "Internal server error");
+                    out.write(gson.toJson(err));
+                }
+            } else {
+                response.sendError(500);
+            }
         }
     }
 }
