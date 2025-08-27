@@ -99,6 +99,123 @@
         margin-left: 0;
         width: 100%;
     }
+    /* ==== Stock List – polish to match dashboard theme (CSS-only) ==== */
+
+/* Nền trang & layout khớp dashboard */
+body { background:#f8fafc; }
+.content-area{
+  position:relative;
+  padding:24px;
+  min-height:100vh;
+  transition:all .5s ease;
+}
+.sidebar.close ~ .content-area{ margin-left:88px; width:calc(100% - 88px); }
+.sidebar.hidden ~ .content-area{ margin-left:0; width:100%; }
+
+/* Header bar */
+.page-header{
+  background:#eef2ff;                  /* nhạt, hợp theme */
+  color:#0f172a;
+  border:1px solid #e5e7eb;
+  border-radius:14px;
+  box-shadow:0 10px 30px rgba(16,24,40,.05);
+}
+.page-header h3{
+  font-weight:700;
+  margin:0;
+}
+
+/* Filter bar */
+.filter-bar{
+  border:1px solid #e5e7eb;
+  border-radius:14px;
+  box-shadow:0 8px 24px rgba(16,24,40,.04);
+}
+.filter-bar .form-control,
+.filter-bar .form-select{
+  border-color:#e5e7eb;
+  border-radius:10px;
+}
+.filter-bar .form-control:focus,
+.filter-bar .form-select:focus{
+  border-color:#6366f1;                /* brand */
+  box-shadow:0 0 0 .2rem rgba(99,102,241,.15);
+}
+
+/* Container của bảng */
+.list-container{
+  border:1px solid #e5e7eb;
+  border-radius:14px;
+  box-shadow:0 10px 30px rgba(16,24,40,.05);
+}
+
+/* Loading overlay trong list-container */
+.list-container .loading-overlay{
+  border-radius:14px;
+  background:rgba(255,255,255,.75);
+}
+
+/* Table */
+.products-table thead th{
+  background:#f8fafc !important;
+  color:#0f172a;
+  font-weight:700;
+  border-bottom:1px solid #e5e7eb !important;
+  vertical-align:middle;
+}
+.products-table td, .products-table th{
+  padding:.7rem .75rem;
+  vertical-align:middle;
+}
+.products-table tbody tr:hover{
+  background:#fafafa;                   /* hover nhẹ */
+}
+
+/* Icon sắp xếp */
+.sort-icon{ color:#cbd5e1; margin-left:6px; }
+.sort-icon.active{ color:#475569; }
+
+/* Badge tinh gọn (nếu có dùng) */
+.badge-muted{
+  background:#e2e8f0;
+  color:#334155;
+  font-weight:600;
+  border-radius:8px;
+}
+
+/* Buttons tinh chỉnh nhẹ cho đồng bộ */
+.btn{ border-radius:10px; }
+.btn-primary{ background:#6366f1; border-color:#6366f1; }
+.btn-primary:hover{ background:#5558ee; border-color:#5558ee; }
+.btn-success{ background:#22c55e; border-color:#22c55e; }
+.btn-success:hover{ background:#18b24f; border-color:#18b24f; }
+.btn-outline-secondary{ border-color:#cbd5e1; color:#334155; }
+.btn-outline-secondary:hover{ background:#f1f5f9; }
+
+/* Pagination */
+.pagination .page-link{
+  border:none;
+  border-radius:10px !important;
+  margin:0 4px;
+  color:#334155;
+}
+.pagination .page-item.active .page-link{
+  background:#6366f1;
+  color:#fff;
+}
+.pagination .page-item .page-link:focus{
+  box-shadow:0 0 0 .2rem rgba(99,102,241,.15);
+}
+
+/* Modal chi tiết (chỉ làm mềm giao diện, không đổi cấu trúc) */
+.modal-content{
+  border-radius:14px;
+  border:1px solid #e5e7eb;
+  box-shadow:0 20px 50px rgba(16,24,40,.15);
+}
+.modal-header{ border-bottom:1px solid #eef2f7; }
+.modal-footer{ border-top:1px solid #eef2f7; }
+
         </style>
     </head>
     <body>

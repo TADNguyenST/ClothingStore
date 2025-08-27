@@ -301,7 +301,8 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        // Use global toast from header for consistency
+        const IS_AUTH = ${sessionScope.userId != null};
+        // Global toast (fallback to alert)
         const showToast = (message, isSuccess) => {
             if (window.showToast) {
                 window.showToast(message, !!isSuccess);
@@ -326,6 +327,7 @@
             thumb.classList.add('active');
             currentIndex = Array.from(thumbnails).indexOf(thumb);
         };
+
         const navigateImage = (dir) => {
             if (thumbnails.length === 0)
                 return;
@@ -336,6 +338,7 @@
                 idx = thumbnails.length - 1;
             updateMainImage(thumbnails[idx]);
         };
+
         thumbnails.forEach(t => t.addEventListener('click', () => updateMainImage(t)));
         if (prevImageBtn)
             prevImageBtn.addEventListener('click', () => navigateImage(-1));
@@ -361,16 +364,14 @@
             if (!opt)
                 return;
 
-            // Price is already the final variant price (no accumulation)
             const price = Number(opt.dataset.price || 0);
             currentAvailable = Number(opt.dataset.available || 0);
 
             if (priceElement)
                 priceElement.textContent = fmt.format(price);
-            if (stockStatus)
-                stockStatus.textContent = currentAvailable > 0
-                        ? `In stock: ${currentAvailable}`
-                        : 'Out of stock';
+            if (stockStatus) {
+                stockStatus.textContent = currentAvailable > 0 ? `In stock: ${currentAvailable}` : 'Out of stock';
+            }
 
             quantityInput.value = 1;
             quantityInput.max = currentAvailable;
@@ -384,12 +385,13 @@
             addToCartBtn.innerHTML = enabled
                     ? '<i class="fas fa-cart-plus"></i> Add to Cart'
                     : '<i class="fas fa-x-circle"></i> Out of Stock';
+
             buyNowBtn.innerHTML = enabled
                     ? '<i class="fas fa-bag-check"></i> Buy Now'
                     : '<i class="fas fa-x-circle"></i> Out of Stock';
         };
 
-        if (increaseBtn)
+        if (increaseBtn) {
             increaseBtn.addEventListener('click', () => {
                 let q = Number(quantityInput.value || 1);
                 if (q < currentAvailable) {
@@ -398,7 +400,9 @@
                     increaseBtn.disabled = (q + 1) >= currentAvailable;
                 }
             });
-        if (decreaseBtn)
+        }
+
+        if (decreaseBtn) {
             decreaseBtn.addEventListener('click', () => {
                 let q = Number(quantityInput.value || 1);
                 if (q > 1) {
@@ -407,6 +411,7 @@
                     decreaseBtn.disabled = (q - 1) <= 1;
                 }
             });
+        }
 
         if (variantSelect) {
             variantSelect.addEventListener('change', updateUIFromVariant);
@@ -414,7 +419,7 @@
         }
 
         // ----- Add to cart -----
-        if (addToCartBtn)
+        if (addToCartBtn) {
             addToCartBtn.addEventListener('click', () => {
                 if (!variantSelect)
                     return;
@@ -434,10 +439,7 @@
                 fetch('${pageContext.request.contextPath}/customer/cart', {
                     method: 'POST',
                     body: new URLSearchParams(fd),
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                        'Accept': 'application/json'
-                    }
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json'}
                 })
                         .then(res => {
                             if (!res.ok)
@@ -464,21 +466,50 @@
                             showToast('An error occurred while adding to cart.', false);
                         });
             });
+        }
 
         // ----- Buy now -----
-        if (buyNowBtn)
+        if (buyNowBtn) {
             buyNowBtn.addEventListener('click', () => {
+                if (!IS_AUTH) {
+                    showToast('Please log in to perform this action.', false);
+                    return;
+                }
                 if (!variantSelect)
                     return;
                 if (currentAvailable <= 0 || variantSelect.value === '0') {
                     showToast('This product is out of stock.', false);
                     return;
                 }
+
+                // create/overwrite dynamic action=buyNow
+                let act = productForm.querySelector('input[name="action"][data-dynamic="1"]');
+                if (!act) {
+                    act = document.createElement('input');
+                    act.type = 'hidden';
+                    act.name = 'action';
+                    act.setAttribute('data-dynamic', '1');
+                    productForm.appendChild(act);
+                }
+                act.value = 'buyNow';
+
                 productForm.action = '${pageContext.request.contextPath}/customer/checkout';
                 productForm.method = 'POST';
-                // If backend requires action=buy:
-                // const h = document.createElement('input'); h.type='hidden'; h.name='action'; h.value='buy'; productForm.appendChild(h);
                 productForm.submit();
             });
+        }
+
+        // ===== NEW: show toast if redirected back with error flag =====
+        try {
+            const url = new URL(window.location.href);
+            const err = url.searchParams.get('err');
+            if (err === 'oos') {
+                showToast('This product is out of stock or not enough quantity.', false);
+            } else if (err === 'missing') {
+                showToast('Please choose a variant first.', false);
+            }
+        } catch (e) {
+        }
     });
 </script>
+
