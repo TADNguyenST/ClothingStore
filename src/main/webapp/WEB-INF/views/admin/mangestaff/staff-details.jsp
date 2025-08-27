@@ -108,6 +108,7 @@
         .send-btn:hover {
             background-color: #218838;
         }
+        
     </style>
 </head>
 <body>
@@ -118,7 +119,7 @@
 <jsp:include page="/WEB-INF/includes/admin-sidebar.jsp" />
 
 <div class="main-content-wrapper">
-    <jsp:include page="/WEB-INF/includes/admin-header.jsp" />
+    
     <div class="content-area">
         <h2>Staff Information</h2>
 
@@ -144,9 +145,6 @@
             <form action="${pageContext.request.contextPath}/sendInfoStaff" method="get" style="text-align:center; margin-top:20px;">
                 <input type="hidden" name="userId" value="${staffInfo.user.userId}" />
                 <input type="hidden" name="email" value="${staffInfo.user.email}" />
-                <button type="submit" class="send-btn">
-                    <i class="fa fa-envelope"></i> Send Mail
-                </button>
             </form>
         </c:if>
 

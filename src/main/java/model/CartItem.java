@@ -15,6 +15,9 @@ public class CartItem {
     private String imageUrl;
     private int availableStock;
 
+    // --- thêm field không map DB, chỉ dùng hiển thị/tính toán ---
+    private BigDecimal totalPrice;
+
     public long getCartItemId() {
         return cartItemId;
     }
@@ -95,10 +98,23 @@ public class CartItem {
         this.availableStock = availableStock;
     }
 
+    /**
+     * Nếu totalPrice đã được set từ DAO/Service thì trả về giá trị đó. Nếu
+     * chưa, tự tính từ unitPrice * quantity (an toàn null).
+     */
     public BigDecimal getTotalPrice() {
-        if (unitPrice == null) {
-            return BigDecimal.ZERO;
+        if (totalPrice != null) {
+            return totalPrice;
         }
-        return unitPrice.multiply(BigDecimal.valueOf(quantity));
+        BigDecimal up = (unitPrice != null) ? unitPrice : BigDecimal.ZERO;
+        int qty = Math.max(0, quantity);
+        return up.multiply(BigDecimal.valueOf(qty));
+    }
+
+    /**
+     * Cho phép DAO/Service set sẵn tổng tiền để hiển thị
+     */
+    public void setTotalPrice(BigDecimal totalPrice) {
+        this.totalPrice = totalPrice;
     }
 }

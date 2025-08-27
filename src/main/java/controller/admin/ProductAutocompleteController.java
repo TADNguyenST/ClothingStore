@@ -7,8 +7,11 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import model.Product;
+
 import java.io.IOException;
+import java.text.NumberFormat;
 import java.util.List;
+import java.util.Locale;
 
 @WebServlet(name = "ProductAutocompleteController", urlPatterns = {"/ProductAutocomplete"})
 public class ProductAutocompleteController extends HttpServlet {
@@ -27,9 +30,16 @@ public class ProductAutocompleteController extends HttpServlet {
             List<Product> products = productDAO.searchProductsForHomePage(keyword);
             response.setContentType("text/html; charset=UTF-8");
             StringBuilder html = new StringBuilder();
+
+            NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(new Locale("vi", "VN"));
+            currencyFormat.setMaximumFractionDigits(0);
+
             if (products != null && !products.isEmpty()) {
                 for (Product product : products) {
                     String imageUrl = product.getImageUrl() != null ? product.getImageUrl() : "https://placehold.co/50x50";
+
+                    String formattedPrice = product.getPrice() != null ? currencyFormat.format(product.getPrice()) : "N/A";
+
                     html.append("<div class='p-2 d-flex align-items-center suggestion-item' style='cursor: pointer;' ")
                             .append("onclick='window.location=\"")
                             .append(request.getContextPath()).append("/ProductDetail?productId=")
@@ -38,7 +48,7 @@ public class ProductAutocompleteController extends HttpServlet {
                             .append(product.getName() != null ? product.getName().replace("'", "\\'") : "Product").append("'>")
                             .append("<div>")
                             .append("<div>").append(product.getName() != null ? product.getName() : "N/A").append("</div>")
-                            .append("<div>").append(product.getPrice() != null ? product.getPrice() : "N/A").append(" VNĐ</div>")
+                            .append("<div>").append(formattedPrice).append("</div>")
                             .append("</div>")
                             .append("</div>");
                 }

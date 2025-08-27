@@ -54,7 +54,7 @@ public class CustomerVoucherServlet extends HttpServlet {
         }
        
         // Forward to JSP
-        request.getRequestDispatcher("WEB-INF/views/customer/voucher/customer_voucher.jsp").forward(request, response);
+        request.getRequestDispatcher("/WEB-INF/views/customer/voucher/customer_voucher.jsp").forward(request, response);
     }
 
     @Override

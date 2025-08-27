@@ -123,6 +123,7 @@
             text-align: right;
             margin-top: 20px;
         }
+        
     </style>
 </head>
 <body>
@@ -137,7 +138,7 @@
 
     <div class="main-content-wrapper">
         <%-- Nhúng Header --%>
-        <jsp:include page="/WEB-INF/includes/admin-header.jsp" />
+        
 
         <%-- Nội dung chính của trang Edit Staff --%>
         <div class="content-area">
@@ -161,16 +162,6 @@
                     <div class="form-group">
                         <label>Phone Number:</label>
                         <input type="text" name="phoneNumber" value="${staffInfo.user.phoneNumber}" required pattern="[0-9]{10}" title="Phone number must contain exactly 10 digits (0-9)" />
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Status:</label>
-                        <select name="status">
-                            <option value="Active" ${staffInfo.user.status == 'Active' ? 'selected' : ''}>Active</option>
-                            <option value="Inactive" ${staffInfo.user.status == 'Inactive' ? 'selected' : ''}>Inactive</option>
-                        </select>
                     </div>
                 </div>
 

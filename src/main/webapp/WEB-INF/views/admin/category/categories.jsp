@@ -122,7 +122,7 @@
     <c:set var="currentAction" value="categories" scope="request"/>
     <c:set var="currentModule" value="admin" scope="request"/>
     <c:set var="pageTitle" value="Category List" scope="request"/>
-    <jsp:include page="/WEB-INF/includes/sidebar.jsp" />
+    <jsp:include page="/WEB-INF/includes/admin-sidebar.jsp" />
     <div class="content-area">
         <h2 style="text-align: center;">Category List</h2>
         <div class="search-filter-container">
@@ -217,7 +217,7 @@ function confirmDelete(button) {
     
     Swal.fire({
         title: 'Are you sure?',
-        text: `You are about to delete "${categoryName}". This action cannot be undone!`,
+        text: `Do you want to delete? This action cannot be undone!`,
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#3085d6',
@@ -238,7 +238,7 @@ function confirmDelete(button) {
                 if (data.success) {
                     Swal.fire(
                         'Deleted!',
-                        `Category "${categoryName}" has been deleted.`,
+                        `Category has been deleted.`,
                         'success'
                     ).then(() => {
                         window.location.href = '${pageContext.request.contextPath}/CategoryListAdmin';

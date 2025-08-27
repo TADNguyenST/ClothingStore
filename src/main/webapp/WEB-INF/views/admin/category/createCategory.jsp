@@ -120,7 +120,7 @@
     <c:set var="currentAction" value="categories" scope="request"/>
     <c:set var="currentModule" value="admin" scope="request"/>
     <c:set var="pageTitle" value="Create Category" scope="request"/>
-    <jsp:include page="/WEB-INF/includes/sidebar.jsp" />
+    <jsp:include page="/WEB-INF/includes/admin-sidebar.jsp" />
     <div class="content-area">
         <h2 style="text-align: center;">Create Category</h2>
         <!-- Debug information -->

@@ -253,17 +253,20 @@ public class CustomerDAO {
         }
         return null;
     }
-    //GoogleLogin
+    //History Order
 
-// Thêm bản ghi customer rỗng cho người dùng đăng nhập bằng Google
-    public boolean createCustomerForGoogleUser(long userId) {
-        String sql = "INSERT INTO customers (user_id, loyalty_points, created_at) VALUES (?, 0, GETDATE())";
-        try ( Connection conn = getConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+    public int getCustomerIdByUserId(long userId) {
+        String sql = "SELECT customer_id FROM customers WHERE user_id = ?";
+        try ( Connection conn = DBContext.getNewConnection();  PreparedStatement ps = conn.prepareStatement(sql)) {
+
             ps.setLong(1, userId);
-            return ps.executeUpdate() > 0;
-        } catch (SQLException e) {
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                return rs.getInt("customer_id");
+            }
+        } catch (Exception e) {
             e.printStackTrace();
         }
-        return false;
+        return -1; // không tìm thấy
     }
 }

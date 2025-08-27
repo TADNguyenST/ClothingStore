@@ -11,6 +11,7 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
 /**
  *
@@ -22,6 +23,14 @@ public class ViewCustomerDetailsController extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+
+        // 🔒 Kiểm tra session admin
+        HttpSession session = request.getSession(false);
+        if (session == null || session.getAttribute("admin") == null) {
+            response.sendRedirect(request.getContextPath() + "/AdminLogin");
+            return;
+        }
+
         try {
             String userIdParam = request.getParameter("userId");
             if (userIdParam != null && !userIdParam.isEmpty()) {
@@ -43,4 +52,3 @@ public class ViewCustomerDetailsController extends HttpServlet {
         response.sendRedirect(request.getContextPath() + "/admindashboard?action=customerList&module=customer");
     }
 }
-

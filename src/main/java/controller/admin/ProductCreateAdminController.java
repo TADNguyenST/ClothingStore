@@ -59,7 +59,7 @@ public class ProductCreateAdminController extends HttpServlet {
             request.setAttribute("categories", productDAO.getCategories());
             request.getRequestDispatcher("/WEB-INF/views/staff/product/createProduct.jsp").forward(request, response);
         } catch (SQLException e) {
-            request.setAttribute("errorMessage", "Lỗi khi tải dữ liệu: " + e.getMessage());
+            request.setAttribute("errorMessage", "Error loading data: " + e.getMessage());
             request.getRequestDispatcher("/WEB-INF/views/staff/product/createProduct.jsp").forward(request, response);
         }
     }
@@ -70,7 +70,7 @@ public class ProductCreateAdminController extends HttpServlet {
         response.setContentType("text/html;charset=UTF-8");
 
         try {
-            // Lấy thông tin sản phẩm
+            // Retrieve product information
             String name = request.getParameter("name");
             String categoryIdStr = request.getParameter("categoryId");
             String brandName = request.getParameter("brandName");
@@ -85,65 +85,65 @@ public class ProductCreateAdminController extends HttpServlet {
                     .filter(part -> "images".equals(part.getName()) && part.getSize() > 0)
                     .collect(Collectors.toList());
 
-            // Danh sách lỗi
+            // List of errors
             List<String> errorMessages = new ArrayList<>();
 
-            // Validate sản phẩm
+            // Validate product
             if (name == null || name.trim().isEmpty()) {
-                errorMessages.add("Tên sản phẩm là bắt buộc.");
+                errorMessages.add("Product name is required.");
             } else if (productDAO.isProductNameExists(name)) {
-                errorMessages.add("Tên sản phẩm đã tồn tại.");
+                errorMessages.add("Product name already exists.");
             }
 
             if (categoryIdStr == null || categoryIdStr.trim().isEmpty()) {
-                errorMessages.add("Danh mục là bắt buộc.");
+                errorMessages.add("Category is required.");
             } else {
                 try {
                     Long.parseLong(categoryIdStr);
                 } catch (NumberFormatException e) {
-                    errorMessages.add("ID danh mục không hợp lệ.");
+                    errorMessages.add("Invalid category ID.");
                 }
             }
 
             if (brandName == null || brandName.trim().isEmpty()) {
-                errorMessages.add("Thương hiệu là bắt buộc.");
+                errorMessages.add("Brand is required.");
             }
 
             if (fileParts.isEmpty()) {
-                errorMessages.add("Cần ít nhất một hình ảnh.");
+                errorMessages.add("At least one image is required.");
             }
 
-            // Validate biến thể
+            // Validate variants
             boolean hasValidVariant = false;
             Set<String> variantSet = new HashSet<>();
             if (sizes != null && colors != null && priceModifiers != null &&
                     sizes.length == colors.length && sizes.length == priceModifiers.length) {
                 for (int i = 0; i < sizes.length; i++) {
                     if (sizes[i] == null || sizes[i].isEmpty() || colors[i] == null || colors[i].isEmpty()) {
-                        errorMessages.add("Biến thể #" + (i + 1) + ": thiếu Size hoặc Color.");
+                        errorMessages.add("Variant #" + (i + 1) + ": Missing Size or Color.");
                         continue;
                     }
                     String variantKey = sizes[i] + ":" + colors[i];
                     if (!variantSet.add(variantKey)) {
-                        errorMessages.add("Biến thể #" + (i + 1) + " bị trùng (Size " + sizes[i] + ", Color " + colors[i] + ").");
+                        errorMessages.add("Variant #" + (i + 1) + " is duplicated (Size " + sizes[i] + ", Color " + colors[i] + ").");
                     }
                     try {
                         String priceModifier = priceModifiers[i] != null && !priceModifiers[i].isEmpty() ? priceModifiers[i] : "0";
                         new BigDecimal(priceModifier); // check parse
                     } catch (NumberFormatException e) {
-                        errorMessages.add("Biến thể #" + (i + 1) + ": Giá biến thể không hợp lệ.");
+                        errorMessages.add("Variant #" + (i + 1) + ": Invalid price modifier.");
                     }
                     hasValidVariant = true;
                 }
             } else {
-                errorMessages.add("Dữ liệu biến thể không hợp lệ hoặc không đồng bộ.");
+                errorMessages.add("Invalid or unsynchronized variant data.");
             }
 
             if (!hasValidVariant) {
-                errorMessages.add("Cần ít nhất một biến thể hợp lệ (Size và Color).");
+                errorMessages.add("At least one valid variant (Size and Color) is required.");
             }
 
-            // Nếu có lỗi -> trả lại form
+            // If there are errors -> return to form
             if (!errorMessages.isEmpty()) {
                 request.setAttribute("errorMessage", String.join("<br>", errorMessages));
                 request.setAttribute("oldName", name);
@@ -160,7 +160,7 @@ public class ProductCreateAdminController extends HttpServlet {
                 return;
             }
 
-            // Thêm product
+            // Add product
             long categoryId = Long.parseLong(categoryIdStr);
             Product product = new Product();
             product.setName(name);
@@ -196,7 +196,7 @@ public class ProductCreateAdminController extends HttpServlet {
                 productDAO.addInventory(variantId);
             }
 
-            // Thêm ảnh
+            // Add images
             int displayOrder = 0;
             int mainImageIndex = Integer.parseInt(mainImageIndexStr);
             for (Part filePart : fileParts) {

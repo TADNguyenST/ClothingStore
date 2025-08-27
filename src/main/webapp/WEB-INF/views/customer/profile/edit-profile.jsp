@@ -353,7 +353,6 @@
                     <select name="gender" class="form-select" required>
                         <option value="Male" ${customer.gender == 'Male' ? 'selected' : ''}>Male</option>
                         <option value="Female" ${customer.gender == 'Female' ? 'selected' : ''}>Female</option>
-                        <option value="Other" ${customer.gender == 'Other' ? 'selected' : ''}>Other</option>
                     </select>
                 </div>
 

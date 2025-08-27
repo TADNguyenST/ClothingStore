@@ -69,7 +69,7 @@
         .error-text.show {
             display: block;
         }
-        .input-group {
+.input-group {
             display: flex;
             gap: 10px;
         }
@@ -113,7 +113,7 @@
                     </div>
                     <div class="form-group">
                         <label for="description">Description</label>
-                        <textarea id="description" name="description" placeholder="Example: 10% off on orders above $50">${requestScope.formData.description != null ? requestScope.formData.description : ''}</textarea>
+<textarea id="description" name="description" placeholder="Example: 10% off on orders above $50">${requestScope.formData.description != null ? requestScope.formData.description : ''}</textarea>
                         <span class="help-text">Optional: Describe the purpose or conditions of the voucher.</span>
                         <span class="error-text" id="descriptionError">${requestScope.errors.description != null ? requestScope.errors.description : ''}</span>
                     </div>
@@ -138,7 +138,7 @@
                         <input type="number" id="minimumOrderAmount" name="minimumOrderAmount" step="0.01" min="0" required placeholder="Example: 50000" value="${requestScope.formData.minimumOrderAmount != null ? requestScope.formData.minimumOrderAmount : ''}">
                         <span class="help-text">Enter the minimum order value to apply the voucher (e.g., $50).</span>
                         <span class="error-text" id="minimumOrderAmountError">${requestScope.errors.minimumOrderAmount != null ? requestScope.errors.minimumOrderAmount : ''}</span>
-                    </div>
+</div>
                     <div class="form-group">
                         <label for="maximumDiscountAmount">Maximum Discount Amount <span style="color: red;">*</span></label>
                         <input type="number" id="maximumDiscountAmount" name="maximumDiscountAmount" step="0.01" min="0" required placeholder="Example: 20000" value="${requestScope.formData.maximumDiscountAmount != null ? requestScope.formData.maximumDiscountAmount : ''}">
@@ -172,7 +172,7 @@
                     <div class="form-group">
                         <label for="visibility">Visibility</label>
                         <select id="visibility" name="visibility">
-                            <option value="true" ${requestScope.formData.visibility != null && requestScope.formData.visibility ? 'selected' : ''}>Visible</option>
+<option value="true" ${requestScope.formData.visibility != null && requestScope.formData.visibility ? 'selected' : ''}>Visible</option>
                             <option value="false" ${requestScope.formData.visibility == null || !requestScope.formData.visibility ? 'selected' : ''}>Hidden</option>
                         </select>
                         <span class="help-text">Choose whether the voucher is visible or hidden.</span>
@@ -219,7 +219,7 @@
                     const parentTreeview = activeLink.closest('.treeview');
                     if (parentTreeview) {
                         parentTreeview.classList.add('active');
-                        parentTreeview.classList.add('menu-open');
+parentTreeview.classList.add('menu-open');
                     }
                 } else {
                     console.warn('No matching link found for currentAction and currentModule');
@@ -275,7 +275,7 @@
                     return '';
                 }},
                 { id: 'usageLimit', validate: value => {
-                    if (!value) return 'Usage Limit is required.';
+if (!value) return 'Usage Limit is required.';
                     const numValue = parseInt(value);
                     if (isNaN(numValue) || numValue < 0) return 'Usage Limit cannot be negative.';
                     return '';
@@ -353,7 +353,7 @@
                 });
                 if (!isValid && firstInvalidField) {
                     firstInvalidField.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    firstInvalidField.focus();
+firstInvalidField.focus();
                 }
                 return isValid;
             }
