@@ -65,7 +65,14 @@
   </style>
 </head>
 <body>
-  <jsp:include page="/WEB-INF/includes/admin-sidebar.jsp"/>
+  <c:choose>
+    <c:when test="${not empty sessionScope.admin}">
+        <jsp:include page="/WEB-INF/includes/admin-sidebar.jsp"/>
+    </c:when>
+    <c:when test="${not empty sessionScope.staff}">
+         <jsp:include page="/WEB-INF/views/staff/staff-sidebar.jsp" />
+    </c:when>
+</c:choose>
 
   <div class="main-content-wrapper">
     <main class="content-area">

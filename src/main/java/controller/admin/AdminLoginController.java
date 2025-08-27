@@ -44,7 +44,7 @@ public class AdminLoginController extends HttpServlet {
             // Nếu đăng nhập thành công và đúng role Admin
             HttpSession session = request.getSession();
             session.setAttribute("admin", admin);
-            response.sendRedirect(request.getContextPath() + "/Admindashboard");
+            response.sendRedirect(request.getContextPath() + "/Reports");
         } else {
             // Sai tài khoản/mật khẩu hoặc không phải admin
             request.setAttribute("error", "Invalid credentials or not an Admin account.");

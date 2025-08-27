@@ -156,12 +156,11 @@
     <ul class="sidebar-links">
         <div>
             <li>
-                <a href="${cpath}/Staffdashboard?action=dashboard&module=staff"
-                   class="${requestScope.currentModule == 'staff' && requestScope.currentAction == 'dashboard' ? 'active' : ''}">
-                    <i class='bx bx-grid-alt'></i><span class="link-name">Overview</span>
+                <a href="${pageContext.request.contextPath}/Reports">
+                    <i class='bx bx-grid-alt'></i>
+                    <span class="link-name">Report</span>
                 </a>
             </li>
-
             <!-- Orders (STAFF) -->
             <li>
                 <a href="${cpath}/Staffdashboard?action=orderList&module=order"
@@ -169,7 +168,32 @@
                     <i class='bx bx-cart-alt'></i><span class="link-name">Orders</span>
                 </a>
             </li>
+            <li>
+                <a href="${pageContext.request.contextPath}/PurchaseOrderList">
+                    <i class='bx bx-cart-add'></i>
+                    <span class="link-name">Purchase Order Management</span>
+                </a>
+            </li>
+            <li>
+                <a href="${pageContext.request.contextPath}/Admindashboard?action=supplierList&module=supplier">
+                    <i class='bx bx-buildings'></i>
+                    <span class="link-name">Supplier Management</span>
+                </a>
+            </li>
+            <li>
+                 <a href="${pageContext.request.contextPath}/StockMovement">
+                    <i class='bx bxs-truck'></i>
+                    <span class="link-name">Stock Movement</span>
+                </a>
+            </li>
+            <li>
+                <a href="${pageContext.request.contextPath}/PurchaseOrderList">
+                    <i class='bx bx-cart-add'></i>
+                    <span class="link-name">Purchase Order Management</span>
+                </a>
+            </li>
         </div>
+                    
 
         <div class="logout-section">
             <li class="logout-link">
