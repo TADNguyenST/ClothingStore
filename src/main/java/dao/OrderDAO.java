@@ -14,17 +14,29 @@ import java.util.List;
 public class OrderDAO {
 
     // ===================== FEEDBACK QUERIES (merged in) =====================
+    // Chỉ lấy đơn đã COMPLETED & PAID và CHƯA có feedback nào của chính customer đó
     private static final String GET_ORDERS_FOR_FEEDBACK
             = "SELECT o.order_id, o.customer_id, o.order_date, o.total_price, o.status "
             + "FROM orders o "
-            + "WHERE o.customer_id = ? AND o.status = 'PENDING' "
-            + "AND NOT EXISTS (SELECT 1 FROM feedbacks f WHERE f.order_id = o.order_id)";
+            + "WHERE o.customer_id = ? "
+            + "  AND o.status = 'COMPLETED' "
+            + "  AND o.payment_status = 'PAID' "
+            + "  AND NOT EXISTS ("
+            + "      SELECT 1 FROM feedbacks f "
+            + "      WHERE f.order_id = o.order_id AND f.customer_id = o.customer_id"
+            + "  )";
 
+    // Lấy các đơn đã COMPLETED & PAID và ĐÃ có feedback (của chính customer đó)
     private static final String GET_ORDERS_WITH_FEEDBACK
             = "SELECT o.order_id, o.customer_id, o.order_date, o.total_price, o.status "
             + "FROM orders o "
             + "WHERE o.customer_id = ? "
-            + "AND EXISTS (SELECT 1 FROM feedbacks f WHERE f.order_id = o.order_id AND f.customer_id = o.customer_id)";
+            + "  AND o.status = 'COMPLETED' "
+            + "  AND o.payment_status = 'PAID' "
+            + "  AND EXISTS ("
+            + "      SELECT 1 FROM feedbacks f "
+            + "      WHERE f.order_id = o.order_id AND f.customer_id = o.customer_id"
+            + "  )";
 
     private static final String GET_ORDER_ITEMS
             = "SELECT oi.order_item_id, oi.quantity, p.name AS product_name, pv.size, pv.color, p.product_id "
@@ -35,7 +47,7 @@ public class OrderDAO {
 
     private static final String GET_FEEDBACKS_FOR_ORDER_ITEM
             = "SELECT f.feedback_id, f.product_id, f.customer_id, f.order_id, f.rating, f.comments, f.creation_date, f.visibility, f.is_verified, "
-            + "fr.content AS reply_content "
+            + "       fr.content AS reply_content "
             + "FROM feedbacks f "
             + "LEFT JOIN feedback_replies fr ON f.feedback_id = fr.feedback_id "
             + "WHERE f.order_id = ? AND f.product_id = ? AND f.customer_id = ?";

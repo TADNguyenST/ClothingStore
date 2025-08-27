@@ -12,12 +12,12 @@
         --bg:#f8fafc;
     }
     .voucher-hero{
-        padding: 32px 0 12px;
+        padding:32px 0 12px;
     }
     .voucher-hero h1{
-        color: var(--primary);
-        font-weight: 800;
-        margin: 0;
+        color:var(--primary);
+        font-weight:800;
+        margin:0;
     }
     .voucher-hero p{
         color:#475569;
@@ -45,10 +45,9 @@
     .voucher-card .card-top{
         padding:16px 16px 10px;
     }
-
     .voucher-card .card-mid{
         position:relative;
-        margin: 0 16px;
+        margin:0 16px;
         height:16px;
     }
     .voucher-card .card-mid:before{
@@ -59,21 +58,20 @@
         top:7px;
         border-top:2px dashed #e2e8f0;
     }
-    .voucher-card .cutout-left, .voucher-card .cutout-right{
+    .voucher-card .cutout-left,.voucher-card .cutout-right{
         content:"";
         position:absolute;
-        top:0;
-        bottom:0;
+        top:-9px;
         width:18px;
-        background: transparent;
+        height:18px;
+        background:#fafafa;
+        border-radius:50%;
     }
     .voucher-card .cutout-left{
         left:-9px;
-        border-right: 9px solid transparent;
     }
     .voucher-card .cutout-right{
         right:-9px;
-        border-left: 9px solid transparent;
     }
 
     .voucher-card .card-bottom{
@@ -95,13 +93,13 @@
     }
     .discount-txt.percent{
         color:#6d28d9;
-    }  /* tím */
+    }   /* tím */
     .discount-txt.amount{
         color:#1e3a8a;
-    }   /* primary */
+    }    /* primary */
     .discount-txt.used{
         color:#64748b;
-    }     /* gray */
+    }      /* gray */
 
     .copy-btn.btn{
         border-radius:10px;
@@ -114,6 +112,10 @@
         border-radius:16px;
         background:#fff;
         color:#64748b;
+    }
+    .mini-meta{
+        color:#64748b;
+        font-size:.875rem;
     }
 </style>
 
@@ -137,44 +139,64 @@
         <c:set var="showOnlyAvailable" value="${param.onlyAvailable == 'true' or requestScope.onlyAvailable}" />
         <div class="row g-3">
             <c:forEach var="voucher" items="${voucherList}">
-                <c:set var="isAvailable" value="${not voucher.isUsed}" />
+                <!-- Có thể tinh chỉnh điều kiện 'available' theo nhu cầu (ví dụ kiểm tra ngày hiệu lực) -->
+                <c:set var="isAvailable" value="${not voucher.isUsed and voucher.active}" />
                 <c:if test="${not showOnlyAvailable or isAvailable}">
                     <div class="col-12 col-md-6 col-lg-4">
                         <div class="voucher-card ${isAvailable ? '' : 'dim'}">
-                            <!-- top -->
+                            <!-- TOP -->
                             <div class="card-top">
                                 <div class="d-flex align-items-start justify-content-between">
                                     <div class="pe-2">
                                         <div class="voucher-name h5 mb-1">${voucher.voucherName}</div>
-                                        <div class="text-muted small">
+
+                                        <div class="mini-meta">
                                             <i class="fa-regular fa-paper-plane me-1"></i>
-                                            Sent on
-                                            <fmt:formatDate value="${voucher.sentDate}" pattern="dd MMM, yyyy" />
+                                            Sent on <fmt:formatDate value="${voucher.sentDate}" pattern="dd MMM, yyyy"/>
                                         </div>
-                                        <c:if test="${not isAvailable and not empty voucher.usedDate}">
-                                            <div class="text-muted small mt-1">
+
+                                        <div class="mini-meta mt-1">
+                                            <i class="fa-regular fa-calendar me-1"></i>
+                                            Valid from <fmt:formatDate value="${voucher.startDate}" pattern="dd MMM, yyyy"/>
+                                        </div>
+
+                                        <div class="mini-meta mt-1">
+                                            <i class="fa-regular fa-calendar-xmark me-1"></i>
+                                            Expires on <fmt:formatDate value="${voucher.expirationDate}" pattern="dd MMM, yyyy"/>
+                                        </div>
+
+                                        <c:if test="${voucher.isUsed and not empty voucher.usedDate}">
+                                            <div class="mini-meta mt-1">
                                                 <i class="fa-regular fa-circle-check me-1"></i>
-                                                Used on
-                                                <fmt:formatDate value="${voucher.usedDate}" pattern="dd MMM, yyyy" />
+                                                Used on <fmt:formatDate value="${voucher.usedDate}" pattern="dd MMM, yyyy" />
                                             </div>
                                         </c:if>
                                     </div>
-                                    <span class="badge ${isAvailable ? 'bg-success-subtle text-success-emphasis' : 'bg-secondary-subtle text-secondary-emphasis'}">
-                                        ${isAvailable ? 'Available' : 'Used'}
-                                    </span>
+
+                                    <c:choose>
+                                        <c:when test="${voucher.isUsed}">
+                                            <span class="badge bg-secondary-subtle text-secondary-emphasis">Used</span>
+                                        </c:when>
+                                        <c:when test="${not voucher.active}">
+                                            <span class="badge bg-danger-subtle text-danger-emphasis">Inactive</span>
+                                        </c:when>
+                                        <c:otherwise>
+                                            <span class="badge bg-success-subtle text-success-emphasis">Available</span>
+                                        </c:otherwise>
+                                    </c:choose>
                                 </div>
                             </div>
 
-                            <!-- dash -->
-                            <div class="card-mid">
+                            <!-- DASH -->
+                            <div class="card-mid position-relative">
                                 <span class="cutout-left"></span>
                                 <span class="cutout-right"></span>
                             </div>
 
-                            <!-- bottom -->
+                            <!-- BOTTOM -->
                             <div class="card-bottom">
                                 <div class="discount-txt
-                                     ${isAvailable ? (voucher.discountType == 'Percentage' ? 'percent' : 'amount') : 'used'} h4 mb-0">
+                                     ${voucher.isUsed ? 'used' : (voucher.discountType == 'Percentage' ? 'percent' : 'amount')} h4 mb-0">
                                     <c:choose>
                                         <c:when test="${voucher.discountType == 'Percentage'}">
                                             ${voucher.discountValue}% OFF
@@ -187,16 +209,18 @@
                                     </c:choose>
                                 </div>
 
-                                <c:if test="${isAvailable}">
-                                    <button class="btn btn-outline-primary copy-btn"
-                                            onclick="copyVoucherCode(this, '${voucher.voucherCode}')">
-                                        <span class="copy-text">${voucher.voucherCode}</span>
-                                        <i class="fa-regular fa-clone ms-1 copy-icon"></i>
-                                    </button>
-                                </c:if>
-                                <c:if test="${not isAvailable}">
-                                    <span class="text-muted small fw-semibold">${voucher.voucherCode}</span>
-                                </c:if>
+                                <c:choose>
+                                    <c:when test="${isAvailable}">
+                                        <button class="btn btn-outline-primary copy-btn"
+                                                onclick="copyVoucherCode(this, '${voucher.voucherCode}')">
+                                            <span class="copy-text">${voucher.voucherCode}</span>
+                                            <i class="fa-regular fa-clone ms-1 copy-icon"></i>
+                                        </button>
+                                    </c:when>
+                                    <c:otherwise>
+                                        <span class="text-muted small fw-semibold">${voucher.voucherCode}</span>
+                                    </c:otherwise>
+                                </c:choose>
                             </div>
                         </div>
                     </div>
@@ -217,7 +241,8 @@
 
 <script>
     function copyVoucherCode(btn, code) {
-        if (!code) return;
+        if (!code)
+            return;
 
         if (!navigator.clipboard) {
             try {
@@ -228,36 +253,38 @@
                 document.execCommand('copy');
                 document.body.removeChild(ta);
                 afterCopyUI(btn);
-            } catch (_) {
+            } catch (e) {
                 alert('Clipboard not available. Please copy manually.');
             }
             return;
         }
-
         navigator.clipboard.writeText(code).then(function () {
             afterCopyUI(btn);
         }).catch(function () {
             alert('Failed to copy. Please try again.');
         });
     }
-
     function afterCopyUI(btn) {
         var textEl = btn.querySelector('.copy-text');
         var iconEl = btn.querySelector('.copy-icon');
         var oldText = textEl ? textEl.textContent : null;
 
-        if (textEl) textEl.textContent = 'Copied!';
+        if (textEl)
+            textEl.textContent = 'Copied!';
         if (iconEl) {
             iconEl.classList.remove('fa-clone');
             iconEl.classList.add('fa-check');
         }
 
         try {
-            if (window.showToast) window.showToast('Voucher code copied.', true);
-        } catch (_) {}
+            if (window.showToast)
+                window.showToast('Voucher code copied.', true);
+        } catch (_) {
+        }
 
         setTimeout(function () {
-            if (textEl && oldText) textEl.textContent = oldText;
+            if (textEl && oldText)
+                textEl.textContent = oldText;
             if (iconEl) {
                 iconEl.classList.remove('fa-check');
                 iconEl.classList.add('fa-clone');
