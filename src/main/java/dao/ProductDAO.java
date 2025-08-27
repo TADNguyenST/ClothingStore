@@ -1106,14 +1106,15 @@ public List<Product> getBestSellers(int limit) {
                  "       (SELECT TOP 1 image_url " +
                  "        FROM product_images pi " +
                  "        WHERE pi.product_id = p.product_id AND pi.is_main = 1) AS main_image, " +
-                 "       SUM(pod.quantity) AS total_sold, " +
+                 "       SUM(oi.quantity) AS total_sold, " +
                  "       (SELECT SUM(i.quantity) " +
                  "        FROM inventory i " +
                  "        JOIN product_variants pv2 ON i.variant_id = pv2.variant_id " +
                  "        WHERE pv2.product_id = p.product_id) AS total_quantity " +
                  "FROM products p " +
                  "JOIN product_variants pv ON p.product_id = pv.product_id " +
-                 "JOIN purchase_order_details pod ON pv.variant_id = pod.variant_id " +
+                 "JOIN order_items oi ON pv.variant_id = oi.variant_id " +
+                 "JOIN orders o ON oi.order_id = o.order_id " +
                  "JOIN brands b ON p.brand_id = b.brand_id " +
                  "JOIN categories c ON p.category_id = c.category_id " +
                  "LEFT JOIN categories pc ON c.parent_category_id = pc.category_id " +
@@ -1121,6 +1122,8 @@ public List<Product> getBestSellers(int limit) {
                  "  AND b.is_active = 1 " +
                  "  AND c.is_active = 1 " +
                  "  AND (pc.is_active = 1 OR pc.category_id IS NULL) " +
+                 "  AND o.status IN ('SHIPPED', 'COMPLETED') " + // chỉ tính đơn đã giao/hoàn tất
+                 "  AND o.order_date >= DATEADD(MONTH, -1, GETDATE()) " + // 1 tháng gần nhất
                  "GROUP BY p.product_id, p.name, p.price, p.status " +
                  "ORDER BY total_sold DESC";
 
@@ -1139,9 +1142,8 @@ public List<Product> getBestSellers(int limit) {
             int totalSold = rs.getInt("total_sold");
             int totalQuantity = rs.getInt("total_quantity");
 
-            product.setQuantity(totalQuantity); // tồn kho thật
+            product.setQuantity(totalQuantity);
             product.setStockStatus(totalQuantity > 0 ? "In Stock" : "Out of Stock");
-
             product.setDescription("Đã bán " + totalSold);
 
             list.add(product);
