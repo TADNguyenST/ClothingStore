@@ -1,29 +1,38 @@
 package model;
-
 import java.util.Date;
-import java.util.List;
 
 public class Feedback {
-
     private long feedbackId;
     private long productId;
     private long customerId;
-    private long orderId;
+    private Long orderId;
     private int rating;
     private String comments;
     private Date creationDate;
-
-    // 🔁 Sửa từ boolean -> String
-    private String visibility;  // 'Public', 'Hidden', etc.
+    private String visibility;
     private boolean isVerified;
+    private String replyContent;
+    private String customerName;
 
-    // 👇 Các field mở rộng
-    private String customerName;          // Tên người đánh giá
-    private String variantInfo;           // Ví dụ: Màu sắc, size
-    private String sellerReply;           // Phản hồi từ người bán
-    private List<String> mediaUrls;       // Danh sách ảnh hoặc video
+    // Constructor mặc định
+    public Feedback() {
+        this.creationDate = new Date();
+    }
 
-    // Getters and Setters
+    // Constructor khớp với FeedbackServlet
+    public Feedback(long feedbackId, long customerId, long orderId, int rating, String comments, String visibility, boolean isVerified) {
+        this.feedbackId = feedbackId;
+        this.productId = 0;
+        this.customerId = customerId;
+        this.orderId = orderId;
+        this.rating = rating;
+        this.comments = comments;
+        this.creationDate = new Date();
+        this.visibility = visibility;
+        this.isVerified = isVerified;
+    }
+
+    // Getters và setters
     public long getFeedbackId() {
         return feedbackId;
     }
@@ -48,11 +57,11 @@ public class Feedback {
         this.customerId = customerId;
     }
 
-    public long getOrderId() {
+    public Long getOrderId() {
         return orderId;
     }
 
-    public void setOrderId(long orderId) {
+    public void setOrderId(Long orderId) {
         this.orderId = orderId;
     }
 
@@ -80,7 +89,6 @@ public class Feedback {
         this.creationDate = creationDate;
     }
 
-    // ✅ visibility kiểu String
     public String getVisibility() {
         return visibility;
     }
@@ -93,8 +101,16 @@ public class Feedback {
         return isVerified;
     }
 
-    public void setVerified(boolean isVerified) {
+    public void setIsVerified(boolean isVerified) {
         this.isVerified = isVerified;
+    }
+
+    public String getReplyContent() {
+        return replyContent;
+    }
+
+    public void setReplyContent(String replyContent) {
+        this.replyContent = replyContent;
     }
 
     public String getCustomerName() {
@@ -103,29 +119,5 @@ public class Feedback {
 
     public void setCustomerName(String customerName) {
         this.customerName = customerName;
-    }
-
-    public String getVariantInfo() {
-        return variantInfo;
-    }
-
-    public void setVariantInfo(String variantInfo) {
-        this.variantInfo = variantInfo;
-    }
-
-    public String getSellerReply() {
-        return sellerReply;
-    }
-
-    public void setSellerReply(String sellerReply) {
-        this.sellerReply = sellerReply;
-    }
-
-    public List<String> getMediaUrls() {
-        return mediaUrls;
-    }
-
-    public void setMediaUrls(List<String> mediaUrls) {
-        this.mediaUrls = mediaUrls;
     }
 }

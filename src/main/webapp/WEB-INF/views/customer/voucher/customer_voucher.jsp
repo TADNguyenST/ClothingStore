@@ -217,8 +217,8 @@
 
 <script>
     function copyVoucherCode(btn, code) {
-        if (!code)
-            return;
+        if (!code) return;
+
         if (!navigator.clipboard) {
             try {
                 const ta = document.createElement('textarea');
@@ -233,33 +233,31 @@
             }
             return;
         }
+
         navigator.clipboard.writeText(code).then(function () {
             afterCopyUI(btn);
         }).catch(function () {
             alert('Failed to copy. Please try again.');
         });
     }
+
     function afterCopyUI(btn) {
         var textEl = btn.querySelector('.copy-text');
         var iconEl = btn.querySelector('.copy-icon');
         var oldText = textEl ? textEl.textContent : null;
 
-        if (textEl)
-            textEl.textContent = 'Copied!';
+        if (textEl) textEl.textContent = 'Copied!';
         if (iconEl) {
             iconEl.classList.remove('fa-clone');
             iconEl.classList.add('fa-check');
         }
 
         try {
-            if (window.showToast)
-                window.showToast('Voucher code copied.', true);
-        } catch (_) {
-        }
+            if (window.showToast) window.showToast('Voucher code copied.', true);
+        } catch (_) {}
 
         setTimeout(function () {
-            if (textEl && oldText)
-                textEl.textContent = oldText;
+            if (textEl && oldText) textEl.textContent = oldText;
             if (iconEl) {
                 iconEl.classList.remove('fa-check');
                 iconEl.classList.add('fa-clone');

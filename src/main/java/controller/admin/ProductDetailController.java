@@ -1,11 +1,13 @@
 package controller.admin;
 
+import dao.FeedbackDAO;
 import dao.ProductDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import model.Feedback;
 import model.Product;
 import model.ProductVariant;
 
@@ -15,16 +17,24 @@ import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @WebServlet(name = "ProductDetailController", urlPatterns = {"/ProductDetail"})
 public class ProductDetailController extends HttpServlet {
 
+    private static final Logger LOGGER = Logger.getLogger(ProductDetailController.class.getName());
+
+
+
     private ProductDAO productDAO;
+    private FeedbackDAO feedbackDAO;
 
     @Override
     public void init() {
         try {
             productDAO = new ProductDAO();
+            feedbackDAO = new FeedbackDAO(); // Thêm FeedbackDAO
         } catch (Exception e) {
             throw new RuntimeException("Initialization failed", e);
         }
@@ -57,6 +67,13 @@ public class ProductDetailController extends HttpServlet {
             product.setVariants(variants);
             product.setImages(productDAO.getProductImagesByProductId(productId));
 
+
+            // Lấy danh sách phản hồi
+            List<Feedback> feedbackList = feedbackDAO.getFeedbackByProductId(productId);
+            LOGGER.log(Level.INFO, "Retrieved {0} feedbacks for product {1}", new Object[]{feedbackList.size(), productId});
+
+            // TODO: Thay bằng logic thực tế từ bảng product_favorites
+
             // ---- Giá variant là giá cuối, KHÔNG cộng base ----
             BigDecimal lowestPrice = null;
             ProductVariant defaultVariant = null;
@@ -80,12 +97,17 @@ public class ProductDetailController extends HttpServlet {
             }
 
             // TODO: thay bằng dữ liệu wishlist thực tế
+
             Set<Long> wishlistProductIds = new HashSet<>();
 
             request.setAttribute("wishlistProductIds", wishlistProductIds);
             request.setAttribute("product", product);
+
+            request.setAttribute("feedbackList", feedbackList); // Truyền feedbackList vào JSP
+
             request.setAttribute("defaultVariant", defaultVariant);
             request.setAttribute("lowestPrice", lowestPrice.doubleValue()); // chỉ dùng dự phòng
+
             request.setAttribute("pageTitle", product.getName());
 
             request.getRequestDispatcher("/WEB-INF/views/public/product/product-details.jsp")

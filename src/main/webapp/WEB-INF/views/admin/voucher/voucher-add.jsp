@@ -1,7 +1,6 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt" %>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -9,14 +8,8 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>${requestScope.pageTitle != null ? requestScope.pageTitle : "Add Voucher"}</title>
-
-    <%-- Link to external libraries --%>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-
-    <%-- Link to shared CSS file --%>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/admin-dashboard/css/admin-css.css">
-
-    <%-- Inline CSS for add voucher page --%>
     <style>
         body { font-family: Arial, sans-serif; background-color: #f4f4f9; }
         h2 { text-align: center; color: #333; }
@@ -87,20 +80,12 @@
     </style>
 </head>
 <body>
-
-    <%-- Set requestScope variables for sidebar/header --%>
     <c:set var="currentAction" value="addVoucher" scope="request"/>
     <c:set var="currentModule" value="admin" scope="request"/>
     <c:set var="pageTitle" value="Add Voucher" scope="request"/>
-
-    <%-- Include Sidebar --%>
     <jsp:include page="/WEB-INF/includes/admin-sidebar.jsp" />
-
     <div class="main-content-wrapper">
-        <%-- Include Header --%>
         <jsp:include page="/WEB-INF/includes/admin-header.jsp" />
-
-        <%-- Main content of Add Voucher page --%>
         <div class="content-area">
             <h2>Add Voucher</h2>
             <c:if test="${not empty param.successMessage}">
@@ -167,6 +152,12 @@
                         <span class="error-text" id="usageLimitError">${requestScope.errors.usageLimit != null ? requestScope.errors.usageLimit : ''}</span>
                     </div>
                     <div class="form-group">
+                        <label for="startDate">Start Date <span style="color: red;">*</span></label>
+                        <input type="date" id="startDate" name="startDate" required placeholder="Example: 2025-08-27" value="${requestScope.formData.startDate != null ? requestScope.formData.startDate : ''}">
+                        <span class="help-text">Enter the voucher's start date (YYYY-MM-DD). Must be after creation date and before or on expiration date.</span>
+                        <span class="error-text" id="startDateError">${requestScope.errors.startDate != null ? requestScope.errors.startDate : ''}</span>
+                    </div>
+                    <div class="form-group">
                         <label for="expirationDate">Expiration Date <span style="color: red;">*</span></label>
                         <input type="date" id="expirationDate" name="expirationDate" required placeholder="Example: 2025-12-31" value="${requestScope.formData.expirationDate != null ? requestScope.formData.expirationDate : ''}">
                         <span class="help-text">Enter the voucher's expiration date (YYYY-MM-DD).</span>
@@ -175,7 +166,7 @@
                     <div class="form-group">
                         <label for="isActive">Active</label>
                         <input type="checkbox" id="isActive" name="isActive" ${requestScope.formData.isActive != null && requestScope.formData.isActive ? 'checked' : ''}>
-                        <span class="help-text">Check to activate the voucher immediately.</span>
+                        <span class="help-text">Check to activate the voucher immediately. Automatically checked if start date is today or in the past.</span>
                         <span class="error-text" id="isActiveError">${requestScope.errors.isActive != null ? requestScope.errors.isActive : ''}</span>
                     </div>
                     <div class="form-group">
@@ -195,13 +186,8 @@
             </div>
         </div>
     </div>
-
-    <%-- Link to shared JS file --%>
     <script src="${pageContext.request.contextPath}/admin-dashboard/js/admin-js.js"></script>
-
-    <%-- JS for active menu, client-side validation, and random code --%>
     <script>
-        // Random code generation
         function generateRandomCode() {
             console.log('generateRandomCode called');
             const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -222,13 +208,10 @@
         }
 
         document.addEventListener('DOMContentLoaded', function() {
-            // Active menu logic
             const currentAction = "${requestScope.currentAction}";
             const currentModule = "${requestScope.currentModule}";
-
             document.querySelectorAll('.sidebar-menu li.active').forEach(li => li.classList.remove('active'));
             document.querySelectorAll('.sidebar-menu .treeview.menu-open').forEach(li => li.classList.remove('menu-open'));
-
             if (currentAction && currentModule) {
                 const activeLink = document.querySelector(`.sidebar-menu a[href*="${currentAction}"][href*="${currentModule}"]`);
                 if (activeLink) {
@@ -243,10 +226,12 @@ parentTreeview.classList.add('menu-open');
                 }
             }
 
-            // Client-side form validation
             const form = document.getElementById('voucherForm');
             const discountTypeSelect = document.getElementById('discountType');
             const discountValueInput = document.getElementById('discountValue');
+            const startDateInput = document.getElementById('startDate');
+            const expirationDateInput = document.getElementById('expirationDate');
+            const isActiveCheckbox = document.getElementById('isActive');
 
             const fields = [
                 { id: 'code', validate: value => {
@@ -295,9 +280,24 @@ if (!value) return 'Usage Limit is required.';
                     if (isNaN(numValue) || numValue < 0) return 'Usage Limit cannot be negative.';
                     return '';
                 }},
+                { id: 'startDate', validate: value => {
+                    if (!value) return 'Start Date is required.';
+                    const startDate = new Date(value);
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    if (startDate <= today) return 'Start Date must be after today.';
+                    const expirationDate = expirationDateInput.value ? new Date(expirationDateInput.value) : null;
+                    if (expirationDate && startDate > expirationDate) return 'Start Date cannot be after the expiration date.';
+                    return '';
+                }},
                 { id: 'expirationDate', validate: value => {
                     if (!value) return 'Expiration Date is required.';
-                    if (new Date(value) < new Date().setHours(0, 0, 0, 0)) return 'Expiration Date cannot be in the past.';
+                    const expirationDate = new Date(value);
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    if (expirationDate < today) return 'Expiration Date cannot be in the past.';
+                    const startDate = startDateInput.value ? new Date(startDateInput.value) : null;
+                    if (startDate && expirationDate < startDate) return 'Expiration Date must be after the start date.';
                     return '';
                 }},
                 { id: 'visibility', validate: value => {
@@ -377,6 +377,21 @@ firstInvalidField.focus();
 
             discountTypeSelect.addEventListener('change', function() {
                 validateField('discountValue', discountValueInput.value);
+            });
+
+            startDateInput.addEventListener('change', function() {
+                validateField('startDate', startDateInput.value);
+                validateField('expirationDate', expirationDateInput.value);
+                // Auto-set isActive based on startDate
+                const startDate = new Date(startDateInput.value);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                isActiveCheckbox.checked = startDate <= today;
+            });
+
+            expirationDateInput.addEventListener('change', function() {
+                validateField('expirationDate', expirationDateInput.value);
+                validateField('startDate', startDateInput.value);
             });
 
             document.querySelectorAll('.error-text').forEach(errorElement => {

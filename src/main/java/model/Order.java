@@ -1,43 +1,32 @@
 package model;
 
-import com.google.gson.annotations.SerializedName;
-import java.math.BigDecimal;
 import java.sql.Date;
-import java.sql.Timestamp;
+import java.util.List;
 
 public class Order {
-
-    @SerializedName("orderId")
     private long orderId;
-    @SerializedName("customerId")
     private long customerId;
-    @SerializedName("shippingAddressId")
+    private Date orderDate;
     private long shippingAddressId;
-    @SerializedName("voucherId")
     private Long voucherId;
-    @SerializedName("subtotal")
-    private BigDecimal subtotal;
-    @SerializedName("discountAmount")
-    private BigDecimal discountAmount;
-    @SerializedName("shippingFee")
-    private BigDecimal shippingFee;
-    @SerializedName("totalPrice")
-    private BigDecimal totalPrice;
-    @SerializedName("status")
+    private double subtotal;
+    private double discountAmount;
+    private double shippingFee;
+    private double totalPrice;
     private String status;
-    @SerializedName("paymentStatus")
     private String paymentStatus;
-    @SerializedName("notes")
     private String notes;
-    @SerializedName("estimatedDeliveryDate")
     private Date estimatedDeliveryDate;
-    @SerializedName("actualDeliveryDate")
     private Date actualDeliveryDate;
-    @SerializedName("createdAt")
-    private Timestamp createdAt;
-    @SerializedName("updatedAt")
-    private Timestamp updatedAt;
+    private Date createdAt;
+    private Date updatedAt;
+    private List<OrderItem> orderItems; // Thuộc tính orderItems
 
+    // Constructor
+    public Order() {
+    }
+
+    // Getters và setters
     public long getOrderId() {
         return orderId;
     }
@@ -52,6 +41,14 @@ public class Order {
 
     public void setCustomerId(long customerId) {
         this.customerId = customerId;
+    }
+
+    public Date getOrderDate() {
+        return orderDate;
+    }
+
+    public void setOrderDate(Date orderDate) {
+        this.orderDate = orderDate;
     }
 
     public long getShippingAddressId() {
@@ -70,35 +67,35 @@ public class Order {
         this.voucherId = voucherId;
     }
 
-    public BigDecimal getSubtotal() {
+    public double getSubtotal() {
         return subtotal;
     }
 
-    public void setSubtotal(BigDecimal subtotal) {
+    public void setSubtotal(double subtotal) {
         this.subtotal = subtotal;
     }
 
-    public BigDecimal getDiscountAmount() {
+    public double getDiscountAmount() {
         return discountAmount;
     }
 
-    public void setDiscountAmount(BigDecimal discountAmount) {
+    public void setDiscountAmount(double discountAmount) {
         this.discountAmount = discountAmount;
     }
 
-    public BigDecimal getShippingFee() {
+    public double getShippingFee() {
         return shippingFee;
     }
 
-    public void setShippingFee(BigDecimal shippingFee) {
+    public void setShippingFee(double shippingFee) {
         this.shippingFee = shippingFee;
     }
 
-    public BigDecimal getTotalPrice() {
+    public double getTotalPrice() {
         return totalPrice;
     }
 
-    public void setTotalPrice(BigDecimal totalPrice) {
+    public void setTotalPrice(double totalPrice) {
         this.totalPrice = totalPrice;
     }
 
@@ -142,20 +139,27 @@ public class Order {
         this.actualDeliveryDate = actualDeliveryDate;
     }
 
-    public Timestamp getCreatedAt() {
+    public Date getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(Timestamp createdAt) {
+    public void setCreatedAt(Date createdAt) {
         this.createdAt = createdAt;
     }
 
-    public Timestamp getUpdatedAt() {
+    public Date getUpdatedAt() {
         return updatedAt;
     }
 
-    public void setUpdatedAt(Timestamp updatedAt) {
+    public void setUpdatedAt(Date updatedAt) {
         this.updatedAt = updatedAt;
     }
 
+    public List<OrderItem> getOrderItems() {
+        return orderItems;
+    }
+
+    public void setOrderItems(List<OrderItem> orderItems) {
+        this.orderItems = orderItems;
+    }
 }

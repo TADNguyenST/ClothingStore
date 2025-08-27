@@ -1,5 +1,4 @@
 package model;
-
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 
@@ -15,6 +14,9 @@ public class CustomerVoucher {
     private String voucherName;
     private String discountType;
     private BigDecimal discountValue;
+    private boolean isActive;
+    private Timestamp startDate;
+    private Timestamp expirationDate;
 
     public long getCustomerVoucherId() {
         return customerVoucherId;
@@ -104,7 +106,31 @@ public class CustomerVoucher {
         this.discountValue = discountValue;
     }
 
-    public CustomerVoucher(long customerVoucherId, long customerId, long voucherId, Timestamp sentDate, boolean isUsed, Timestamp usedDate, Long orderId, String voucherCode, String voucherName, String discountType, BigDecimal discountValue) {
+    public boolean isActive() {
+        return isActive;
+    }
+
+    public void setActive(boolean active) {
+        isActive = active;
+    }
+
+    public Timestamp getStartDate() {
+        return startDate;
+    }
+
+    public void setStartDate(Timestamp startDate) {
+        this.startDate = startDate;
+    }
+
+    public Timestamp getExpirationDate() {
+        return expirationDate;
+    }
+
+    public void setExpirationDate(Timestamp expirationDate) {
+        this.expirationDate = expirationDate;
+    }
+
+    public CustomerVoucher(long customerVoucherId, long customerId, long voucherId, Timestamp sentDate, boolean isUsed, Timestamp usedDate, Long orderId, String voucherCode, String voucherName, String discountType, BigDecimal discountValue, boolean isActive, Timestamp startDate, Timestamp expirationDate) {
         this.customerVoucherId = customerVoucherId;
         this.customerId = customerId;
         this.voucherId = voucherId;
@@ -116,5 +142,8 @@ public class CustomerVoucher {
         this.voucherName = voucherName;
         this.discountType = discountType;
         this.discountValue = discountValue;
+        this.isActive = isActive;
+        this.startDate = startDate;
+        this.expirationDate = expirationDate;
     }
 }

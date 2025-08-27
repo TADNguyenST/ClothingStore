@@ -2,7 +2,6 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt" %>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -13,14 +12,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <title>${requestScope.pageTitle != null ? requestScope.pageTitle : "Voucher List"}</title>
-
-    <%-- Link to external libraries --%>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-
-    <%-- Link to shared CSS file --%>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/admin-dashboard/css/admin-css.css">
-
-    <%-- Inline CSS for the voucher list page --%>
     <style>
         body { font-family: Arial, sans-serif; background-color: #f4f4f9; }
         h2 { text-align: center; color: #333; }
@@ -47,11 +39,9 @@
         .btn-clear { background-color: #6c757d; }
         .btn-clear:hover { background-color: #5a6268; }
         .error, .success {
-            position: fixed; /* Fixed position to place at bottom-right */
-            bottom: 20px; right: 20px;
+            position: fixed; bottom: 20px; right: 20px;
             margin: 10px; padding: 10px; border-radius: 4px;
-            z-index: 1000; /* Ensure it appears above other elements */
-            min-width: 200px; max-width: 300px;
+            z-index: 1000; min-width: 200px; max-width: 300px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
         .error { color: red; background-color: #ffe6e6; }
@@ -81,7 +71,6 @@
         }
         .visibility-visible { background-color: #28a745; }
         .visibility-hidden { background-color: #6c757d; }
-        /* Modal styles */
         .modal {
             display: none;
             position: fixed;
@@ -133,6 +122,14 @@
             display: inline-block;
             width: 150px;
         }
+
+        .status-help-text {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+            display: block;
+        }
+
         .content-area {
         position: relative;
         margin-left: 260px;
@@ -149,19 +146,14 @@
         margin-left: 0;
         width: 100%;
     }
+
     </style>
 </head>
 <body>
-
-    <%-- Set requestScope variables for sidebar/header --%>
     <c:set var="currentAction" value="vouchers" scope="request"/>
     <c:set var="currentModule" value="admin" scope="request"/>
     <c:set var="pageTitle" value="Voucher List" scope="request"/>
-
-    <%-- Include Sidebar --%>
     <jsp:include page="/WEB-INF/includes/admin-sidebar.jsp" />
-
-    <%-- Main content of the Voucher List page --%>
     <div class="content-area">
         <div class="header-container">
             <h2>Voucher List</h2>
@@ -216,13 +208,14 @@
                                 <td>
                                     <span class="status-indicator ${voucher.isActive ? 'status-active' : 'status-inactive'}"></span>
                                     ${voucher.isActive ? 'Active' : 'Inactive'}
+                                    <span class="status-help-text">Auto-updated based on start and expiration dates</span>
                                 </td>
                                 <td>
                                     <span class="visibility-indicator ${voucher.visibility ? 'visibility-visible' : 'visibility-hidden'}"></span>
                                     ${voucher.visibility ? 'Visible' : 'Hidden'}
                                 </td>
                                 <td>
-                                    <button class="btn btn-detail" 
+                                    <button class="btn btn-detail"
                                             data-voucher-id="${voucher.voucherId}"
                                             data-code="${voucher.code}"
                                             data-name="${voucher.name}"
@@ -237,6 +230,7 @@
                                             data-is-active="${voucher.isActive}"
                                             data-visibility="${voucher.visibility}"
                                             data-created-at="${voucher.createdAt != null ? voucher.createdAt : ''}"
+                                            data-start-date="${voucher.startDate != null ? voucher.startDate : ''}"
                                             onclick="showVoucherDetails(this)">Detail</button>
                                     <a href="${pageContext.request.contextPath}/editVoucher?voucherId=${voucher.voucherId}" class="btn btn-edit">Edit</a>
                                     <a href="${pageContext.request.contextPath}/deleteVoucher?voucherId=${voucher.voucherId}" class="btn btn-delete" onclick="return confirm('Are you sure you want to delete this voucher?')">Delete</a>
@@ -252,8 +246,6 @@
                 </c:choose>
             </tbody>
         </table>
-
-        <%-- Modal for voucher details --%>
         <div id="voucherModal" class="modal">
             <div class="modal-content">
                 <button class="modal-close" onclick="closeModal()">×</button>
@@ -268,28 +260,22 @@
                 <p><strong>Maximum Discount Amount:</strong> <span id="modal-maximum-discount-amount"></span></p>
                 <p><strong>Usage Limit:</strong> <span id="modal-usage-limit"></span></p>
                 <p><strong>Used Count:</strong> <span id="modal-used-count"></span></p>
+                <p><strong>Start Date:</strong> <span id="modal-start-date"></span></p>
                 <p><strong>Expiration Date:</strong> <span id="modal-expiration-date"></span></p>
-                <p><strong>Status:</strong> <span id="modal-is-active"></span></p>
+                <p><strong>Status:</strong> <span id="modal-is-active"></span> <span class="status-help-text">(Auto-updated based on start and expiration dates)</span></p>
                 <p><strong>Visibility:</strong> <span id="modal-visibility"></span></p>
                 <p><strong>Created At:</strong> <span id="modal-created-at"></span></p>
             </div>
         </div>
     </div>
-
-    <%-- Link to shared JS file --%>
     <script src="${pageContext.request.contextPath}/admin-dashboard/js/admin-js.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
-
-    <%-- JS for active menu, modal handling, and temporary messages --%>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const currentAction = "${requestScope.currentAction}"; // Value is "vouchers"
-            // Remove existing active and menu-open classes
+            const currentAction = "${requestScope.currentAction}";
             document.querySelectorAll('.sidebar-menu li.active').forEach(li => li.classList.remove('active'));
             document.querySelectorAll('.sidebar-menu .treeview.menu-open').forEach(treeview => treeview.classList.remove('menu-open'));
-
             if (currentAction) {
-                // Find <a> tag with href containing part of currentAction
                 const activeLink = document.querySelector(`.sidebar-menu a[href*="${currentAction.toLowerCase()}"], .sidebar-menu a[href*="/voucher"]`);
                 if (activeLink) {
                     activeLink.parentElement.classList.add('active');
@@ -298,45 +284,36 @@
                         parentTreeview.classList.add('active', 'menu-open');
                     }
                 }
-                // No console.warn to avoid runtime error log
             }
-
-            // Hide messages after 3 seconds
             function hideMessages() {
                 const successMessage = document.getElementById('success-message');
                 const errorMessage = document.getElementById('error-message');
-
                 if (successMessage) {
                     setTimeout(() => {
                         successMessage.style.opacity = '0';
                         successMessage.style.transition = 'opacity 0.5s ease';
                         setTimeout(() => {
                             successMessage.remove();
-                        }, 500); // Remove after fade-out
-                    }, 3000); // Display for 3 seconds
+                        }, 500);
+                    }, 3000);
                 }
-
                 if (errorMessage) {
                     setTimeout(() => {
                         errorMessage.style.opacity = '0';
                         errorMessage.style.transition = 'opacity 0.5s ease';
                         setTimeout(() => {
                             errorMessage.remove();
-                        }, 500); // Remove after fade-out
-                    }, 3000); // Display for 3 seconds
+                        }, 500);
+                    }, 3000);
                 }
             }
-
             hideMessages();
         });
-
-        // Modal handling functions
         function showVoucherDetails(button) {
             const modal = document.getElementById('voucherModal');
             const discountValue = button.dataset.discountValue + (button.dataset.discountType === 'Percentage' ? '%' : ' $');
             const isActive = button.dataset.isActive === 'true' ? 'Active' : 'Inactive';
             const visibility = button.dataset.visibility === 'true' ? 'Visible' : 'Hidden';
-
             document.getElementById('modal-voucher-id').textContent = button.dataset.voucherId;
             document.getElementById('modal-code').textContent = button.dataset.code;
             document.getElementById('modal-name').textContent = button.dataset.name;
@@ -347,19 +324,16 @@
             document.getElementById('modal-maximum-discount-amount').textContent = button.dataset.maximumDiscountAmount ? button.dataset.maximumDiscountAmount + ' $' : 'N/A';
             document.getElementById('modal-usage-limit').textContent = button.dataset.usageLimit || 'N/A';
             document.getElementById('modal-used-count').textContent = button.dataset.usedCount || 'N/A';
+            document.getElementById('modal-start-date').textContent = button.dataset.startDate || 'N/A';
             document.getElementById('modal-expiration-date').textContent = button.dataset.expirationDate || 'N/A';
             document.getElementById('modal-is-active').textContent = isActive;
             document.getElementById('modal-visibility').textContent = visibility;
             document.getElementById('modal-created-at').textContent = button.dataset.createdAt || 'N/A';
-
             modal.style.display = 'flex';
         }
-
         function closeModal() {
             document.getElementById('voucherModal').style.display = 'none';
         }
-
-        // Close modal when clicking outside
         window.addEventListener('click', function(event) {
             const modal = document.getElementById('voucherModal');
             if (event.target === modal) {

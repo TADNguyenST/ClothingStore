@@ -1,54 +1,50 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
+// Model: FeedbackReply.java
+// Đặt trong package model
+
 package model;
 
-import java.util.Date;
+import java.sql.Timestamp;
 
 public class FeedbackReply {
-
-    private int replyId;
-    private int feedbackId;
-    private int staffId;
+    private long replyId;
+    private long feedbackId;
+    private long staffId;
     private String content;
-    private Date replyDate;
+    private Timestamp replyDate;
     private String visibility;
 
-    public FeedbackReply() {
-    }
+    // Constructors
+    public FeedbackReply() {}
 
-    public FeedbackReply(int replyId, int feedbackId, int staffId, String content, Date replyDate, String visibility) {
-        this.replyId = replyId;
+    public FeedbackReply(long feedbackId, long staffId, String content, String visibility) {
         this.feedbackId = feedbackId;
         this.staffId = staffId;
         this.content = content;
-        this.replyDate = replyDate;
         this.visibility = visibility;
     }
 
-    // Getters và Setters
-    public int getReplyId() {
+    // Getters and Setters
+    public long getReplyId() {
         return replyId;
     }
 
-    public void setReplyId(int replyId) {
+    public void setReplyId(long replyId) {
         this.replyId = replyId;
     }
 
-    public int getFeedbackId() {
+    public long getFeedbackId() {
         return feedbackId;
     }
 
-    public void setFeedbackId(int feedbackId) {
+    public void setFeedbackId(long feedbackId) {
         this.feedbackId = feedbackId;
     }
 
-    public int getStaffId() {
+    public long getStaffId() {
         return staffId;
     }
 
-    public void setStaffId(int staffId) {
+    public void setStaffId(long staffId) {
         this.staffId = staffId;
     }
 
@@ -60,11 +56,11 @@ public class FeedbackReply {
         this.content = content;
     }
 
-    public Date getReplyDate() {
+    public Timestamp getReplyDate() {
         return replyDate;
     }
 
-    public void setReplyDate(Date replyDate) {
+    public void setReplyDate(Timestamp replyDate) {
         this.replyDate = replyDate;
     }
 

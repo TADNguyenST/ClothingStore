@@ -1,5 +1,4 @@
 package dao;
-
 import model.CustomerVoucher;
 import util.DBContext;
 import java.sql.Connection;
@@ -28,11 +27,10 @@ public class CustomerVoucherDAO {
         List<CustomerVoucher> vouchers = new ArrayList<>();
         StringBuilder sql = new StringBuilder(
             "SELECT cv.customer_voucher_id, cv.customer_id, cv.voucher_id, cv.sent_date, cv.is_used, cv.used_date, cv.order_id, " +
-            "v.code, v.name, v.discount_type, v.discount_value " +
+            "v.code, v.name, v.discount_type, v.discount_value, v.is_active, v.start_date, CAST(v.expiration_date AS DATE) AS expiration_date " +
             "FROM customer_vouchers cv JOIN vouchers v ON cv.voucher_id = v.voucher_id WHERE 1=1"
         );
         List<Object> params = new ArrayList<>();
-
         if (customerId != null) {
             sql.append(" AND cv.customer_id = ?");
             params.add(customerId);
@@ -43,18 +41,15 @@ public class CustomerVoucherDAO {
         }
         if (onlyNonUsed) {
             sql.append(" AND cv.is_used = 0");
+            sql.append(" AND CAST(v.expiration_date AS DATE) >= CAST(GETDATE() AS DATE)");
         }
-
         sql.append(" ORDER BY cv.sent_date DESC");
-
         try (Connection conn = dbContext.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
             LOGGER.log(Level.INFO, "Executing getCustomerVouchersByFilter with SQL: {}", sql.toString());
-
             for (int i = 0; i < params.size(); i++) {
                 stmt.setObject(i + 1, params.get(i));
             }
-
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
                     CustomerVoucher voucher = mapToCustomerVoucher(rs);
@@ -84,7 +79,10 @@ public class CustomerVoucherDAO {
             rs.getString("code"),
             rs.getString("name"),
             rs.getString("discount_type"),
-            rs.getBigDecimal("discount_value")
+            rs.getBigDecimal("discount_value"),
+            rs.getBoolean("is_active"),
+            rs.getTimestamp("start_date"),
+            rs.getTimestamp("expiration_date")
         );
     }
 

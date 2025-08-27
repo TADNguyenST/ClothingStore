@@ -1,3 +1,4 @@
+
 package controller.admin;
 
 import dao.VoucherDAO;
@@ -34,8 +35,8 @@ public class VoucherServlet extends HttpServlet {
             List<Voucher> voucherList;
 
             // Log parameters for debugging
-            LOGGER.log(Level.INFO, "Received search parameters - code: {0}, name: {1}", 
-                       new Object[]{code, name});
+            LOGGER.log(Level.INFO, "Received search parameters - code: {0}, name: {1}",
+                    new Object[]{code, name});
 
             // Apply filter if code or name is provided
             if ((code != null && !code.trim().isEmpty()) || (name != null && !name.trim().isEmpty())) {
@@ -44,16 +45,30 @@ public class VoucherServlet extends HttpServlet {
                 voucherList = voucherDAO.getAllVouchers();
             }
 
+            // Update isActive for each voucher based on startDate and expirationDate
+            java.sql.Date currentDate = new java.sql.Date(System.currentTimeMillis());
+            for (Voucher voucher : voucherList) {
+                boolean isActive = (voucher.getStartDate() != null && 
+                        (voucher.getStartDate().before(currentDate) || voucher.getStartDate().equals(currentDate)) &&
+                        voucher.getExpirationDate() != null && 
+                        voucher.getExpirationDate().after(currentDate));
+                if (isActive != voucher.isIsActive()) {
+                    voucher.setIsActive(isActive);
+                    voucherDAO.updateVoucher(voucher); // Update in database
+                    LOGGER.log(Level.INFO, "Updated isActive to {0} for voucher ID: {1}", 
+                            new Object[]{isActive, voucher.getVoucherId()});
+                }
+            }
+
             // Log the size of the result list
             LOGGER.log(Level.INFO, "Retrieved {0} vouchers", voucherList.size());
-
             request.setAttribute("voucherList", voucherList);
         } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Error retrieving voucher list: {0}", e.getMessage());
             request.setAttribute("errorMessage", "Lỗi khi lấy dữ liệu voucher: " + e.getMessage());
         }
 
-        // Forward to JSP (corrected path to match expected directory)
+        // Forward to JSP
         request.getRequestDispatcher("/WEB-INF/views/admin/voucher/voucher-list.jsp").forward(request, response);
     }
 
