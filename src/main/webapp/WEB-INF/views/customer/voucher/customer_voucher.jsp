@@ -44,7 +44,7 @@
             <h1 class="text-4xl md:text-5xl font-extrabold text-gray-800 tracking-tight">Your Vouchers</h1>
             <p class="mt-2 text-lg text-gray-500">Here are all the special offers we've sent you.</p>
         </header>
-       
+      
         <c:if test="${not empty errorMessage}">
             <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-md shadow-md text-center" role="alert">
                 <p class="font-bold">Error</p>
@@ -61,14 +61,29 @@
                             <div class="p-6">
                                 <div class="flex justify-between items-start">
                                     <h2 class="text-xl font-bold text-gray-800 pr-4">${voucher.voucherName}</h2>
-                                    <span class="text-sm font-semibold py-1 px-3 rounded-full bg-green-100 text-green-800">
-                                        Available
+                                    <span class="text-sm font-semibold py-1 px-3 rounded-full 
+                                        <c:choose>
+                                            <c:when test="${voucher.active}">bg-green-100 text-green-800</c:when>
+                                            <c:otherwise>bg-red-100 text-red-800</c:otherwise>
+                                        </c:choose>">
+                                        <c:choose>
+                                            <c:when test="${voucher.active}">Active</c:when>
+                                            <c:otherwise>Inactive</c:otherwise>
+                                        </c:choose>
                                     </span>
                                 </div>
-                               
+                              
                                 <div class="flex items-center space-x-2 mt-4 text-sm text-gray-500">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                                     <span>Sent on <fmt:formatDate value="${voucher.sentDate}" pattern="dd MMM, yyyy"/></span>
+                                </div>
+                                <div class="flex items-center space-x-2 mt-2 text-sm text-gray-500">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                    <span>Valid from <fmt:formatDate value="${voucher.startDate}" pattern="dd MMM, yyyy"/></span>
+                                </div>
+                                <div class="flex items-center space-x-2 mt-2 text-sm text-gray-500">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                    <span>Expires on <fmt:formatDate value="${voucher.expirationDate}" pattern="dd MMM, yyyy"/></span>
                                 </div>
                             </div>
                             <!-- Dashed Separator with Cutouts -->
@@ -125,11 +140,11 @@
                 alert("Clipboard API not available. Please copy manually.");
                 return;
             }
-           
+          
             navigator.clipboard.writeText(codeToCopy).then(() => {
                 const copyTextElement = buttonElement.querySelector('.copy-text');
                 const copyIconElement = buttonElement.querySelector('.copy-icon');
-               
+              
                 // Store original content
                 const originalText = copyTextElement.innerHTML;
                 const originalIcon = copyIconElement.outerHTML;

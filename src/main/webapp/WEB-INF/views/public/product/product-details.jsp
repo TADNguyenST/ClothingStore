@@ -142,6 +142,46 @@
         right: 20px;
         z-index: 1050;
     }
+    .feedback-section {
+        margin-top: 2rem;
+        padding-top: 2rem;
+        border-top: 1px solid #e9ecef;
+    }
+    .feedback-item {
+        margin-bottom: 1.5rem;
+        padding: 1rem;
+        border: 1px solid #e9ecef;
+        border-radius: 0.5rem;
+        background-color: #f8f9fa;
+    }
+    .feedback-item .customer-name {
+        font-weight: 600;
+        color: #343a40;
+    }
+    .feedback-item .rating {
+        color: #f1c40f;
+        margin-bottom: 0.5rem;
+    }
+    .feedback-item .comments {
+        color: #495057;
+        margin-bottom: 0.5rem;
+    }
+    .feedback-item .creation-date {
+        font-size: 0.85rem;
+        color: #6c757d;
+    }
+    .feedback-item .reply {
+        margin-top: 1rem;
+        padding-left: 1.5rem;
+        border-left: 3px solid #0d6efd;
+    }
+    .feedback-item .reply-content {
+        color: #495057;
+    }
+    .feedback-item .reply-date {
+        font-size: 0.85rem;
+        color: #6c757d;
+    }
     @media (max-width: 991.98px) {
         .product-detail-container .thumbnail-list {
             flex-direction: row;
@@ -167,6 +207,9 @@
         .product-detail-container .btn-primary {
             padding: 0.5rem 1rem;
             font-size: 0.9rem;
+        }
+        .feedback-item {
+            padding: 0.75rem;
         }
     }
 </style>
@@ -275,6 +318,41 @@
                     </form>
                 </div>
             </div>
+            <div class="feedback-section">
+                <h2 class="mb-3 fs-3 fw-bold">Customer Feedback</h2>
+                <c:if test="${empty feedbackList}">
+                    <p>Debug: feedbackList is empty or null</p>
+                </c:if>
+                <c:choose>
+                    <c:when test="${not empty feedbackList}">
+                        <c:forEach var="feedback" items="${feedbackList}">
+                            <div class="feedback-item">
+                                <div class="customer-name"><c:out value="${feedback.customerName}" default="Anonymous"/></div>
+                                <div class="rating">
+                                    <c:forEach begin="1" end="5" var="i">
+                                        <i class="fas fa-star ${i <= feedback.rating ? 'text-warning' : 'text-muted'}"></i>
+                                    </c:forEach>
+                                </div>
+                                <div class="comments"><c:out value="${feedback.comments}" default="No comment provided."/></div>
+                                <div class="creation-date">
+                                    Posted on: <c:out value="${fn:substring(feedback.creationDate, 0, 19)}"/>
+                                </div>
+                                <c:if test="${not empty feedback.replyContent}">
+                                    <div class="reply">
+                                        <div class="reply-content"><strong>Staff Reply:</strong> <c:out value="${feedback.replyContent}"/></div>
+                                        <div class="reply-date">
+                                            Replied on: <c:out value="${fn:substring(feedback.creationDate, 0, 19)}"/>
+                                        </div>
+                                    </div>
+                                </c:if>
+                            </div>
+                        </c:forEach>
+                    </c:when>
+                    <c:otherwise>
+                        <div class="alert alert-info text-center" role="alert">No feedback available for this product.</div>
+                    </c:otherwise>
+                </c:choose>
+            </div>
         </c:when>
         <c:otherwise>
             <div class="alert alert-warning text-center" role="alert">Product does not exist or is discontinued.</div>
@@ -300,7 +378,6 @@
             document.querySelector('.toast-container').appendChild(toast);
             new bootstrap.Toast(toast, {delay: 3000}).show();
         };
-
         const mainImage = document.getElementById('mainProductImage');
         const thumbnails = document.querySelectorAll('.product-detail-container .thumbnail-img');
         const prevImageBtn = document.getElementById('prevImageBtn');
@@ -316,7 +393,6 @@
         const productForm = document.getElementById('productForm');
         let currentIndex = Array.from(thumbnails).findIndex(thumb => thumb.classList.contains('active'));
         let currentAvailable = 0;
-
         const updateMainImage = (selectedThumb) => {
             if (!mainImage || !selectedThumb) return;
             mainImage.src = selectedThumb.src;
@@ -325,7 +401,6 @@
             selectedThumb.classList.add('active');
             currentIndex = Array.from(thumbnails).indexOf(selectedThumb);
         };
-
         const navigateImage = (direction) => {
             if (thumbnails.length === 0) return;
             let newIndex = currentIndex + direction;
@@ -333,13 +408,10 @@
             if (newIndex < 0) newIndex = thumbnails.length - 1;
             updateMainImage(thumbnails[newIndex]);
         };
-
         thumbnails.forEach(thumb => thumb.addEventListener('click', () => updateMainImage(thumb)));
         prevImageBtn.addEventListener('click', () => navigateImage(-1));
         nextImageBtn.addEventListener('click', () => navigateImage(1));
-
         const currencyFormatter = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' });
-
         const updateUIFromVariant = () => {
             const selectedOption = variantSelect.options[variantSelect.selectedIndex];
             if (!selectedOption) return;
@@ -357,7 +429,6 @@
             addToCartBtn.innerHTML = isAvailable ? '<i class="fas fa-cart-plus"></i> Add to Cart' : '<i class="fas fa-x-circle"></i> Out of Stock';
             buyNowBtn.innerHTML = isAvailable ? '<i class="fas fa-bag-check"></i> Buy Now' : '<i class="fas fa-x-circle"></i> Out of Stock';
         };
-
         increaseQtyBtn.addEventListener('click', () => {
             let currentQty = parseInt(quantityInput.value, 10);
             if (currentQty < currentAvailable) {
@@ -366,7 +437,6 @@
                 increaseQtyBtn.disabled = currentQty + 1 >= currentAvailable;
             }
         });
-
         decreaseQtyBtn.addEventListener('click', () => {
             let currentQty = parseInt(quantityInput.value, 10);
             if (currentQty > 1) {
@@ -375,7 +445,6 @@
                 decreaseQtyBtn.disabled = currentQty - 1 <= 1;
             }
         });
-
         addToCartBtn.addEventListener('click', () => {
             if (currentAvailable <= 0) {
                 showToast('This product is out of stock.', false);
@@ -411,7 +480,6 @@
                 showToast('An error occurred while adding to cart: ' + error.message, false);
             });
         });
-
         buyNowBtn.addEventListener('click', () => {
             if (currentAvailable <= 0) {
                 showToast('This product is out of stock.', false);
@@ -421,10 +489,8 @@
             productForm.method = 'POST';
             productForm.submit();
         });
-
         variantSelect.addEventListener('change', updateUIFromVariant);
         updateUIFromVariant();
-
         document.querySelectorAll('[data-bs-toggle="dropdown"]').forEach(toggle => {
             toggle.addEventListener('click', function (e) {
                 const dropdown = document.getElementById(this.getAttribute('aria-controls'));
@@ -437,7 +503,6 @@
                 }
             });
         });
-
         document.addEventListener('click', function (e) {
             if (!e.target.closest('.dropdown')) {
                 document.querySelectorAll('.dropdown-menu.show').forEach(dropdown => {

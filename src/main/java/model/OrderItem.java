@@ -1,30 +1,15 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package model;
 
-import com.google.gson.annotations.SerializedName;
-import java.math.BigDecimal;
-import java.sql.Date;
-import java.sql.Timestamp;
+import java.util.List;
 
 public class OrderItem {
-
-    @SerializedName("orderItemId")
     private long orderItemId;
-    @SerializedName("orderId")
-    private long orderId;
-    @SerializedName("variantId")
-    private long variantId;
-    @SerializedName("quantity")
+    private String productName;
+    private String size;
+    private String color;
     private int quantity;
-    @SerializedName("priceAtPurchase")
-    private BigDecimal priceAtPurchase;
-    @SerializedName("discountAmount")
-    private BigDecimal discountAmount;
-    @SerializedName("totalPrice")
-    private BigDecimal totalPrice;
+    private long productId;
+    private List<Feedback> feedbacks;
 
     public long getOrderItemId() {
         return orderItemId;
@@ -34,20 +19,28 @@ public class OrderItem {
         this.orderItemId = orderItemId;
     }
 
-    public long getOrderId() {
-        return orderId;
+    public String getProductName() {
+        return productName;
     }
 
-    public void setOrderId(long orderId) {
-        this.orderId = orderId;
+    public void setProductName(String productName) {
+        this.productName = productName;
     }
 
-    public long getVariantId() {
-        return variantId;
+    public String getSize() {
+        return size;
     }
 
-    public void setVariantId(long variantId) {
-        this.variantId = variantId;
+    public void setSize(String size) {
+        this.size = size;
+    }
+
+    public String getColor() {
+        return color;
+    }
+
+    public void setColor(String color) {
+        this.color = color;
     }
 
     public int getQuantity() {
@@ -58,28 +51,19 @@ public class OrderItem {
         this.quantity = quantity;
     }
 
-    public BigDecimal getPriceAtPurchase() {
-        return priceAtPurchase;
+    public long getProductId() {
+        return productId;
     }
 
-    public void setPriceAtPurchase(BigDecimal priceAtPurchase) {
-        this.priceAtPurchase = priceAtPurchase;
+    public void setProductId(long productId) {
+        this.productId = productId;
     }
 
-    public BigDecimal getDiscountAmount() {
-        return discountAmount;
+    public List<Feedback> getFeedbacks() {
+        return feedbacks;
     }
 
-    public void setDiscountAmount(BigDecimal discountAmount) {
-        this.discountAmount = discountAmount;
+    public void setFeedbacks(List<Feedback> feedbacks) {
+        this.feedbacks = feedbacks;
     }
-
-    public BigDecimal getTotalPrice() {
-        return totalPrice;
-    }
-
-    public void setTotalPrice(BigDecimal totalPrice) {
-        this.totalPrice = totalPrice;
-    }
-
 }

@@ -1,10 +1,8 @@
 package model;
-
 import java.math.BigDecimal;
 import java.sql.Date;
 
 public class Voucher {
-
     private long voucherId;
     private String code;
     private String name;
@@ -19,6 +17,7 @@ public class Voucher {
     private boolean isActive;
     private boolean visibility;
     private Date createdAt;
+    private Date startDate;
 
     public long getVoucherId() {
         return voucherId;
@@ -132,7 +131,18 @@ public class Voucher {
         this.createdAt = createdAt;
     }
 
-    public Voucher(long voucherId, String code, String name, String description, String discountType, BigDecimal discountValue, BigDecimal minimumOrderAmount, BigDecimal maximumDiscountAmount, Integer usageLimit, Integer usedCount, Date expirationDate, boolean isActive, boolean visibility, Date createdAt) {
+    public Date getStartDate() {
+        return startDate;
+    }
+
+    public void setStartDate(Date startDate) {
+        this.startDate = startDate;
+    }
+
+    public Voucher(long voucherId, String code, String name, String description, String discountType, 
+                   BigDecimal discountValue, BigDecimal minimumOrderAmount, BigDecimal maximumDiscountAmount, 
+                   Integer usageLimit, Integer usedCount, Date expirationDate, boolean isActive, 
+                   boolean visibility, Date createdAt, Date startDate) {
         this.voucherId = voucherId;
         this.code = code;
         this.name = name;
@@ -147,10 +157,10 @@ public class Voucher {
         this.isActive = isActive;
         this.visibility = visibility;
         this.createdAt = createdAt;
+        this.startDate = startDate;
     }
 
     // Default constructor
     public Voucher() {
     }
-
 }

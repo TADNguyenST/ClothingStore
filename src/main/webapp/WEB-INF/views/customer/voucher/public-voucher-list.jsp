@@ -62,6 +62,15 @@
                 font-size: 0.85rem;
                 color: #dc3545;
             }
+            .voucher-status {
+                font-size: 0.85rem;
+            }
+            .status-active {
+                color: #28a745;
+            }
+            .status-inactive {
+                color: #dc3545;
+            }
             .error-message, .success-message {
                 position: fixed;
                 bottom: 20px;
@@ -185,8 +194,12 @@
                                             <i class="fas fa-clock me-2"></i>
                                             <span>Expires on: <fmt:formatDate value="${voucher.expirationDate}" pattern="dd MMM, yyyy"/></span>
                                         </div>
+                                        <div class="d-flex align-items-center mb-3 voucher-status">
+                                            <i class="fas fa-check-circle me-2 ${voucher.isActive ? 'status-active' : 'status-inactive'}"></i>
+                                            <span>Status: <span class="${voucher.isActive ? 'status-active' : 'status-inactive'}">${voucher.isActive ? 'Active' : 'Inactive'}</span></span>
+                                        </div>
                                         <div class="d-flex flex-column flex-sm-row gap-2">
-                                            <button onclick="openVoucherModal(${voucher.voucherId}, '${voucher.code}', '${voucher.name}', '${voucher.description}', '${voucher.discountType}', ${voucher.discountValue}, ${voucher.minimumOrderAmount}, ${voucher.maximumDiscountAmount}, ${voucher.usageLimit}, ${voucher.usedCount}, '${voucher.expirationDate}', ${voucher.isActive}, ${voucher.visibility}, '${voucher.createdAt}')"
+                                            <button onclick="openVoucherModal(${voucher.voucherId}, '${voucher.code}', '${voucher.name}', '${voucher.description}', '${voucher.discountType}', ${voucher.discountValue}, ${voucher.minimumOrderAmount}, ${voucher.maximumDiscountAmount}, ${voucher.usageLimit}, ${voucher.usedCount}, '${voucher.expirationDate}', ${voucher.isActive}, ${voucher.visibility}, '${voucher.createdAt}', '${voucher.startDate}')"
                                                     class="btn btn-outline-secondary w-100">
                                                 Details
                                             </button>
@@ -207,7 +220,7 @@
                     <div class="text-center py-5">
                         <i class="fas fa-search fa-3x text-muted mb-3"></i>
                         <h3 class="h4 fw-medium">No Vouchers Found</h3>
-                        <p class="text-muted">No public vouchers match your search. Try different keywords or check back later!</p>
+                        <p class="text-muted">No public vouchers match your search. Try different keywords or check back later.!</p>
                     </div>
                 </c:if>
             </div>
@@ -230,6 +243,7 @@
                                 <p><strong>Maximum Discount:</strong> <span id="modalMaximumDiscountAmount"></span></p>
                                 <p><strong>Usage Limit:</strong> <span id="modalUsageLimit"></span></p>
                                 <p><strong>Times Used:</strong> <span id="modalUsedCount"></span></p>
+                                <p><strong>Start Date:</strong> <span id="modalStartDate"></span></p>
                                 <p><strong>Expires On:</strong> <span id="modalExpirationDate"></span></p>
                                 <p><strong>Status:</strong> <span id="modalIsActive"></span></p>
                                 <p><strong>Visibility:</strong> <span id="modalVisibility"></span></p>
@@ -245,9 +259,8 @@
         </main>
         <!-- Scripts -->
         <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
         <script>
-            function openVoucherModal(id, code, name, description, discountType, discountValue, minimumOrderAmount, maximumDiscountAmount, usageLimit, usedCount, expirationDate, isActive, visibility, createdAt) {
+            function openVoucherModal(id, code, name, description, discountType, discountValue, minimumOrderAmount, maximumDiscountAmount, usageLimit, usedCount, expirationDate, isActive, visibility, createdAt, startDate) {
                 document.getElementById('modalCode').textContent = code;
                 document.getElementById('modalName').textContent = name || 'N/A';
                 document.getElementById('modalDescription').textContent = description || 'No description provided.';
@@ -257,6 +270,7 @@
                 document.getElementById('modalMaximumDiscountAmount').textContent = maximumDiscountAmount ? new Intl.NumberFormat('vi-VN', {minimumFractionDigits: 0, maximumFractionDigits: 0}).format(maximumDiscountAmount) + ' VND' : 'Unlimited';
                 document.getElementById('modalUsageLimit').textContent = usageLimit ? usageLimit.toLocaleString() : 'Unlimited';
                 document.getElementById('modalUsedCount').textContent = usedCount.toLocaleString();
+                document.getElementById('modalStartDate').textContent = new Date(startDate).toLocaleDateString('en-GB');
                 document.getElementById('modalExpirationDate').textContent = new Date(expirationDate).toLocaleDateString('en-GB');
                 document.getElementById('modalIsActive').textContent = isActive ? 'Active' : 'Inactive';
                 document.getElementById('modalVisibility').textContent = visibility ? 'Public' : 'Private';

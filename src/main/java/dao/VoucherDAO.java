@@ -1,5 +1,4 @@
 package dao;
-
 import model.Voucher;
 import util.DBContext;
 import java.sql.Connection;
@@ -38,7 +37,7 @@ public class VoucherDAO {
         StringBuilder sql = new StringBuilder(
             "SELECT voucher_id, code, name, description, discount_type, discount_value, " +
             "minimum_order_amount, maximum_discount_amount, usage_limit, used_count, " +
-            "expiration_date, is_active, visibility, created_at FROM vouchers WHERE 1=1"
+            "expiration_date, is_active, visibility, created_at, start_date FROM vouchers WHERE 1=1"
         );
         List<Object> params = new ArrayList<>();
         if (code != null && !code.trim().isEmpty()) {
@@ -56,7 +55,7 @@ public class VoucherDAO {
         if (onlyNonExpired) {
             sql.append(" AND expiration_date >= ?");
             params.add(new Date(System.currentTimeMillis()));
-            sql.append(" AND visibility = 1"); // Assuming visibility = 1 means public
+            sql.append(" AND visibility = 1");
         }
         sql.append(" ORDER BY created_at DESC");
         try (Connection conn = dbContext.getConnection();
@@ -82,8 +81,8 @@ public class VoucherDAO {
     public Voucher getVoucherById(long voucherId) throws SQLException {
         String sql = "SELECT voucher_id, code, name, description, discount_type, discount_value, " +
                      "minimum_order_amount, maximum_discount_amount, usage_limit, used_count, " +
-                     "expiration_date, is_active, visibility, created_at FROM vouchers WHERE voucher_id = ?";
-       
+                     "expiration_date, is_active, visibility, created_at, start_date FROM vouchers WHERE voucher_id = ?";
+
         try (Connection conn = dbContext.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setLong(1, voucherId);
@@ -102,7 +101,7 @@ public class VoucherDAO {
 
     public boolean isVoucherSavedByCustomer(long voucherId, long customerId) throws SQLException {
         String sql = "SELECT COUNT(*) FROM customer_vouchers WHERE voucher_id = ? AND customer_id = ?";
-       
+
         try (Connection conn = dbContext.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setLong(1, voucherId);
@@ -122,15 +121,13 @@ public class VoucherDAO {
 
     public boolean saveVoucherForCustomer(long voucherId, long customerId) throws SQLException {
         String sql = "INSERT INTO customer_vouchers (customer_id, voucher_id, sent_date, is_used) VALUES (?, ?, GETDATE(), 0)";
-       
+
         try (Connection conn = dbContext.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             LOGGER.log(Level.INFO, "Executing saveVoucherForCustomer with SQL: {0}, Voucher ID: {1}, Customer ID: {2}",
                        new Object[]{sql, voucherId, customerId});
-           
             stmt.setLong(1, customerId);
             stmt.setLong(2, voucherId);
-           
             int rowsAffected = stmt.executeUpdate();
             LOGGER.log(Level.INFO, "Rows affected by saveVoucherForCustomer: {0}", rowsAffected);
             return rowsAffected > 0;
@@ -144,8 +141,8 @@ public class VoucherDAO {
     public boolean updateVoucher(Voucher voucher) throws SQLException {
         String sql = "UPDATE vouchers SET code = ?, name = ?, description = ?, discount_type = ?, " +
                      "discount_value = ?, minimum_order_amount = ?, maximum_discount_amount = ?, " +
-                     "usage_limit = ?, expiration_date = ?, is_active = ?, visibility = ? WHERE voucher_id = ?";
-       
+                     "usage_limit = ?, expiration_date = ?, is_active = ?, visibility = ?, start_date = ? WHERE voucher_id = ?";
+
         try (Connection conn = dbContext.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             LOGGER.log(Level.INFO, "Executing updateVoucher with SQL: {0}, Voucher ID: {1}",
@@ -161,7 +158,8 @@ public class VoucherDAO {
             stmt.setObject(9, voucher.getExpirationDate(), java.sql.Types.DATE);
             stmt.setBoolean(10, voucher.isIsActive());
             stmt.setBoolean(11, voucher.isVisibility());
-            stmt.setLong(12, voucher.getVoucherId());
+            stmt.setObject(12, voucher.getStartDate(), java.sql.Types.DATE);
+            stmt.setLong(13, voucher.getVoucherId());
             int rowsAffected = stmt.executeUpdate();
             LOGGER.log(Level.INFO, "Rows affected by updateVoucher: {0}", rowsAffected);
             return rowsAffected > 0;
@@ -175,12 +173,11 @@ public class VoucherDAO {
     public boolean addVoucher(Voucher voucher) throws SQLException {
         String sql = "INSERT INTO vouchers (code, name, description, discount_type, discount_value, " +
                      "minimum_order_amount, maximum_discount_amount, usage_limit, used_count, " +
-                     "expiration_date, is_active, visibility, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-       
+                     "expiration_date, is_active, visibility, created_at, start_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
         try (Connection conn = dbContext.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             LOGGER.log(Level.INFO, "Executing addVoucher with SQL: {0}", sql);
-           
             stmt.setString(1, voucher.getCode());
             stmt.setString(2, voucher.getName());
             stmt.setString(3, voucher.getDescription());
@@ -194,7 +191,7 @@ public class VoucherDAO {
             stmt.setBoolean(11, voucher.isIsActive());
             stmt.setBoolean(12, voucher.isVisibility());
             stmt.setDate(13, new java.sql.Date(voucher.getCreatedAt().getTime()));
-           
+            stmt.setObject(14, voucher.getStartDate(), java.sql.Types.DATE);
             int rowsAffected = stmt.executeUpdate();
             LOGGER.log(Level.INFO, "Rows affected by addVoucher: {0}", rowsAffected);
             return rowsAffected > 0;
@@ -206,14 +203,12 @@ public class VoucherDAO {
 
     public boolean deleteVoucher(long voucherId) throws SQLException {
         String sql = "DELETE FROM vouchers WHERE voucher_id = ?";
-       
+
         try (Connection conn = dbContext.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             LOGGER.log(Level.INFO, "Executing deleteVoucher with SQL: {0}, Voucher ID: {1}",
                        new Object[]{sql, voucherId});
-           
             stmt.setLong(1, voucherId);
-           
             int rowsAffected = stmt.executeUpdate();
             LOGGER.log(Level.INFO, "Rows affected by deleteVoucher: {0}", rowsAffected);
             return rowsAffected > 0;
@@ -239,7 +234,8 @@ public class VoucherDAO {
             rs.getDate("expiration_date"),
             rs.getBoolean("is_active"),
             rs.getBoolean("visibility"),
-            rs.getDate("created_at")
+            rs.getDate("created_at"),
+            rs.getDate("start_date")
         );
     }
 

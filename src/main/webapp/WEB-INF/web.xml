@@ -28,10 +28,7 @@
         <servlet-name>FeedbackController</servlet-name>
         <servlet-class>controller.customer.FeedbackController</servlet-class>
     </servlet>
-    <servlet-mapping>
-        <servlet-name>FeedbackController</servlet-name>
-        <url-pattern>/feedback</url-pattern>
-    </servlet-mapping>
+   
     <servlet>
         <servlet-name>WishlistController</servlet-name>
         <servlet-class>controller.customer.WishlistController</servlet-class>
@@ -104,10 +101,7 @@
         <servlet-name>StockMovementController</servlet-name>
         <url-pattern>/StockMovement</url-pattern>
     </servlet-mapping>
-    <servlet-mapping>
-        <servlet-name>FeedbackReplyController</servlet-name>
-        <url-pattern>/FeedbackReplyController</url-pattern>
-    </servlet-mapping>
+   
     <servlet-mapping>
         <servlet-name>BlogController</servlet-name>
         <url-pattern>/blog</url-pattern>
