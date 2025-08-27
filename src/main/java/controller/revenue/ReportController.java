@@ -4,6 +4,9 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import dao.ReportDAO;
 import DTO.CombinedReportDTO;
+import DTO.CustomerOrderDTO;
+import DTO.CustomerOrderItemDTO;
+import DTO.CustomerSummaryDTO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -15,6 +18,7 @@ import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 import model.Users;
 
 @WebServlet(name = "ReportController", urlPatterns = {"/Reports"})
@@ -26,7 +30,7 @@ public class ReportController extends HttpServlet {
     @Override
     public void init() {
         reportDAO = new ReportDAO();
-        // Trả datetime theo ISO để client parse chắc chắn
+        // ISO-8601 để client parse chắc chắn
         gson = new GsonBuilder()
                 .setDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX")
                 .create();
@@ -36,7 +40,7 @@ public class ReportController extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        // Auth check
+        // ==== Auth ====
         HttpSession session = request.getSession(false);
         Users currentUser = (session != null) ? (Users) session.getAttribute("admin") : null;
         if (currentUser == null) currentUser = (session != null) ? (Users) session.getAttribute("staff") : null;
@@ -57,6 +61,10 @@ public class ReportController extends HttpServlet {
 
             String orderSortBy      = trimOrNull(request.getParameter("orderSortBy"));   // date | total
             String orderSortOrder   = trimOrNull(request.getParameter("orderSortOrder")); // ASC | DESC
+
+            // API phụ cho Customer/Items
+            String customerIdStr    = trimOrNull(request.getParameter("customerId"));
+            String orderIdStr       = trimOrNull(request.getParameter("orderId"));
 
             if (reportType == null || reportType.isEmpty()) reportType = "revenue";
 
@@ -87,30 +95,49 @@ public class ReportController extends HttpServlet {
                 orderSortOrder = "DESC";
             else orderSortOrder = orderSortOrder.toUpperCase();
 
-            // ===== AJAX: GIỮ HÀNH VI CŨ (trả đúng 'type' hiện tại) =====
+            // ===== API phụ: Orders theo Customer =====
+            if ("true".equals(isAjaxRequest) && customerIdStr != null) {
+                long cid = Long.parseLong(customerIdStr);
+                List<CustomerOrderDTO> list = reportDAO.getOrdersByCustomer(startDate, endDate, cid);
+                writeJson(response, list);
+                return;
+            }
+
+            // ===== API phụ: Items theo Order =====
+            if ("true".equals(isAjaxRequest) && orderIdStr != null) {
+                long oid = Long.parseLong(orderIdStr);
+                List<CustomerOrderItemDTO> items = reportDAO.getOrderItems(oid);
+                writeJson(response, items);
+                return;
+            }
+
+            // ===== AJAX chính (tab động): trả đúng 'type' hiện tại + customerSummary =====
             if ("true".equals(isAjaxRequest)) {
                 CombinedReportDTO single = reportDAO.getCombinedReportData(
                         startDate, endDate, reportType,
                         productSortBy, productSortOrder,
                         orderSortBy, orderSortOrder
                 );
-                response.setContentType("application/json");
-                response.setCharacterEncoding("UTF-8");
-                response.getWriter().write(gson.toJson(single));
+                // bổ sung customerSummary
+                single.setCustomerSummary(reportDAO.getCustomerSummary(startDate, endDate));
+
+                writeJson(response, single);
                 return;
             }
 
             // ===== PAGE LOAD: PRELOAD CẢ 2 BỘ PRODUCT =====
             CombinedReportDTO revenueBlock = reportDAO.getCombinedReportData(
                     startDate, endDate, "revenue",
-                    "revenue", "DESC",       // sort hợp lý cho chart revenue
+                    "revenue", "DESC",
                     orderSortBy, orderSortOrder
             );
             CombinedReportDTO bestBlock = reportDAO.getCombinedReportData(
                     startDate, endDate, "bestselling",
-                    "quantity", "DESC",      // sort hợp lý cho chart bestselling
+                    "quantity", "DESC",
                     orderSortBy, orderSortOrder
             );
+            // customerSummary dùng cùng range (lấy 1 lần)
+            List<CustomerSummaryDTO> customerSummary = reportDAO.getCustomerSummary(startDate, endDate);
 
             // Gói preload
             PreloadedPayload preload = new PreloadedPayload();
@@ -118,10 +145,13 @@ public class ReportController extends HttpServlet {
             preload.startDate = startDate;
             preload.endDate = endDate;
 
-            // Phần hệ thống và orders có thể dùng từ 1 block (cùng range)
+            // System + orders dùng từ revenueBlock (cùng range)
             preload.systemKpis = revenueBlock.getSystemKpis();
             preload.systemRevenueChartData = revenueBlock.getSystemRevenueChartData();
             preload.ordersReportData = revenueBlock.getOrdersReportData();
+
+            // NEW: customer summary
+            preload.customerSummary = customerSummary;
 
             // Hai block product riêng
             preload.product = new PreloadedPayload.ProductDual();
@@ -153,7 +183,13 @@ public class ReportController extends HttpServlet {
         return (s == null) ? null : s.trim();
     }
 
-    // ===== DTO preload =====
+    private void writeJson(HttpServletResponse resp, Object obj) throws IOException {
+        resp.setContentType("application/json");
+        resp.setCharacterEncoding("UTF-8");
+        resp.getWriter().write(gson.toJson(obj));
+    }
+
+    // ===== DTO preload để đẩy ra JSP =====
     public static class PreloadedPayload {
         public String currentType;
         public String startDate;
@@ -162,6 +198,9 @@ public class ReportController extends HttpServlet {
         public Object systemKpis;
         public Object systemRevenueChartData;
         public Object ordersReportData;
+
+        // NEW: Customer summary
+        public List<CustomerSummaryDTO> customerSummary;
 
         public ProductDual product;
 
