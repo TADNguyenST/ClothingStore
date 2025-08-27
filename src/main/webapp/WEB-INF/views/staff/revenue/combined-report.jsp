@@ -57,12 +57,35 @@
     .customer-toolbar .btn-clear:hover{ background:#e2e8f0; color:#0f172a }
     .theme-dark .customer-toolbar .btn-clear:hover{ background:#1f2937; color:#e5e7eb }
     .pill-mono{ font-variant-numeric: tabular-nums; background:#eef2ff; color:#3730a3; border-radius:999px; padding:.15rem .45rem; font-size:.75rem }
+    .content-area {
+        position: relative;
+        margin-left: 260px;
+        padding: 1.5rem;
+        width: calc(100% - 260px);
+        transition: all 0.5s ease;
+        min-height: 100vh;
+    }
+    .sidebar.close ~ .content-area {
+        margin-left: 88px;
+        width: calc(100% - 88px);
+    }
+    .sidebar.hidden ~ .content-area {
+        margin-left: 0;
+        width: 100%;
+    }
   </style>
 </head>
 <body>
-<jsp:include page="/WEB-INF/includes/admin-sidebar.jsp"/>
-<div class="main-content-wrapper">
-  <jsp:include page="/WEB-INF/includes/admin-header.jsp"/>
+<c:choose>
+    <c:when test="${not empty sessionScope.admin}">
+        <jsp:include page="/WEB-INF/includes/admin-sidebar.jsp"/>
+    </c:when>
+    <c:when test="${not empty sessionScope.staff}">
+         <jsp:include page="/WEB-INF/views/staff/staff-sidebar.jsp" />
+    </c:when>
+</c:choose>
+
+
   <main class="content-area">
     <div class="box">
       <div class="box-header d-flex align-items-center justify-content-between">
@@ -323,7 +346,7 @@
       </div>
     </div>
   </main>
-</div>
+
 
 <!-- Chart.js & Bootstrap bundle -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

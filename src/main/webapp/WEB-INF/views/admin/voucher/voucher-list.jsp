@@ -174,7 +174,9 @@
         </c:if>
         <div class="add-container">
             <a href="${pageContext.request.contextPath}/addVoucher" class="btn btn-add">Add Voucher</a>
+             <a href="${pageContext.request.contextPath}/admin/sendvouchers" class="btn btn-add">Send Voucher</a>
         </div>
+        
         <table>
             <thead>
                 <tr>

@@ -31,13 +31,36 @@
     .badge-mono{ font-variant-numeric: tabular-nums; }
     .table thead th{ background:#f8f9fa }
     .btn-quick.active{ background:#4A90E2; color:#fff; }
+     .content-area {
+        position: relative;
+        margin-left: 260px;
+        padding: 1.5rem;
+        width: calc(100% - 260px);
+        transition: all 0.5s ease;
+        min-height: 100vh;
+    }
+    .sidebar.close ~ .content-area {
+        margin-left: 88px;
+        width: calc(100% - 88px);
+    }
+    .sidebar.hidden ~ .content-area {
+        margin-left: 0;
+        width: 100%;
+    }
   </style>
 </head>
 <body>
 
-<jsp:include page="/WEB-INF/includes/admin-sidebar.jsp"/>
+<c:choose>
+    <c:when test="${not empty sessionScope.admin}">
+        <jsp:include page="/WEB-INF/includes/admin-sidebar.jsp"/>
+    </c:when>
+    <c:when test="${not empty sessionScope.staff}">
+         <jsp:include page="/WEB-INF/views/staff/staff-sidebar.jsp" />
+    </c:when>
+</c:choose>
 
-<div class="main-content-wrapper">
+
   <main class="content-area">
     <div class="page-header d-flex align-items-center justify-content-between">
       <h3 class="mb-0"><i class="fa fa-boxes-stacked me-2"></i>Inventory Change History</h3>
@@ -123,7 +146,6 @@
       <nav id="paginationContainer" class="mt-3 d-flex justify-content-center"></nav>
     </div>
   </main>
-</div>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
