@@ -218,7 +218,7 @@
                                             <li><h6 class="dropdown-header">Hi, ${sessionScope.user.fullName}</h6></li>
                                             <li><a class="dropdown-item" href="${pageContext.request.contextPath}/Profile">My Account</a></li>
                                             <li>
-                                                <a class="dropdown-item" href="${pageContext.request.contextPath}/OrderHistory">
+                                                <a class="dropdown-item" href="${pageContext.request.contextPath}">
                                                     <i class="bi bi-list-ul"></i> My Orders
                                                 </a>
                                             </li>

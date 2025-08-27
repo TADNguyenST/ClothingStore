@@ -6,6 +6,8 @@
 
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<fmt:setLocale value="vi_VN" />
 
 <!DOCTYPE html>
 <html lang="en">
@@ -160,6 +162,10 @@
             .back-button-container {
                 margin-bottom: 20px;
             }
+            .currency-vnd {
+                font-weight: bold;
+                color: #28a745;
+            }
         </style>
     </head>
     <body>
@@ -211,7 +217,9 @@
                                 <c:forEach var="order" items="${historyList}">
                                     <tr>
                                         <td>${order.orderId}</td>
-                                        <td>$${order.totalAmount}</td>
+                                        <td class="currency-vnd">
+                                            <fmt:formatNumber value="${order.totalAmount}" type="number" pattern="#,##0" /> VND
+                                        </td>
                                         <td><c:out value="${order.voucherCode != null ? order.voucherCode : 'N/A'}"/></td>
                                         <td>${order.orderDate}</td>
                                         <td>

@@ -6,8 +6,7 @@
 package controller.admin;
 
 import dao.CustomerOrderHistoryDAO;
-import dao.OrderDAO;
-import model.Order;
+import model.CustomerOrderHistory;
 
 import java.io.IOException;
 import java.util.List;
@@ -17,13 +16,20 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import model.CustomerOrderHistory;
+import jakarta.servlet.http.HttpSession;
 
 @WebServlet(name = "CustomerOrderHistoryController", urlPatterns = {"/CustomerOrderHistoryController"})
 public class CustomerOrderHistoryController extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+
+        // 🔒 Kiểm tra session admin
+        HttpSession session = request.getSession(false);
+        if (session == null || session.getAttribute("admin") == null) {
+            response.sendRedirect(request.getContextPath() + "/AdminLogin");
+            return;
+        }
 
         String customerIdStr = request.getParameter("customerId");
         if (customerIdStr != null && !customerIdStr.isEmpty()) {

@@ -58,5 +58,4 @@ public class OrderDetailHistoryDAO {
         }
         return list;
     }
-    //Customer history
 }
