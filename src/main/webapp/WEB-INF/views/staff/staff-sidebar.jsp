@@ -169,19 +169,19 @@
                 </a>
             </li>
             <li>
-                <a href="${pageContext.request.contextPath}/PurchaseOrderList">
+                <a href="${pageContext.request.contextPath}/Stock">
                     <i class='bx bx-cart-add'></i>
-                    <span class="link-name">Purchase Order Management</span>
+                    <span class="link-name">Stock</span>
                 </a>
             </li>
             <li>
-                <a href="${pageContext.request.contextPath}/Admindashboard?action=supplierList&module=supplier">
+                <a href="${pageContext.request.contextPath}/Supplier">
                     <i class='bx bx-buildings'></i>
                     <span class="link-name">Supplier Management</span>
                 </a>
             </li>
             <li>
-                 <a href="${pageContext.request.contextPath}/StockMovement">
+                <a href="${pageContext.request.contextPath}/StockMovement">
                     <i class='bx bxs-truck'></i>
                     <span class="link-name">Stock Movement</span>
                 </a>
@@ -199,7 +199,7 @@
                 </a>
             </li>
         </div>
-                    
+
 
         <div class="logout-section">
             <li class="logout-link">
