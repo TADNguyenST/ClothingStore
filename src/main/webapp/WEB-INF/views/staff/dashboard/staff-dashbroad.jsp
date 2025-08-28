@@ -34,38 +34,6 @@
         <div class="main-content-wrapper">
 
             <!-- Nội dung chính -->
-            <div class="content-area">
-                <div class="row">
-                    <div class="col-xs-12">
-                        <div class="box box-primary">
-                            <div class="box-header with-border">
-                                <h3 class="box-title">Staff Dashboard Overview</h3>
-                            </div>
-                            <div class="box-body">
-                                <p>Welcome to your dashboard. From here, you can view relevant data and access staff-specific functions.</p>
-                                <div class="row">
-                                    <!-- Ví dụ thống kê -->
-                                    <div class="col-lg-3 col-xs-6">
-                                        <div class="small-box" style="background-color: #00a65a;">
-                                            <div class="inner">
-                                                <h3>75</h3>
-                                                <p>Handled Orders</p>
-                                            </div>
-                                            <div class="icon">
-                                                <i class="fa fa-check-circle"></i>
-                                            </div>
-                                            <a href="#" class="small-box-footer">
-                                                More info <i class="fa fa-arrow-circle-right"></i>
-                                            </a>
-                                        </div>
-                                    </div>
-                                    <!-- Add more boxes as needed -->
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
         </div>
 

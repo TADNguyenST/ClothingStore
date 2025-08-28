@@ -1124,7 +1124,7 @@ public class ProductDAO {
                 + "  AND b.is_active = 1 "
                 + "  AND c.is_active = 1 "
                 + "  AND (pc.is_active = 1 OR pc.category_id IS NULL) "
-                + "  AND o.status IN (zz 'COMPLETED') "
+                + "  AND o.status IN ('COMPLETED') "
                 + "  AND o.created_at >= DATEADD(MONTH, -1, SYSUTCDATETIME()) "
                 + "GROUP BY p.product_id, p.name, p.price, p.status "
                 + "ORDER BY total_sold DESC";

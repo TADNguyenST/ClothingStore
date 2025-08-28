@@ -5,6 +5,10 @@
 
 <c:set var="cpath" value="${pageContext.request.contextPath}" />
 
+<%-- Khai báo danh sách trạng thái bằng fn:split để tránh lỗi EL --%>
+<c:set var="orderStatuses" value="${fn:split('PENDING,PROCESSING,SHIPPED,COMPLETED,CANCELED', ',')}" />
+<c:set var="paymentStatuses" value="${fn:split('PAID,REFUND_PENDING,REFUNDED', ',')}" />
+
 <!DOCTYPE html>
 <html lang="en">
     <head>
@@ -237,22 +241,22 @@
                 font:700 12px Inter;
                 color:#111
             }
-              .content-area {
-        position: relative;
-        margin-left: 260px;
-        padding: 1.5rem;
-        width: calc(100% - 260px);
-        transition: all 0.5s ease;
-        min-height: 100vh;
-    }
-    .sidebar.close ~ .content-area {
-        margin-left: 88px;
-        width: calc(100% - 88px);
-    }
-    .sidebar.hidden ~ .content-area {
-        margin-left: 0;
-        width: 100%;
-    }
+            .content-area {
+                position: relative;
+                margin-left: 260px;
+                padding: 1.5rem;
+                width: calc(100% - 260px);
+                transition: all 0.5s ease;
+                min-height: 100vh;
+            }
+            .sidebar.close ~ .content-area {
+                margin-left: 88px;
+                width: calc(100% - 88px);
+            }
+            .sidebar.hidden ~ .content-area {
+                margin-left: 0;
+                width: 100%;
+            }
         </style>
     </head>
     <body>
@@ -282,7 +286,7 @@
 
                     <select class="sel" name="status" title="Order Status">
                         <option value="">Order Status: All</option>
-                        <c:forEach var="s" items="${['PENDING','PROCESSING','SHIPPED','COMPLETED','CANCELED']}">
+                        <c:forEach var="s" items="${orderStatuses}">
                             <option value="${s}" ${param.status==s?'selected':''}>${s}</option>
                         </c:forEach>
                     </select>
@@ -290,7 +294,7 @@
                     <!-- Staff only manages paid flows: no UNPAID/FAILED in the UI -->
                     <select class="sel" name="pay" title="Payment">
                         <option value="">Payment: All</option>
-                        <c:forEach var="p" items="${['PAID','REFUND_PENDING','REFUNDED']}">
+                        <c:forEach var="p" items="${paymentStatuses}">
                             <option value="${p}" ${param.pay==p?'selected':''}>${p}</option>
                         </c:forEach>
                     </select>

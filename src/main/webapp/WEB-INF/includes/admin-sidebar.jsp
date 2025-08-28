@@ -99,17 +99,29 @@
         transform: translateY(-50%) rotate(0deg);
         right: -10px; /* Adjust button position when collapsed */
     }
+
     /* --- Sidebar Links --- */
+    /* CẬP NHẬT Ở ĐÂY */
     .sidebar-links {
         height: calc(100% - 90px);
-        display: flex; /* Use flexbox to push logout to the bottom */
+        display: flex;
         flex-direction: column;
         justify-content: space-between;
-        overflow-y: auto; /* Allow vertical scrolling if needed */
+        overflow-y: auto; /* Giữ lại để có thể cuộn khi cần */
+        overflow-x: hidden; /* Thêm để ẩn thanh cuộn ngang */
         padding-top: 20px;
         list-style: none;
-        padding-left: 0; /* Reset padding left */
+        padding-left: 0;
+        /* Thêm các thuộc tính để ẩn thanh cuộn dọc */
+        scrollbar-width: none; /* Cho Firefox */
+        -ms-overflow-style: none;  /* Cho Internet Explorer & Edge */
     }
+
+    /* THÊM MỚI Ở ĐÂY: Ẩn thanh cuộn cho các trình duyệt WebKit */
+    .sidebar-links::-webkit-scrollbar {
+        display: none;
+    }
+
     .sidebar-links a {
         display: flex;
         align-items: center;
@@ -120,11 +132,9 @@
         transition: var(--tran-03);
         padding: 0 10px; /* Add padding to avoid icon and text sticking to the edge */
     }
-
     .sidebar.close .sidebar-links a {
         padding: 0; /* Reset padding when collapsed */
     }
-
     .sidebar-links a:hover {
         background-color: var(--primary-color);
         color: var(--panel-color);
@@ -136,7 +146,6 @@
         align-items: center;
         justify-content: center;
     }
-    
     .sidebar .link-name {
         font-size: 16px;
         font-weight: 400;
@@ -177,7 +186,7 @@
                     <span class="link-name">Report</span>
                 </a>
             </li>
-            
+
             <li>
                 <a href="${pageContext.request.contextPath}/CustomerManagement">
                     <i class='bx bx-group'></i>
@@ -202,7 +211,7 @@
                     <span class="link-name">Categories</span>
                 </a>
             </li>
-             <li>
+            <li>
                 <a href="${pageContext.request.contextPath}/BrandListAdmin">
                     <i class='bx bx-purchase-tag-alt'></i>
                     <span class="link-name">Brands</span>
@@ -214,7 +223,7 @@
                     <span class="link-name">Inventory Management</span>
                 </a>
             </li>
-             <li>
+            <li>
                 <a href="${pageContext.request.contextPath}/Admindashboard?action=supplierList&module=supplier">
                     <i class='bx bx-buildings'></i>
                     <span class="link-name">Supplier Management</span>
@@ -227,7 +236,7 @@
                 </a>
             </li>
             <li>
-                 <a href="${pageContext.request.contextPath}/StockMovement">
+                <a href="${pageContext.request.contextPath}/StockMovement">
                     <i class='bx bxs-truck'></i>
                     <span class="link-name">Stock Movement</span>
                 </a>
@@ -238,23 +247,23 @@
                     <span class="link-name">Purchase Order Management</span>
                 </a>
             </li>
-            
+
             <div class="logout-section">
-             <li class="logout-link">
-                <a href="${pageContext.request.contextPath}/AdminLogout">
-                    <i class='bx bx-log-out'></i>
-                    <span class="link-name">Logout</span>
-                </a>
-            </li>
+                <li class="logout-link">
+                    <a href="${pageContext.request.contextPath}/AdminLogout">
+                        <i class='bx bx-log-out'></i>
+                        <span class="link-name">Logout</span>
+                    </a>
+                </li>
+            </div>
         </div>
-        </div>
-        
+
     </ul>
 </nav>
 <script>
     const body = document.querySelector("body"),
-          sidebar = body.querySelector(".sidebar"),
-          toggle = body.querySelector("#btn-toggle");
+            sidebar = body.querySelector(".sidebar"),
+            toggle = body.querySelector("#btn-toggle");
 
     toggle.addEventListener("click", () => {
         sidebar.classList.toggle("close");

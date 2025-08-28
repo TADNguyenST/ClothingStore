@@ -42,7 +42,7 @@ public class StaffLoginController extends HttpServlet {
         if (user != null && "Staff".equalsIgnoreCase(user.getRole()) && "Active".equalsIgnoreCase(user.getStatus())) {
             HttpSession session = request.getSession();
             session.setAttribute("staff", user); // lưu thông tin nhân viên vào session
-            response.sendRedirect(request.getContextPath() + "/Staffdashboard"); // chuyển đến dashboard
+            response.sendRedirect(request.getContextPath() + "/Reports"); // chuyển đến dashboard
         } else {
             request.setAttribute("error", "Incorrect email or password, or invalid account.");
             request.getRequestDispatcher("/WEB-INF/views/staff/staff-login.jsp").forward(request, response);
