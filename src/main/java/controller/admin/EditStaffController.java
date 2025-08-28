@@ -1,4 +1,4 @@
-/*
+/* 
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/JSP_Servlet/Servlet.java to edit this template
  */
@@ -32,6 +32,13 @@ public class EditStaffController extends HttpServlet {
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
     throws ServletException, IOException {
         response.setContentType("text/html;charset=UTF-8");
+
+        
+        jakarta.servlet.http.HttpSession session = request.getSession(false);
+        if (session == null || session.getAttribute("admin") == null) {
+            response.sendRedirect(request.getContextPath() + "/AdminLogin");
+            return;
+        }
 
         String method = request.getMethod();
         StaffDAO dao = new StaffDAO();

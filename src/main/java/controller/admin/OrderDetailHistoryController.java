@@ -24,6 +24,13 @@ public class OrderDetailHistoryController extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
+      
+        jakarta.servlet.http.HttpSession session = request.getSession(false);
+        if (session == null || session.getAttribute("admin") == null) {
+            response.sendRedirect(request.getContextPath() + "/AdminLogin");
+            return;
+        }
+
         String orderIdStr = request.getParameter("orderId");
         if (orderIdStr != null && !orderIdStr.isEmpty()) {
             int orderId = Integer.parseInt(orderIdStr);
@@ -39,4 +46,3 @@ public class OrderDetailHistoryController extends HttpServlet {
                .forward(request, response);
     }
 }
-

@@ -81,6 +81,14 @@ public class ChangePasswordController extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+
+        // ✅ Đã thêm đoạn kiểm tra session ở đây
+        HttpSession session = request.getSession(false);
+        if (session == null || session.getAttribute("user") == null) {
+            response.sendRedirect(request.getContextPath() + "/Login");
+            return;
+        }
+
         processRequest(request, response);
     }
 
