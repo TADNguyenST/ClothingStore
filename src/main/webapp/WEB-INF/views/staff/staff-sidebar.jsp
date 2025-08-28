@@ -192,6 +192,12 @@
                     <span class="link-name">Purchase Order Management</span>
                 </a>
             </li>
+            <li>
+                <a href="${pageContext.request.contextPath}/feedbackList">
+                    <i class='bx bx-message-dots'></i>
+                    <span class="link-name">Feedback</span>
+                </a>
+            </li>
         </div>
                     
 

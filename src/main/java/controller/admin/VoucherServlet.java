@@ -1,13 +1,14 @@
-
 package controller.admin;
 
 import dao.VoucherDAO;
 import model.Voucher;
+import model.Users;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
@@ -28,6 +29,17 @@ public class VoucherServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        // Check for valid admin session
+        HttpSession session = request.getSession(false); // Get session without creating a new one
+        Users admin = (session != null) ? (Users) session.getAttribute("admin") : null;
+
+        if (admin == null || !"Admin".equalsIgnoreCase(admin.getRole())) {
+            // If no valid admin session, redirect to login page
+            request.setAttribute("error", "Please log in as an Admin to access this page.");
+            request.getRequestDispatcher("/WEB-INF/views/admin/admin-login.jsp").forward(request, response);
+            return;
+        }
+
         try {
             // Get search parameters
             String code = request.getParameter("code");
@@ -70,6 +82,23 @@ public class VoucherServlet extends HttpServlet {
 
         // Forward to JSP
         request.getRequestDispatcher("/WEB-INF/views/admin/voucher/voucher-list.jsp").forward(request, response);
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        // Check for valid admin session for POST requests as well
+        HttpSession session = request.getSession(false);
+        Users admin = (session != null) ? (Users) session.getAttribute("admin") : null;
+
+        if (admin == null || !"Admin".equalsIgnoreCase(admin.getRole())) {
+            request.setAttribute("error", "Please log in as an Admin to access this page.");
+            request.getRequestDispatcher("/WEB-INF/views/admin/admin-login.jsp").forward(request, response);
+            return;
+        }
+
+        // Add POST handling logic here if needed (e.g., creating/updating vouchers)
+        doGet(request, response); // Fallback to doGet for now if no specific POST logic
     }
 
     @Override
