@@ -3,31 +3,20 @@ package controller.admin;
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import dao.ProductDAO;
-import model.Brand;
-import model.Category;
-import model.Product;
-import model.ProductImage;
-import model.ProductVariant;
-import model.Users;
+import model.*;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
-import jakarta.servlet.http.Part;
+import jakarta.servlet.http.*;
 
 import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 
-@MultipartConfig(maxFileSize = 10485760) // 10MB
 @WebServlet(name = "ProductEditAdminController", urlPatterns = {"/ProductEditAdmin"})
+@MultipartConfig(maxFileSize = 10485760) // 10MB
 public class ProductEditAdminController extends HttpServlet {
     private ProductDAO productDAO;
     private Cloudinary cloudinary;
@@ -55,17 +44,8 @@ public class ProductEditAdminController extends HttpServlet {
             return;
         }
         try {
-            String productIdStr = request.getParameter("productId");
-            if (productIdStr == null || productIdStr.trim().isEmpty()) {
-                throw new IllegalArgumentException("Missing productId.");
-            }
-            long productId = Long.parseLong(productIdStr);
-
+            long productId = Long.parseLong(request.getParameter("productId"));
             Product product = productDAO.getProductById(productId);
-            if (product == null) {
-                throw new IllegalArgumentException("No products found with ID: " + productId);
-            }
-
             List<ProductVariant> variants = productDAO.getProductVariantsByProductId(productId);
             List<ProductImage> images = productDAO.getProductImagesByProductId(productId);
             List<Category> categories = productDAO.getCategories();
@@ -93,7 +73,6 @@ public class ProductEditAdminController extends HttpServlet {
         response.setContentType("text/html;charset=UTF-8");
 
         try {
-            // Information products
             long productId = Long.parseLong(request.getParameter("productId"));
             String name = request.getParameter("name");
             long categoryId = Long.parseLong(request.getParameter("categoryId"));
@@ -119,6 +98,7 @@ public class ProductEditAdminController extends HttpServlet {
 
             productDAO.updateProduct(product);
 
+            // xử lý variant 
             //variant
             String[] variantIds = request.getParameterValues("variantId[]");
             String[] sizes = request.getParameterValues("size[]");
@@ -189,22 +169,23 @@ public class ProductEditAdminController extends HttpServlet {
                 productDAO.deleteProductVariant(variantId);
             }
 
-            //Image
+            // xử lý ảnh
             String[] imageIds = request.getParameterValues("imageId[]");
             String[] deleteImages = request.getParameterValues("deleteImage[]");
             String mainImageIndex = request.getParameter("mainImage");
 
-            // Delete Image
+            // Xoá ảnh trong DB
             if (deleteImages != null) {
                 for (String del : deleteImages) {
-                    if (del != null && !del.isEmpty()) {
-                        long imageId = Long.parseLong(del);
+                    if (del != null && !del.trim().isEmpty()) {
+                        long imageId = Long.parseLong(del.trim());
+                        System.out.println("Deleting imageId = " + imageId); // debug
                         productDAO.deleteProductImage(imageId);
                     }
                 }
             }
 
-            // Reset image is_main = false
+            // reset all main=false
             if (imageIds != null) {
                 for (String idStr : imageIds) {
                     if (idStr != null && !idStr.isEmpty()) {
@@ -213,54 +194,33 @@ public class ProductEditAdminController extends HttpServlet {
                 }
             }
 
-            // update image is main image
+            // gán lại ảnh chính
             if (mainImageIndex != null && !mainImageIndex.isEmpty()) {
-                try {
-                    int index = Integer.parseInt(mainImageIndex);
-                    if (imageIds != null && index < imageIds.length) {
-                        long mainImageId = Long.parseLong(imageIds[index]);
-                        productDAO.updateImageMainFlag(mainImageId, true);
-                    }
-                } catch (Exception ignored) {}
+                int index = Integer.parseInt(mainImageIndex);
+                if (imageIds != null && index < imageIds.length) {
+                    long mainImageId = Long.parseLong(imageIds[index]);
+                    productDAO.updateImageMainFlag(mainImageId, true);
+                }
             }
 
-            // Upload new image
-            Collection<Part> parts = request.getParts();
-            for (Part part : parts) {
+            // upload ảnh mới (giữ nguyên code bạn)
+            for (Part part : request.getParts()) {
                 if (part.getName().equals("images[]") && part.getSize() > 0) {
                     String fileName = System.currentTimeMillis() + "_" + part.getSubmittedFileName();
                     String uploadPath = request.getServletContext().getRealPath("/") + "uploads" + File.separator + fileName;
-
                     File file = new File(uploadPath);
                     file.getParentFile().mkdirs();
                     part.write(uploadPath);
-
-                    boolean isMain = false;
-                    if (mainImageIndex != null) {
-                        int index = Integer.parseInt(mainImageIndex);
-                        if (imageIds == null || index == imageIds.length) {
-                            isMain = true;
-                        }
-                    }
-
-                    productDAO.insertProductImage(productId, "uploads/" + fileName, isMain);
+                    productDAO.insertProductImage(productId, "uploads/" + fileName, false);
                 }
             }
 
             response.sendRedirect(request.getContextPath() + "/ProductListAdmin?action=list&success=edit");
 
         } catch (Exception e) {
-            String errorMsg = e.getMessage();
-            if (errorMsg != null && errorMsg.contains("UNIQUE KEY")) {
-                errorMsg = "This variation already exists, please choose another Size or Color.";
-            }
-            request.setAttribute("errorMessage", "An error occurred: " + errorMsg);
+            e.printStackTrace();
+            request.setAttribute("errorMessage","" + e.getMessage());
             doGet(request, response);
         }
-    }
-
-    @Override
-    public String getServletInfo() {
-        return "Servlet for editing product information, variants, and images.";
     }
 }

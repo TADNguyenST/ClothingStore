@@ -224,47 +224,52 @@
                         <button type="button" class="btn btn-primary mt-2" id="addVariant"><i class="bi bi-plus-circle"></i> Add Variant</button>
                     </div>
 
-                    <div class="image-container">
-                        <h5>Product Images <span class="text-danger">*</span></h5>
-                        <div id="images">
-                            <c:forEach var="image" items="${images}" varStatus="status">
-                                <div class="image-row p-2 mb-2 border rounded">
-                                    <input type="hidden" name="imageId[]" value="${image.imageId}">
-                                    <input type="hidden" name="imageUrl[]" value="${image.imageUrl}"> <img src="${fn:escapeXml(image.imageUrl)}" alt="Image Preview" class="image-preview">
-
-                                    <div class="form-check mx-3">
-                                        <input class="form-check-input" type="radio" name="mainImage" id="mainImage${status.index}" value="${status.index}" ${image.main ? 'checked' : ''}>
-                                        <label class="form-check-label" for="mainImage${status.index}">
-                                            Main Image
-                                        </label>
-                                    </div>
-
-                                    <button type="button" class="btn btn-danger ms-auto remove-image"><i class="bi bi-trash"></i></button>
-                                    <input type="hidden" name="deleteImage[]" class="deleteImage" value="">
-                                </div>
-                            </c:forEach>
-
-                            <div class="image-row new-image p-2 mb-2">
-                                <div class="flex-grow-1">
-                                    <label class="form-label">Add New Image</label>
-                                    <input type="file" class="form-control" name="images[]" accept="image/*">
-                                </div>
-                                <div class="form-check mx-3">
-                                    <input class="form-check-input" type="radio" name="mainImage" value="${fn:length(images)}">
-                                    <label class="form-check-label">Main Image</label>
-                                </div>
-                                <div>
-                                    <button type="button" class="btn btn-danger mt-4 remove-image"><i class="bi bi-trash"></i></button>
-                                </div>
+                    <!-- Images -->
+            <div class="image-container">
+                <h5>Product Images <span class="text-danger">*</span></h5>
+                <div id="images">
+                    <c:forEach var="image" items="${images}" varStatus="status">
+                        <div class="image-row p-2 mb-2 border rounded">
+                            <input type="hidden" name="imageId[]" value="${image.imageId}">
+                            <input type="hidden" name="deleteImage[]" class="deleteImage" value="">
+                            <img src="${fn:escapeXml(image.imageUrl)}" class="image-preview">
+                            <div class="form-check mx-3">
+                                <input class="form-check-input" type="radio" name="mainImage"
+                                       value="${status.index}" ${image.main ? 'checked' : ''}>
+                                <label class="form-check-label">Main Image</label>
                             </div>
+                            <button type="button" class="btn btn-danger ms-auto remove-image">
+                                <i class="bi bi-trash"></i>
+                            </button>
                         </div>
-                        <button type="button" class="btn btn-primary mt-2" id="addImage"><i class="bi bi-plus-circle"></i> Add Image</button>
-                    </div>
+                    </c:forEach>
 
-                    <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-success"><i class="bi bi-save"></i> Save Changes</button>
-                        <a href="${pageContext.request.contextPath}/ProductListAdmin" class="btn btn-secondary"><i class="bi bi-x-circle"></i> Cancel</a>
+                    <!-- Add new image -->
+                    <div class="image-row new-image p-2 mb-2">
+                        <div class="flex-grow-1">
+                            <label class="form-label">Add New Image</label>
+                            <input type="file" class="form-control" name="images[]" accept="image/*">
+                        </div>
+                        <div class="form-check mx-3">
+                            <input class="form-check-input" type="radio" name="mainImage" value="${fn:length(images)}">
+                            <label class="form-check-label">Main Image</label>
+                        </div>
+                        <div>
+                            <button type="button" class="btn btn-danger mt-4 remove-image">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
                     </div>
+                </div>
+                <button type="button" class="btn btn-primary mt-2" id="addImage">
+                    <i class="bi bi-plus-circle"></i> Add Image
+                </button>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-success"><i class="bi bi-save"></i> Save Changes</button>
+                <a href="${pageContext.request.contextPath}/ProductListAdmin" class="btn btn-secondary"><i class="bi bi-x-circle"></i> Cancel</a>
+            </div>
                 </form>
             </div>
         </div>
@@ -315,45 +320,32 @@
             }
         }
     });
-            document.getElementById('addImage').addEventListener('click', function () {
-                const imageContainer = document.getElementById('images');
-                const imageRow = imageContainer.querySelector('.new-image').cloneNode(true);
-                const index = imageContainer.querySelectorAll('.image-row, .new-image').length;
-                imageRow.querySelector('input[type="file"]').value = '';
-                imageRow.querySelector('input[type="radio"]').value = index;
-                imageRow.querySelector('input[type="radio"]').checked = false;
-                imageContainer.appendChild(imageRow);
-            });
-            document.addEventListener('click', function (e) {
-                const removeBtn = e.target.closest('.remove-image');
-                if (removeBtn) {
-                    const imageRow = removeBtn.closest('.image-row, .new-image');
-                    if (document.querySelectorAll('.image-row, .new-image').length > 1) {
-                        const imageIdInput = imageRow.querySelector('input[name="imageId"]');
-                        if (imageIdInput && imageIdInput.value) {
-                            imageRow.querySelector('.deleteImage').value = imageIdInput.value;
-                            imageRow.style.display = 'none';
-                        } else {
-                            imageRow.remove();
-                        }
-                        const imageRows = document.querySelectorAll('.image-row, .new-image');
-                        let mainImageChecked = false;
-                        imageRows.forEach(row => {
-                            if (row.querySelector('input[name="mainImage"]:checked')) {
-                                mainImageChecked = true;
-                            }
-                        });
-                        if (!mainImageChecked && imageRows.length > 0) {
-                            const firstVisibleRow = Array.from(imageRows).find(row => row.style.display !== 'none');
-                            if (firstVisibleRow) {
-                                firstVisibleRow.querySelector('input[type="radio"]').checked = true;
-                            }
-                        }
-                    } else {
-                        Swal.fire({icon: 'warning', title: 'Cannot Delete', text: 'At least one image is required.'});
-                    }
-                }
-            });
+            // thêm image mới
+    document.getElementById('addImage').addEventListener('click', function () {
+        const imageContainer = document.getElementById('images');
+        const imageRow = imageContainer.querySelector('.new-image').cloneNode(true);
+        imageRow.querySelector('input[type="file"]').value = '';
+        const index = imageContainer.querySelectorAll('.image-row').length;
+        imageRow.querySelector('input[type="radio"]').value = index;
+        imageRow.querySelector('input[type="radio"]').checked = false;
+        imageContainer.appendChild(imageRow);
+    });
+
+    // xoá image
+    document.addEventListener('click', function (e) {
+        const removeBtn = e.target.closest('.remove-image');
+        if (removeBtn) {
+            const imageRow = removeBtn.closest('.image-row');
+            const imageIdInput = imageRow.querySelector('input[name="imageId[]"]');
+            const deleteInput = imageRow.querySelector('.deleteImage');
+            if (imageIdInput && imageIdInput.value) {
+                deleteInput.value = imageIdInput.value; // đánh dấu xoá
+                imageRow.style.display = 'none';
+            } else {
+                imageRow.remove(); // ảnh mới chưa lưu DB
+            }
+        }
+    });
             document.querySelector('form').addEventListener('submit', function (e) {
                 // Form validation logic remains unchanged
             });
