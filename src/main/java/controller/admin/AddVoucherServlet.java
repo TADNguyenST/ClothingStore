@@ -9,8 +9,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.sql.SQLException;
 import java.sql.Date;
+import java.sql.SQLException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.HashMap;
@@ -42,7 +42,6 @@ public class AddVoucherServlet extends HttpServlet {
             throws ServletException, IOException {
         request.setCharacterEncoding("UTF-8");
         response.setCharacterEncoding("UTF-8");
-
         try {
             // Extract form parameters
             String code = request.getParameter("code");
@@ -54,6 +53,7 @@ public class AddVoucherServlet extends HttpServlet {
             String maximumDiscountAmountStr = request.getParameter("maximumDiscountAmount");
             String usageLimitStr = request.getParameter("usageLimit");
             String expirationDateStr = request.getParameter("expirationDate");
+            String startDateStr = request.getParameter("startDate");
             String isActiveStr = request.getParameter("isActive");
             String visibilityStr = request.getParameter("visibility");
 
@@ -68,6 +68,7 @@ public class AddVoucherServlet extends HttpServlet {
             formData.put("maximumDiscountAmount", maximumDiscountAmountStr);
             formData.put("usageLimit", usageLimitStr);
             formData.put("expirationDate", expirationDateStr);
+            formData.put("startDate", startDateStr);
             formData.put("isActive", isActiveStr != null);
             formData.put("visibility", visibilityStr != null ? Boolean.parseBoolean(visibilityStr) : false);
 
@@ -75,8 +76,8 @@ public class AddVoucherServlet extends HttpServlet {
             Map<String, String> errors = new HashMap<>();
 
             // Debug: Log input parameters
-            LOGGER.log(Level.INFO, "Parameters: code={0}, name={1}, discountType={2}, discountValue={3}, minimumOrderAmount={4}, maximumDiscountAmount={5}, usageLimit={6}, expirationDate={7}",
-                    new Object[]{code, name, discountType, discountValueStr, minimumOrderAmountStr, maximumDiscountAmountStr, usageLimitStr, expirationDateStr});
+            LOGGER.log(Level.INFO, "Parameters: code={0}, name={1}, discountType={2}, discountValue={3}, minimumOrderAmount={4}, maximumDiscountAmount={5}, usageLimit={6}, expirationDate={7}, startDate={8}",
+                    new Object[]{code, name, discountType, discountValueStr, minimumOrderAmountStr, maximumDiscountAmountStr, usageLimitStr, expirationDateStr, startDateStr});
 
             // Validate required fields
             if (code == null || code.trim().isEmpty()) {
@@ -177,8 +178,29 @@ public class AddVoucherServlet extends HttpServlet {
                 }
             }
 
-            boolean isActive = isActiveStr != null && Boolean.parseBoolean(isActiveStr.trim());
+            Date startDate = null;
+            if (startDateStr == null || startDateStr.trim().isEmpty()) {
+                errors.put("startDate", "Start Date is required.");
+            } else {
+                try {
+                    SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+                    dateFormat.setLenient(false);
+                    java.util.Date utilDate = dateFormat.parse(startDateStr.trim());
+                    startDate = new Date(utilDate.getTime());
+                    Date createdAt = new Date(System.currentTimeMillis());
+                    if (startDate.before(createdAt) || startDate.equals(createdAt)) {
+                        errors.put("startDate", "Start Date must be after the creation date.");
+                    }
+                    if (expirationDate != null && startDate.after(expirationDate)) {
+                        errors.put("startDate", "Start Date cannot be after the expiration date.");
+                    }
+                } catch (ParseException e) {
+                    LOGGER.log(Level.WARNING, "Invalid start date format: " + startDateStr, e);
+                    errors.put("startDate", "Invalid start date format.");
+                }
+            }
 
+            boolean isActive = isActiveStr != null && Boolean.parseBoolean(isActiveStr.trim());
             boolean visibility = Boolean.parseBoolean(visibilityStr != null ? visibilityStr.trim() : "false");
 
             // If there are errors, forward back to the form with the data
@@ -205,7 +227,8 @@ public class AddVoucherServlet extends HttpServlet {
                     expirationDate,
                     isActive,
                     visibility,
-                    new Date(System.currentTimeMillis())
+                    new Date(System.currentTimeMillis()),
+                    startDate
             );
 
             // Save to database

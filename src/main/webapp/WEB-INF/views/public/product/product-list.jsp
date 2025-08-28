@@ -73,7 +73,7 @@
         border: 1px solid #eee;
         text-align: center;
         margin-bottom: 1.5rem;
-        border-radius: 5px;
+        border-radius: 10px;
         overflow: hidden;
         background: #fff;
         transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -100,37 +100,38 @@
         transform: scale(1.05);
     }
     .product-card .product-title {
-        font-size: 0.85rem;
+        font-size: 0.9rem;
         font-weight: 500;
-        color: #333;
+        color: #1e3a8a;
         text-decoration: none;
         display: -webkit-box;
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
         overflow: hidden;
-        height: 34px;
+        height: 38px;
         padding: 0 6px;
-        margin-bottom: 5px;
+        margin-bottom: 6px;
     }
     .product-card .product-title:hover {
         color: #000;
     }
     .product-card .product-price {
-        font-size: 0.95rem;
+        font-size: 1rem;
         font-weight: 600;
         color: #111;
-        margin-bottom: 8px;
+        margin-bottom: 10px;
     }
     .product-card .btn-container {
         display: flex;
         justify-content: center;
-        gap: 6px;
-        padding: 0 6px 8px 6px;
+        gap: 10px; /* giống home.jsp */
+        padding-bottom: 10px;
     }
-    .product-card .btn-custom-sm {
-        padding: 0.25rem 0.7rem;
-        font-size: 0.75rem;
-        line-height: 1.5;
+    .product-card .btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+        border-radius: 20px;
+        transition: all 0.3s ease;
     }
     .wishlist-icon {
         position: absolute;
@@ -155,8 +156,8 @@
     }
     .wishlist-icon-circle:hover,
     .wishlist-icon-circle.active {
-        border-color: #ff4d4f;
-        color: #ff4d4f;
+        border-color: #ef4444;
+        color: #ef4444;
     }
     .error-message {
         color: red;
@@ -165,7 +166,7 @@
         text-align: center;
     }
     /* Out of stock badge */
-    .oos-badge{
+    .oos-badge {
         position:absolute;
         top:10px;
         left:10px;
@@ -215,24 +216,21 @@
                     <a href="<%= request.getContextPath()%>/ProductDetail?productId=<%= product.getProductId()%>">
                         <img src="<%= imageUrl%>" alt="<%= name%>">
                     </a>
-                    <% if (!hasStock) { %>
-                    <span class="oos-badge">Out of stock</span>
-                    <% } %>
                 </div>
 
                 <!-- Title & price -->
                 <a href="<%= request.getContextPath()%>/ProductDetail?productId=<%= product.getProductId()%>" class="product-title"><%= name%></a>
                 <p class="product-price"><%= price%></p>
 
-                <!-- Buttons: match Home behavior -->
+                <!-- Buttons: style đồng bộ với home.jsp -->
                 <div class="btn-container">
                     <% if (hasStock) { %>
                     <a href="<%= request.getContextPath()%>/ProductDetail?productId=<%= product.getProductId()%>"
-                       class="btn btn-primary btn-custom-sm">
+                       class="btn btn-primary">
                         View details
                     </a>
                     <% } else { %>
-                    <button class="btn btn-outline-secondary btn-custom-sm" disabled>
+                    <button class="btn btn-secondary disabled">
                         Out of stock
                     </button>
                     <% } %>

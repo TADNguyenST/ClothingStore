@@ -34,13 +34,20 @@ public class EditVoucherServlet extends HttpServlet {
             throws ServletException, IOException {
         request.setCharacterEncoding("UTF-8");
         response.setCharacterEncoding("UTF-8");
-
         String voucherIdParam = request.getParameter("voucherId");
         if (voucherIdParam != null && !voucherIdParam.trim().isEmpty()) {
             try {
                 long voucherId = Long.parseLong(voucherIdParam);
                 Voucher voucher = voucherDAO.getVoucherById(voucherId);
                 if (voucher != null) {
+                    // Update isActive based on start_date and expiration_date
+                    java.sql.Date currentDate = new java.sql.Date(System.currentTimeMillis());
+                    boolean isActive = (voucher.getStartDate().before(currentDate) || voucher.getStartDate().equals(currentDate))
+                            && voucher.getExpirationDate().after(currentDate);
+                    if (isActive != voucher.isIsActive()) {
+                        voucher.setIsActive(isActive);
+                        voucherDAO.updateVoucher(voucher); // Update in database
+                    }
                     request.setAttribute("voucher", voucher);
                 } else {
                     request.setAttribute("errorMessage", "Voucher not found with ID: " + voucherId);
@@ -55,13 +62,22 @@ public class EditVoucherServlet extends HttpServlet {
         } else {
             try {
                 java.util.List<Voucher> voucherList = voucherDAO.getAllVouchers();
+                // Update isActive for each voucher in the list
+                java.sql.Date currentDate = new java.sql.Date(System.currentTimeMillis());
+                for (Voucher voucher : voucherList) {
+                    boolean isActive = (voucher.getStartDate().before(currentDate) || voucher.getStartDate().equals(currentDate))
+                            && voucher.getExpirationDate().after(currentDate);
+                    if (isActive != voucher.isIsActive()) {
+                        voucher.setIsActive(isActive);
+                        voucherDAO.updateVoucher(voucher);
+                    }
+                }
                 request.setAttribute("voucherList", voucherList);
             } catch (SQLException e) {
                 LOGGER.log(Level.SEVERE, "Database error while retrieving voucher list", e);
                 request.setAttribute("errorMessage", "Error retrieving voucher list: " + e.getMessage());
             }
         }
-
         request.getRequestDispatcher("/WEB-INF/views/admin/voucher/voucher-edit.jsp").forward(request, response);
     }
 
@@ -70,7 +86,6 @@ public class EditVoucherServlet extends HttpServlet {
             throws ServletException, IOException {
         request.setCharacterEncoding("UTF-8");
         response.setCharacterEncoding("UTF-8");
-
         try {
             // Extract form parameters
             String voucherIdParam = request.getParameter("voucherId");
@@ -83,6 +98,7 @@ public class EditVoucherServlet extends HttpServlet {
             String maximumDiscountAmountStr = request.getParameter("maximumDiscountAmount");
             String usageLimitStr = request.getParameter("usageLimit");
             String expirationDateStr = request.getParameter("expirationDate");
+            String startDateStr = request.getParameter("startDate");
             String isActiveStr = request.getParameter("isActive");
             String visibilityStr = request.getParameter("visibility");
 
@@ -98,6 +114,7 @@ public class EditVoucherServlet extends HttpServlet {
             formData.put("maximumDiscountAmount", maximumDiscountAmountStr);
             formData.put("usageLimit", usageLimitStr);
             formData.put("expirationDate", expirationDateStr);
+            formData.put("startDate", startDateStr);
             formData.put("isActive", isActiveStr != null ? Boolean.parseBoolean(isActiveStr) : false);
             formData.put("visibility", visibilityStr != null ? Boolean.parseBoolean(visibilityStr) : false);
 
@@ -105,8 +122,8 @@ public class EditVoucherServlet extends HttpServlet {
             Map<String, String> errors = new HashMap<>();
 
             // Debug: Log input parameters
-            LOGGER.log(Level.INFO, "Parameters: voucherId={0}, code={1}, name={2}, discountType={3}, discountValue={4}, minimumOrderAmount={5}, maximumDiscountAmount={6}, usageLimit={7}, expirationDate={8}",
-                    new Object[]{voucherIdParam, code, name, discountType, discountValueStr, minimumOrderAmountStr, maximumDiscountAmountStr, usageLimitStr, expirationDateStr});
+            LOGGER.log(Level.INFO, "Parameters: voucherId={0}, code={1}, name={2}, discountType={3}, discountValue={4}, minimumOrderAmount={5}, maximumDiscountAmount={6}, usageLimit={7}, expirationDate={8}, startDate={9}",
+                    new Object[]{voucherIdParam, code, name, discountType, discountValueStr, minimumOrderAmountStr, maximumDiscountAmountStr, usageLimitStr, expirationDateStr, startDateStr});
 
             // Validate voucherId
             long voucherId;
@@ -236,6 +253,27 @@ public class EditVoucherServlet extends HttpServlet {
                 }
             }
 
+            java.sql.Date sqlStartDate = existingVoucher.getStartDate();
+            if (startDateStr == null || startDateStr.trim().isEmpty()) {
+                errors.put("startDate", "Start Date is required.");
+            } else {
+                try {
+                    SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+                    dateFormat.setLenient(false);
+                    Date utilDate = dateFormat.parse(startDateStr.trim());
+                    sqlStartDate = new java.sql.Date(utilDate.getTime());
+                    if (sqlStartDate.before(existingVoucher.getCreatedAt()) || sqlStartDate.equals(existingVoucher.getCreatedAt())) {
+                        errors.put("startDate", "Start Date must be after the creation date.");
+                    }
+                    if (sqlExpirationDate != null && sqlStartDate.after(sqlExpirationDate)) {
+                        errors.put("startDate", "Start Date cannot be after the expiration date.");
+                    }
+                } catch (ParseException e) {
+                    LOGGER.log(Level.WARNING, "Invalid start date format: " + startDateStr, e);
+                    errors.put("startDate", "Invalid start date format.");
+                }
+            }
+
             boolean isActive = existingVoucher.isIsActive();
             if (isActiveStr == null || isActiveStr.trim().isEmpty()) {
                 errors.put("isActive", "Status is required.");
@@ -284,7 +322,8 @@ public class EditVoucherServlet extends HttpServlet {
                 sqlExpirationDate,
                 isActive,
                 visibility,
-                existingVoucher.getCreatedAt()
+                existingVoucher.getCreatedAt(),
+                sqlStartDate
             );
 
             // Update voucher in database

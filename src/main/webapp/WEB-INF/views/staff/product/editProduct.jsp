@@ -204,6 +204,7 @@
                                             <option value="Black" ${variant.color == 'Black' ? 'selected' : ''}>Black</option>
                                             <option value="White" ${variant.color == 'White' ? 'selected' : ''}>White</option>
                                             <option value="Green" ${variant.color == 'Green' ? 'selected' : ''}>Green</option>
+                                            <option value="Pink" ${variant.color == 'Pink' ? 'selected' : ''}>Pink</option>
                                         </select>
                                     </div>
                                     <div class="flex-grow-1">
@@ -272,34 +273,48 @@
         <script src="${pageContext.request.contextPath}/admin-dashboard/js/admin-js.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
         <script>
-            // JavaScript code remains unchanged
-            document.getElementById('addVariant').addEventListener('click', function () {
-                const variantContainer = document.getElementById('variants');
-                const variantRow = variantContainer.querySelector('.variant-row').cloneNode(true);
-                variantRow.querySelectorAll('input').forEach(input => input.value = '');
-                variantRow.querySelector('input[name="priceModifier[]"]').value = 0;
-                variantRow.querySelectorAll('select').forEach(select => select.selectedIndex = 0);
-                variantRow.querySelector('.deleteVariant').value = '';
-                variantRow.querySelector('input[name="variantId[]"]').value = '0'; // Mark as new variant
-                variantContainer.appendChild(variantRow);
-            });
-            document.addEventListener('click', function (e) {
-                const removeBtn = e.target.closest('.remove-variant');
-                if (removeBtn) {
-                    const variantRow = removeBtn.closest('.variant-row');
-                    if (document.querySelectorAll('.variant-row').length > 1) {
-                        const variantIdInput = variantRow.querySelector('input[name="variantId"]');
-                        if (variantIdInput.value && variantIdInput.value !== '0') {
-                            variantRow.querySelector('.deleteVariant').value = variantIdInput.value;
-                            variantRow.style.display = 'none';
-                        } else {
-                            variantRow.remove();
-                        }
-                    } else {
-                        Swal.fire({icon: 'warning', title: 'Cannot Delete', text: 'At least one variant is required.'});
-                    }
+            // Thêm variant mới
+    document.getElementById('addVariant').addEventListener('click', function () {
+        const variantContainer = document.getElementById('variants');
+        const variantRow = variantContainer.querySelector('.variant-row').cloneNode(true);
+
+        // Reset các input trong dòng clone
+        variantRow.querySelectorAll('input').forEach(input => input.value = '');
+        variantRow.querySelector('input[name="priceModifier[]"]').value = 0;
+        variantRow.querySelectorAll('select').forEach(select => select.selectedIndex = 0);
+
+        // Đặt deleteVariant rỗng
+        variantRow.querySelector('.deleteVariant').value = '';
+
+        // Đặt variantId rỗng (để servlet hiểu là thêm mới)
+        variantRow.querySelector('input[name="variantId[]"]').value = '';
+
+        variantContainer.appendChild(variantRow);
+    });
+            // Xoá variant
+    document.addEventListener('click', function (e) {
+        const removeBtn = e.target.closest('.remove-variant');
+        if (removeBtn) {
+            const variantRow = removeBtn.closest('.variant-row');
+            if (document.querySelectorAll('.variant-row').length > 1) {
+                const variantIdInput = variantRow.querySelector('input[name="variantId[]"]');
+                if (variantIdInput && variantIdInput.value && variantIdInput.value !== '') {
+                    // Nếu là variant cũ trong DB → đánh dấu xoá
+                    variantRow.querySelector('.deleteVariant').value = variantIdInput.value;
+                    variantRow.style.display = 'none';
+                } else {
+                    // Nếu là variant mới chưa lưu → xoá khỏi DOM luôn
+                    variantRow.remove();
                 }
-            });
+            } else {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Cannot Delete',
+                    text: 'At least one variant is required.'
+                });
+            }
+        }
+    });
             document.getElementById('addImage').addEventListener('click', function () {
                 const imageContainer = document.getElementById('images');
                 const imageRow = imageContainer.querySelector('.new-image').cloneNode(true);

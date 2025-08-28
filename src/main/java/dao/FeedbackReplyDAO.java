@@ -1,64 +1,33 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package dao;
 
 import model.FeedbackReply;
 import util.DBContext;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.Timestamp;
 
-import java.sql.*;
-import java.util.ArrayList;
-import java.util.List;
+public class FeedbackReplyDAO {
+    private static final String INSERT_FEEDBACK_REPLY =
+        "INSERT INTO feedback_replies (feedback_id, staff_id, content, reply_date, visibility) " +
+        "VALUES (?, ?, ?, ?, ?)";
 
-public class FeedbackReplyDAO extends DBContext {
-
-    // Thêm phản hồi mới
-    public void insertReply(FeedbackReply reply) throws SQLException {
-        String sql = "INSERT INTO feedback_replies (feedback_id, staff_id, content, reply_date, visibility) "
-                + "VALUES (?, ?, ?, ?, ?)";
-
-        try ( Connection conn = getConnection();  PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setInt(1, reply.getFeedbackId());
-            stmt.setInt(2, reply.getStaffId());
-            stmt.setString(3, reply.getContent());
-            stmt.setTimestamp(4, new Timestamp(reply.getReplyDate().getTime()));
-            stmt.setString(5, reply.getVisibility());
-
-            stmt.executeUpdate();
+    public boolean addFeedbackReply(FeedbackReply reply) throws SQLException {
+        try (Connection conn = DBContext.getNewConnection();
+             PreparedStatement ps = conn.prepareStatement(INSERT_FEEDBACK_REPLY)) {
+            ps.setLong(1, reply.getFeedbackId());
+            ps.setLong(2, reply.getStaffId());
+            ps.setString(3, reply.getContent());
+            ps.setTimestamp(4, reply.getReplyDate());
+            ps.setString(5, reply.getVisibility());
+            int rowsAffected = ps.executeUpdate();
+            return rowsAffected > 0;
+        } catch (SQLException ex) {
+            throw new SQLException("Error adding feedback reply: " + ex.getMessage(), ex);
         }
     }
 
-    // Lấy tất cả phản hồi theo feedback_id
-    public List<FeedbackReply> getRepliesByFeedbackId(int feedbackId) throws SQLException {
-        List<FeedbackReply> list = new ArrayList<>();
-        String sql = "SELECT * FROM feedback_replies WHERE feedback_id = ? ORDER BY reply_date DESC";
-
-        try ( Connection conn = getConnection();  PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setInt(1, feedbackId);
-            try ( ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    FeedbackReply reply = new FeedbackReply(
-                            rs.getInt("reply_id"),
-                            rs.getInt("feedback_id"),
-                            rs.getInt("staff_id"),
-                            rs.getString("content"),
-                            rs.getTimestamp("reply_date"),
-                            rs.getString("visibility")
-                    );
-                    list.add(reply);
-                }
-            }
-        }
-        return list;
-    }
-
-    // Xóa phản hồi theo reply_id (nếu cần)
-    public boolean deleteReply(int replyId) throws SQLException {
-        String sql = "DELETE FROM feedback_replies WHERE reply_id = ?";
-        try ( Connection conn = getConnection();  PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setInt(1, replyId);
-            return stmt.executeUpdate() > 0;
-        }
+    public void closeConnection() {
+        // Không cần thực hiện vì sử dụng getNewConnection() với try-with-resources
     }
 }

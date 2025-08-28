@@ -198,6 +198,7 @@
                                         <option value="Black">Black</option>
                                         <option value="White">White</option>
                                         <option value="Green">Green</option>
+                                        <option value="Pink">Prink</option>
                                     </select>
                                 </div>
                                 <div class="flex-grow-1">

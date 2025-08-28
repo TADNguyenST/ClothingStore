@@ -215,14 +215,37 @@ body { background:#f8fafc; }
 }
 .modal-header{ border-bottom:1px solid #eef2f7; }
 .modal-footer{ border-top:1px solid #eef2f7; }
+ .content-area {
+        position: relative;
+        margin-left: 260px;
+        padding: 1.5rem;
+        width: calc(100% - 260px);
+        transition: all 0.5s ease;
+        min-height: 100vh;
+    }
+    .sidebar.close ~ .content-area {
+        margin-left: 88px;
+        width: calc(100% - 88px);
+    }
+    .sidebar.hidden ~ .content-area {
+        margin-left: 0;
+        width: 100%;
+    }
 
         </style>
     </head>
     <body>
 
+        <c:choose>
+    <c:when test="${not empty sessionScope.admin}">
         <jsp:include page="/WEB-INF/includes/admin-sidebar.jsp"/>
+    </c:when>
+    <c:when test="${not empty sessionScope.staff}">
+         <jsp:include page="/WEB-INF/views/staff/staff-sidebar.jsp" />
+    </c:when>
+</c:choose>
 
-        <div class="main-content-wrapper">
+        
             
 
             <main class="content-area">
@@ -351,7 +374,7 @@ body { background:#f8fafc; }
                     <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button></div>
                 </div>
             </div>
-        </div>
+        
 
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
         <script src="${pageContext.request.contextPath}/admin-dashboard/js/admin-js.js"></script>

@@ -1,7 +1,7 @@
+
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt" %>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -9,14 +9,8 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>${requestScope.pageTitle != null ? requestScope.pageTitle : "Edit Voucher"}</title>
-
-    <%-- Link to external library --%>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-
-    <%-- Link to shared CSS file --%>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/admin-dashboard/css/admin-css.css">
-
-    <%-- Inline CSS for the edit voucher page --%>
     <style>
         body { font-family: Arial, sans-serif; background-color: #f4f4f9; }
         h2 { text-align: center; color: #333; }
@@ -80,20 +74,12 @@
     </style>
 </head>
 <body>
-
-    <%-- Set requestScope variables for sidebar/header --%>
     <c:set var="currentAction" value="vouchers" scope="request"/>
     <c:set var="currentModule" value="admin" scope="request"/>
     <c:set var="pageTitle" value="Edit Voucher" scope="request"/>
-
-    <%-- Include Sidebar --%>
     <jsp:include page="/WEB-INF/includes/admin-sidebar.jsp" />
-
     <div class="main-content-wrapper">
-        <%-- Include Header --%>
-        
 
-        <%-- Main content of the Edit Voucher page --%>
         <div class="content-area">
             <h2>Edit Voucher</h2>
             <c:if test="${not empty param.successMessage}">
@@ -158,6 +144,12 @@
                         <span class="error-text" id="usageLimitError">${requestScope.errors.usageLimit != null ? requestScope.errors.usageLimit : ''}</span>
                     </div>
                     <div class="form-group">
+                        <label for="startDate">Start Date <span style="color: red;">*</span></label>
+                        <input type="date" id="startDate" name="startDate" value="${requestScope.formData.startDate != null ? requestScope.formData.startDate : (voucher.startDate != null ? voucher.startDate.toLocalDate() : '')}" required placeholder="Example: 2025-08-27">
+                        <span class="help-text">Enter the voucher's start date (YYYY-MM-DD). Must be after creation date and before or on expiration date.</span>
+                        <span class="error-text" id="startDateError">${requestScope.errors.startDate != null ? requestScope.errors.startDate : ''}</span>
+                    </div>
+                    <div class="form-group">
                         <label for="expirationDate">Expiration Date <span style="color: red;">*</span></label>
                         <input type="date" id="expirationDate" name="expirationDate" value="${requestScope.formData.expirationDate != null ? requestScope.formData.expirationDate : (voucher.expirationDate != null ? voucher.expirationDate.toLocalDate() : '')}" required placeholder="Example: 2025-12-31">
                         <span class="help-text">Enter the voucher's expiration date (YYYY-MM-DD).</span>
@@ -166,10 +158,10 @@
                     <div class="form-group">
                         <label for="isActive">Status <span style="color: red;">*</span></label>
                         <select id="isActive" name="isActive" required>
-                            <option value="true" ${requestScope.formData.isActive != null ? (requestScope.formData.isActive ? 'selected' : '') : (voucher.isActive ? 'selected' : '')}>Active</option>
-                            <option value="false" ${requestScope.formData.isActive != null ? (requestScope.formData.isActive ? '' : 'selected') : (voucher.isActive ? '' : 'selected')}>Inactive</option>
+                            <option value="true" ${voucher.isActive ? 'selected' : ''}>Active</option>
+                            <option value="false" ${!voucher.isActive ? 'selected' : ''}>Inactive</option>
                         </select>
-                        <span class="help-text">Choose whether the voucher is active or inactive.</span>
+                        <span class="help-text">Choose whether the voucher is active or inactive. Automatically set to Active if the start date is today or in the past and before the expiration date.</span>
                         <span class="error-text" id="isActiveError">${requestScope.errors.isActive != null ? requestScope.errors.isActive : ''}</span>
                     </div>
                     <div class="form-group">
@@ -189,20 +181,13 @@
             </div>
         </div>
     </div>
-
-    <%-- Link to shared JS file --%>
     <script src="${pageContext.request.contextPath}/admin-dashboard/js/admin-js.js"></script>
-
-    <%-- JS for active menu and client-side validation --%>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Active menu logic
             const currentAction = "${requestScope.currentAction}";
             const currentModule = "${requestScope.currentModule}";
-
             document.querySelectorAll('.sidebar-menu li.active').forEach(li => li.classList.remove('active'));
             document.querySelectorAll('.sidebar-menu .treeview.menu-open').forEach(li => li.classList.remove('menu-open'));
-
             if (currentAction && currentModule) {
                 const activeLink = document.querySelector(`.sidebar-menu a[href*="${currentAction}"][href*="${currentModule}"]`);
                 if (activeLink) {
@@ -217,10 +202,36 @@
                 }
             }
 
-            // Client-side form validation
             const form = document.getElementById('voucherForm');
             const discountTypeSelect = document.getElementById('discountType');
             const discountValueInput = document.getElementById('discountValue');
+            const startDateInput = document.getElementById('startDate');
+            const expirationDateInput = document.getElementById('expirationDate');
+            const isActiveSelect = document.getElementById('isActive');
+
+            // Format createdAt date to yyyy-MM-dd
+            <c:choose>
+                <c:when test="${voucher.createdAt != null}">
+                    <fmt:formatDate value="${voucher.createdAt}" pattern="yyyy-MM-dd" var="formattedCreatedAt" />
+                    const createdDate = new Date('${formattedCreatedAt}');
+                </c:when>
+                <c:otherwise>
+                    const createdDate = new Date();
+                    createdDate.setHours(0, 0, 0, 0);
+                </c:otherwise>
+            </c:choose>
+
+            // Update isActive based on startDate and expirationDate
+            function updateIsActive() {
+                const startDate = startDateInput.value ? new Date(startDateInput.value) : null;
+                const expirationDate = expirationDateInput.value ? new Date(expirationDateInput.value) : null;
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                if (startDate && expirationDate) {
+                    const isActive = (startDate <= today && expirationDate > today);
+                    isActiveSelect.value = isActive ? 'true' : 'false';
+                }
+            }
 
             const fields = [
                 { id: 'code', validate: value => {
@@ -267,12 +278,22 @@
                     if (isNaN(num) || num < 0) return 'Usage Limit cannot be negative.';
                     return '';
                 }},
+                { id: 'startDate', validate: value => {
+                    if (!value) return 'Start Date is required.';
+                    const startDate = new Date(value);
+                    if (startDate <= createdDate) return 'Start Date must be after the creation date.';
+                    const expirationDate = expirationDateInput.value ? new Date(expirationDateInput.value) : null;
+                    if (expirationDate && startDate > expirationDate) return 'Start Date cannot be after the expiration date.';
+                    return '';
+                }},
                 { id: 'expirationDate', validate: value => {
                     if (!value) return 'Expiration Date is required.';
-                    const inputDate = new Date(value);
+                    const expirationDate = new Date(value);
                     const today = new Date();
                     today.setHours(0, 0, 0, 0);
-                    if (inputDate < today) return 'Expiration Date cannot be in the past.';
+                    if (expirationDate < today) return 'Expiration Date cannot be in the past.';
+                    const startDate = startDateInput.value ? new Date(startDateInput.value) : null;
+                    if (startDate && expirationDate < startDate) return 'Expiration Date must be after the start date.';
                     return '';
                 }},
                 { id: 'isActive', validate: value => {
@@ -359,6 +380,18 @@
                 validateField('discountValue', discountValueInput.value);
             });
 
+            startDateInput.addEventListener('change', function() {
+                validateField('startDate', startDateInput.value);
+                validateField('expirationDate', expirationDateInput.value);
+                updateIsActive();
+            });
+
+            expirationDateInput.addEventListener('change', function() {
+                validateField('expirationDate', expirationDateInput.value);
+                validateField('startDate', startDateInput.value);
+                updateIsActive();
+            });
+
             document.querySelectorAll('.error-text').forEach(errorElement => {
                 if (errorElement.textContent.trim()) {
                     const fieldId = errorElement.id.replace('Error', '');
@@ -374,6 +407,9 @@
                     }
                 }
             });
+
+            // Initialize isActive on page load
+            updateIsActive();
         });
     </script>
 </body>

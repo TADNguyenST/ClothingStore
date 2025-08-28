@@ -95,6 +95,7 @@
       .content-area{ margin-left:0; width:100%; }
       .page-actions{ width:100%; display:flex; justify-content:flex-end; }
     }
+    
   </style>
 </head>
 <body data-is-admin="${isAdmin}" data-context-path="${pageContext.request.contextPath}">
@@ -244,9 +245,15 @@
       </div>
     </div>
   </div>
-
   <!-- ===== Main ===== -->
-  <jsp:include page="/WEB-INF/includes/admin-sidebar.jsp"/>
+  <c:choose>
+    <c:when test="${not empty sessionScope.admin}">
+        <jsp:include page="/WEB-INF/includes/admin-sidebar.jsp"/>
+    </c:when>
+    <c:when test="${not empty sessionScope.staff}">
+         <jsp:include page="/WEB-INF/views/staff/staff-sidebar.jsp" />
+    </c:when>
+</c:choose>
   <div class="main-content-wrapper">
     <main class="content-area">
       <div class="d-flex justify-content-between align-items-center mb-3">

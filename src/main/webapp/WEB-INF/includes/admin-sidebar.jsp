@@ -172,17 +172,12 @@
     <ul class="sidebar-links">
         <div>
             <li>
-                <a href="#">
+                <a href="${pageContext.request.contextPath}/Reports">
                     <i class='bx bx-grid-alt'></i>
-                    <span class="link-name">Overview</span>
+                    <span class="link-name">Report</span>
                 </a>
             </li>
-            <li>
-                <a href="#">
-                    <i class='bx bx-cart-alt'></i>
-                    <span class="link-name">Orders</span>
-                </a>
-            </li>
+            
             <li>
                 <a href="${pageContext.request.contextPath}/CustomerManagement">
                     <i class='bx bx-group'></i>
@@ -226,16 +221,27 @@
                 </a>
             </li>
             <li>
-                <!-- ICON FIXED HERE -->
                 <a href="${pageContext.request.contextPath}/Admindashboard?action=voucherList&module=voucher">
                     <i class='bx bx-receipt'></i>
                     <span class="link-name">Voucher Management</span>
                 </a>
             </li>
+            <li>
+                 <a href="${pageContext.request.contextPath}/StockMovement">
+                    <i class='bx bxs-truck'></i>
+                    <span class="link-name">Stock Movement</span>
+                </a>
+            </li>
+            <li>
+                <a href="${pageContext.request.contextPath}/PurchaseOrderList">
+                    <i class='bx bx-cart-add'></i>
+                    <span class="link-name">Purchase Order Management</span>
+                </a>
+            </li>
             
             <div class="logout-section">
              <li class="logout-link">
-                <a href="#">
+                <a href="${pageContext.request.contextPath}/AdminLogout">
                     <i class='bx bx-log-out'></i>
                     <span class="link-name">Logout</span>
                 </a>
