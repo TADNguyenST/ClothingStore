@@ -1,10 +1,12 @@
 package dao;
+
 import model.CustomerVoucher;
 import util.DBContext;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
@@ -96,6 +98,23 @@ public class CustomerVoucherDAO {
             return rowsAffected > 0;
         } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Error adding customer voucher: {0}", e.getMessage());
+            throw e;
+        }
+    }
+
+    public boolean markVoucherAsUsed(long customerVoucherId, Timestamp usedDate, Long orderId) throws SQLException {
+        String sql = "UPDATE customer_vouchers SET is_used = 1, used_date = ?, order_id = ? WHERE customer_voucher_id = ?";
+        try (Connection conn = dbContext.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setTimestamp(1, usedDate);
+            stmt.setObject(2, orderId); // Use setObject to handle null orderId
+            stmt.setLong(3, customerVoucherId);
+            int rowsAffected = stmt.executeUpdate();
+            LOGGER.log(Level.INFO, "Marked voucher as used: customer_voucher_id={0}, rowsAffected={1}", 
+                       new Object[]{customerVoucherId, rowsAffected});
+            return rowsAffected > 0;
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error marking voucher as used: {0}", e.getMessage());
             throw e;
         }
     }
