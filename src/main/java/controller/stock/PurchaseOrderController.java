@@ -158,7 +158,7 @@ public class PurchaseOrderController extends HttpServlet {
             throw new IllegalStateException("Cannot edit a PO that is not in Draft or Sent status.");
         }
         switch (updateType) {
-            case "quantity":
+            case "quantity": {
                 long podIdQty = Long.parseLong(request.getParameter("podId"));
                 int quantity = Integer.parseInt(request.getParameter("value"));
                 if (quantity <= 0) {
@@ -166,7 +166,8 @@ public class PurchaseOrderController extends HttpServlet {
                 }
                 purchaseDAO.updateItemQuantity(podIdQty, quantity);
                 break;
-            case "price":
+            }
+            case "price": {
                 long podIdPrice = Long.parseLong(request.getParameter("podId"));
                 BigDecimal price = new BigDecimal(request.getParameter("value"));
                 if (price.compareTo(BigDecimal.ZERO) < 0) {
@@ -174,21 +175,39 @@ public class PurchaseOrderController extends HttpServlet {
                 }
                 purchaseDAO.updateItemPrice(podIdPrice, price);
                 break;
-            case "notes":
-                String userNotes = request.getParameter("value");
+            }
+            case "notes": {
+                String userNotes = request.getParameter("value");           // chỉ phần người dùng nhập
+                String providedPrefix = request.getParameter("notePrefix"); // tiền tố client gửi kèm (nếu có)
+                String prefix = (providedPrefix != null) ? providedPrefix.trim() : "";
+
+                // Nếu client không gửi prefix (hoặc rỗng), fallback tách bằng regex từ notes hiện tại
                 PurchaseOrderHeaderDTO currentPO = purchaseDAO.getPurchaseOrderHeader(poId);
-                String currentFullNotes = currentPO.getNotes();
-                String prefix = "";
-                int prefixLength = 31;
-                if (currentFullNotes != null && currentFullNotes.startsWith("Purchase Order") && currentFullNotes.length() >= prefixLength) {
-                    prefix = currentFullNotes.substring(0, prefixLength);
-                } else {
-                    prefix = currentFullNotes != null ? currentFullNotes : "";
+                String currentFullNotes = (currentPO != null) ? currentPO.getNotes() : null;
+                if ((prefix == null || prefix.isEmpty()) && currentFullNotes != null) {
+                    // Ví dụ prefix chuẩn khi tạo PO: "Purchase Order dd/MM/yyyy HH:mm"
+                    java.util.regex.Pattern pat = java.util.regex.Pattern.compile(
+                        "^Purchase Order\\s\\d{2}/\\d{2}/\\d{4}\\s\\d{2}:\\d{2}"
+                    );
+                    java.util.regex.Matcher m = pat.matcher(currentFullNotes);
+                    if (m.find()) {
+                        prefix = m.group(0);
+                    } else {
+                        // nếu không khớp, coi toàn bộ currentFullNotes là prefix để không lộ thêm tiền tố ở UI
+                        prefix = currentFullNotes;
+                    }
                 }
-                String newFullNotes = (prefix + " " + userNotes).trim();
+
+                String newFullNotes;
+                if (prefix != null && !prefix.isEmpty()) {
+                    newFullNotes = (prefix + " " + (userNotes != null ? userNotes.trim() : "")).trim();
+                } else {
+                    newFullNotes = (userNotes != null ? userNotes.trim() : "");
+                }
                 purchaseDAO.updatePONotes(poId, newFullNotes);
                 break;
-            case "supplier":
+            }
+            case "supplier": {
                 String supplierIdStr = request.getParameter("value");
                 if (supplierIdStr != null && !supplierIdStr.isEmpty()) {
                     long supplierId = Long.parseLong(supplierIdStr);
@@ -197,6 +216,7 @@ public class PurchaseOrderController extends HttpServlet {
                     purchaseDAO.clearPOSupplier(poId);
                 }
                 break;
+            }
             default:
                 throw new IllegalArgumentException("Invalid update type.");
         }
@@ -343,41 +363,55 @@ public class PurchaseOrderController extends HttpServlet {
     }
 
     private ApiResponse<List<PurchaseOrderItemDTO>> handleAjaxAddProducts(HttpServletRequest request) throws SQLException {
-        long poId = Long.parseLong(request.getParameter("poId"));
-        String[] selectedVariants = request.getParameterValues("variantIds[]");
-        if (selectedVariants != null && selectedVariants.length > 0) {
-            List<Long> variantIds = new ArrayList<>();
-            for (String idStr : selectedVariants) {
-                variantIds.add(Long.parseLong(idStr));
-            }
-            purchaseDAO.addVariantsToPODetails(poId, variantIds);
-            List<PurchaseOrderItemDTO> updatedItems = purchaseDAO.getItemsInPurchaseOrder(poId);
-            return ApiResponse.success(updatedItems, "Products added successfully.");
-        }
+    long poId = Long.parseLong(request.getParameter("poId"));
+    String[] selectedVariants = request.getParameterValues("variantIds[]");
+    if (selectedVariants == null || selectedVariants.length == 0) {
         throw new IllegalArgumentException("No products selected.");
     }
+
+    // Khử trùng tại controller (phòng double-click gửi mảng trùng)
+    java.util.LinkedHashSet<Long> uniq = new java.util.LinkedHashSet<>();
+    for (String idStr : selectedVariants) {
+        if (idStr != null && !idStr.isEmpty()) {
+            uniq.add(Long.parseLong(idStr));
+        }
+    }
+
+    purchaseDAO.addVariantsToPODetails(poId, new java.util.ArrayList<>(uniq));
+    List<PurchaseOrderItemDTO> updatedItems = purchaseDAO.getItemsInPurchaseOrder(poId);
+    return ApiResponse.success(updatedItems, "Products added successfully.");
+}
 
     private void handleEditPOPage(HttpServletRequest request, HttpServletResponse response) throws SQLException, ServletException, IOException {
         long poId = Long.parseLong(request.getParameter("poId"));
         PurchaseOrderHeaderDTO poData = purchaseDAO.getPurchaseOrderHeader(poId);
         List<PurchaseOrderItemDTO> itemsInPO = purchaseDAO.getItemsInPurchaseOrder(poId);
         List<Supplier> suppliers = purchaseDAO.getAllActiveSuppliers();
+
+        // --- TÁCH PREFIX / USER NOTES BẰNG REGEX (bỏ 31 ký tự cứng) ---
         if (poData != null && poData.getNotes() != null) {
             String fullNotes = poData.getNotes();
-            int prefixLength = 31;
-            if (fullNotes.startsWith("Purchase Order") && fullNotes.length() >= prefixLength) {
-                String prefix = fullNotes.substring(0, prefixLength);
-                poData.setNotePrefix(prefix);
-                if (fullNotes.length() > prefixLength) {
-                    poData.setUserNotes(fullNotes.substring(prefixLength).trim());
-                } else {
-                    poData.setUserNotes("");
-                }
+            String notePrefix = "";
+            String userNotes  = "";
+
+            java.util.regex.Pattern pat = java.util.regex.Pattern.compile(
+                "^Purchase Order\\s\\d{2}/\\d{2}/\\d{4}\\s\\d{2}:\\d{2}"
+            );
+            java.util.regex.Matcher m = pat.matcher(fullNotes);
+
+            if (m.find()) {
+                notePrefix = m.group(0);
+                userNotes  = fullNotes.substring(m.end()).trim();
             } else {
-                poData.setNotePrefix(fullNotes);
-                poData.setUserNotes("");
+                // nếu không đúng mẫu chuẩn, coi toàn bộ là prefix để tránh hiển thị sai
+                notePrefix = fullNotes;
+                userNotes  = "";
             }
+
+            poData.setNotePrefix(notePrefix);
+            poData.setUserNotes(userNotes);
         }
+
         request.setAttribute("poData", gson.toJson(poData));
         request.setAttribute("itemsInPO", gson.toJson(itemsInPO));
         request.setAttribute("suppliers", suppliers);

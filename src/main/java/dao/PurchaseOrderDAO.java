@@ -150,16 +150,32 @@ public class PurchaseOrderDAO {
      * Thêm nhiều sản phẩm vào chi tiết của một PO.
      */
     public void addVariantsToPODetails(long poId, List<Long> variantIds) throws SQLException {
-        String insertSql = "INSERT INTO purchase_order_details (purchase_order_id, variant_id, quantity, unit_price, total_price) VALUES (?, ?, 1, 0, 0)";
-        try ( Connection conn = new DBContext().getConnection();  PreparedStatement psInsert = conn.prepareStatement(insertSql)) {
-            for (Long variantId : variantIds) {
-                psInsert.setLong(1, poId);
-                psInsert.setLong(2, variantId);
-                psInsert.addBatch();
-            }
-            psInsert.executeBatch();
+    // Khử trùng ID client gửi lặp
+    java.util.LinkedHashSet<Long> uniq = new java.util.LinkedHashSet<>(variantIds);
+
+    String mergeSql =
+        "MERGE INTO purchase_order_details AS target " +
+        "USING (SELECT ? AS purchase_order_id, ? AS variant_id) AS src " +
+        "ON (target.purchase_order_id = src.purchase_order_id AND target.variant_id = src.variant_id) " +
+        "WHEN MATCHED THEN " +
+        "  UPDATE SET quantity = target.quantity + 1, " +
+        "             total_price = (target.quantity + 1) * target.unit_price " +
+        "WHEN NOT MATCHED THEN " +
+        "  INSERT (purchase_order_id, variant_id, quantity, unit_price, total_price) " +
+        "  VALUES (src.purchase_order_id, src.variant_id, 1, 0, 0);";
+
+    try (Connection conn = new DBContext().getConnection();
+         PreparedStatement ps = conn.prepareStatement(mergeSql)) {
+        conn.setAutoCommit(false);
+        for (Long vid : uniq) {
+            ps.setLong(1, poId);
+            ps.setLong(2, vid);
+            ps.addBatch();
         }
+        ps.executeBatch();
+        conn.commit();
     }
+}
 
     /**
      * Xóa một dòng sản phẩm khỏi chi tiết PO.

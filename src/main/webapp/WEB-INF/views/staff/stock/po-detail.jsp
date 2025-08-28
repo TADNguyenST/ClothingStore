@@ -90,19 +90,19 @@
                 background:#fff;
                 z-index:2
             }
-            
+
         </style>
     </head>
 
     <body>
         <c:choose>
-    <c:when test="${not empty sessionScope.admin}">
-        <jsp:include page="/WEB-INF/includes/admin-sidebar.jsp"/>
-    </c:when>
-    <c:when test="${not empty sessionScope.staff}">
-         <jsp:include page="/WEB-INF/views/staff/staff-sidebar.jsp" />
-    </c:when>
-</c:choose>
+            <c:when test="${not empty sessionScope.admin}">
+                <jsp:include page="/WEB-INF/includes/admin-sidebar.jsp"/>
+            </c:when>
+            <c:when test="${not empty sessionScope.staff}">
+                <jsp:include page="/WEB-INF/views/staff/staff-sidebar.jsp" />
+            </c:when>
+        </c:choose>
         <div class="main-content-wrapper">
             <main class="content-area">
                 <div class="box">
@@ -140,7 +140,7 @@
                                 <div class="col-sm-10">
                                     <div class="input-group">
                                         <span class="input-group-text" id="notePrefix"></span>
-                                        <textarea class="form-control" id="userNotes" name="userNotes" rows="3" placeholder="Add additional notes..."></textarea>
+                                        <textarea class="form-control" id="poNotes" name="userNotes" rows="3" placeholder="Add additional notes..."></textarea>
                                     </div>
                                 </div>
                             </div>
@@ -174,7 +174,7 @@
                             <div class="action-buttons-container">
                                 <div id="save-status"></div>
                                 <div class="action-buttons" style="border-top:none;padding-top:0;margin-top:0;">
-                                    <a href="${pageContext.request.contextPath}/Admindashboard?action=purchaseorder&module=stock" class="btn btn-secondary">
+                                    <a href="${pageContext.request.contextPath}/PurchaseOrderList" class="btn btn-secondary">
                                         <i class="fa fa-arrow-left me-1"></i> Back to List
                                     </a>
 
@@ -376,7 +376,13 @@
 
                 var autoSave = function (updateType, value, podId) {
                     updateSaveStatus('saving');
-                    sendAjaxRequest('autoSave', {updateType, value, podId})
+                    var payload = {updateType: updateType, value: value};
+                    if (podId)
+                        payload.podId = podId;
+                    if (updateType === 'notes') {
+                        payload.notePrefix = (document.getElementById('notePrefix').textContent || '').trim();
+                    }
+                    sendAjaxRequest('autoSave', payload)
                             .then(function () {
                                 updateSaveStatus('saved');
                                 updateTotals();
@@ -401,7 +407,7 @@
 
                     document.getElementById('supplierId').value = poData.supplierId || '';
                     document.getElementById('notePrefix').textContent = poData.notePrefix || '';
-                    document.getElementById('userNotes').value = poData.userNotes || '';
+                    document.getElementById('poNotes').value = poData.userNotes || '';
 
                     var body = document.getElementById('po-item-list');
                     body.innerHTML = itemsInPO.length > 0 ? itemsInPO.map(function (it) {
@@ -618,19 +624,39 @@
                     });
                 });
 
-                document.getElementById('addSelectedProductsBtn').addEventListener('click', function () {
-                    var ids = Array.from(document.querySelectorAll('.select-product-cb:checked')).map(cb => cb.value);
-                    if (ids.length === 0) {
-                        showToast('Please select at least one product.', true);
-                        return;
-                    }
-                    sendAjaxRequest('addProducts', {'variantIds[]': ids}).then(function (result) {
-                        itemsInPO = result.data;
-                        renderUI();
-                        productModal.hide();
-                        showToast(result.message);
-                    });
-                });
+              (function () {
+  const addBtn = document.getElementById('addSelectedProductsBtn');
+  let adding = false;
+
+  addBtn.addEventListener('click', function () {
+    if (adding) return;                 // chặn re-entry
+    const ids = Array.from(document.querySelectorAll('.select-product-cb:checked'))
+      .map(cb => cb.value)
+      // khử trùng client-side
+      .filter((v, i, arr) => arr.indexOf(v) === i);
+
+    if (ids.length === 0) {
+      showToast('Please select at least one product.', true);
+      return;
+    }
+
+    adding = true;
+    addBtn.disabled = true;
+
+    sendAjaxRequest('addProducts', {'variantIds[]': ids})
+      .then(function (result) {
+        itemsInPO = result.data;
+        renderUI();
+        productModal.hide();
+        showToast(result.message);
+      })
+      .catch(function () { /* toast lỗi đã hiển thị trong sendAjaxRequest */ })
+      .finally(function () {
+        adding = false;
+        addBtn.disabled = false;
+      });
+  });
+})();
 
                 // ====== Nâng cấp UX chọn row (click cả hàng, Shift range, Select-All thông minh) ======
                 (function () {
