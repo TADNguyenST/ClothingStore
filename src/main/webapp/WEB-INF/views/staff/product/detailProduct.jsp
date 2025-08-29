@@ -175,9 +175,6 @@
                                     <p><strong>Brand:</strong> <c:out value="${product.brand != null ? product.brand.name : 'N/A'}"/></p>
                                     <p><strong>Material:</strong> <c:out value="${product.material != null ? product.material : 'N/A'}"/></p>
                                     <p><strong>Description:</strong> <c:out value="${product.description != null ? product.description : 'N/A'}"/></p>
-                                    <p><strong>Description:</strong> 
-                                        <c:out value="${product.description != null ? product.description : 'N/A'}"/>
-                                    </p>
                                     <p><strong>Created At:</strong>
                                         <c:choose>
                                             <c:when test="${not empty product.createdAt}">

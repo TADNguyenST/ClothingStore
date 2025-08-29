@@ -1,3 +1,4 @@
+
 /* 
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/JSP_Servlet/Servlet.java to edit this template
@@ -13,7 +14,6 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.io.PrintWriter;
 
 /**
  *
@@ -33,7 +33,6 @@ public class EditStaffController extends HttpServlet {
     throws ServletException, IOException {
         response.setContentType("text/html;charset=UTF-8");
 
-        
         jakarta.servlet.http.HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("admin") == null) {
             response.sendRedirect(request.getContextPath() + "/AdminLogin");
@@ -56,18 +55,19 @@ public class EditStaffController extends HttpServlet {
             long userId = Long.parseLong(request.getParameter("userId"));
             String fullName = request.getParameter("fullName");
             String phoneNumber = request.getParameter("phoneNumber");
-            String status = request.getParameter("status");
             String position = request.getParameter("position");
             String notes = request.getParameter("notes");
 
-            // Validation
+            // Validation (không check status nữa)
             if (fullName == null || fullName.trim().isEmpty()
                     || phoneNumber == null || !phoneNumber.matches("\\d{10}")
-                    || status == null || status.trim().isEmpty()
                     || position == null || position.trim().isEmpty()) {
                 response.sendRedirect("EditStaff?userId=" + userId + "&errorMessage=Please+fill+all+fields+correctly");
                 return;
             }
+
+            // Gán mặc định status = Active (nếu không muốn hiển thị trên form)
+            String status = "Active";
 
             boolean updated = dao.updateStaff(userId, fullName, phoneNumber, status, position, notes);
             if (updated) {

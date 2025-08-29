@@ -457,31 +457,8 @@ public class CheckoutController extends HttpServlet {
                     total = BigDecimal.ZERO;
                 }
 
-                // Finalize draft first, then try to reserve
+                // Finalize draft only — reserve sẽ thực hiện 1 lần duy nhất trong markOrderPaid() sau khi thanh toán thành công
                 orderDAO.finalizeDraftOrder(orderId, shippingAddressId, voucherId, subtotal, discount, total, notes);
-
-                try {
-                    // IMPORTANT: catch broad to avoid 500 if DAO wraps SQLException
-                    orderDAO.reserveStockForOrder(orderId);
-                } catch (Exception ex) {
-                    AddressDAO addressDAO = new AddressDAO();
-                    List<Address> addresses = addressDAO.getAddressesByUserId(userId);
-
-                    req.setAttribute("items", items);
-                    req.setAttribute("subtotal", subtotal);
-                    req.setAttribute("discount", discount);
-                    req.setAttribute("shippingFee", shippingFee);
-                    req.setAttribute("total", total);
-
-                    req.setAttribute("addresses", addresses);
-                    req.setAttribute("isDraft", true);
-                    req.setAttribute("draftOrderId", orderId);
-                    req.setAttribute("error",
-                            "Some items have just gone out of stock or are being reserved by another order. Please reduce quantity or choose another variant.");
-
-                    req.getRequestDispatcher("/WEB-INF/views/customer/checkout/checkout.jsp").forward(req, resp);
-                    return;
-                }
 
                 // Create pending payment and redirect to VNPay
                 Payment payment = paymentDAO.createInitPayment(orderId, total);
@@ -557,7 +534,7 @@ public class CheckoutController extends HttpServlet {
 
             long orderId;
             try {
-                // create order + reserve + clear cart inside DAO (single TX)
+                // create order + clear cart (DAO KHÔNG reserve ở bước này)
                 orderId = orderDAO.createOrderAndClearCart(
                         customerId, shippingAddressId, voucherId,
                         subtotal, discount, total, notes, items, ids

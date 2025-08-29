@@ -1,4 +1,5 @@
 package controller.customer;
+
 import dao.FeedbackDAO;
 import dao.OrderDAO;
 import jakarta.servlet.ServletException;
@@ -9,6 +10,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import model.Feedback;
 import model.Order;
+
 import java.io.IOException;
 import java.util.List;
 import java.util.logging.Level;
@@ -16,6 +18,7 @@ import java.util.logging.Logger;
 
 @WebServlet("/feedback")
 public class FeedbackServlet extends HttpServlet {
+
     private static final long serialVersionUID = 1L;
     private static final Logger LOGGER = Logger.getLogger(FeedbackServlet.class.getName());
     private FeedbackDAO feedbackDAO;
@@ -44,7 +47,9 @@ public class FeedbackServlet extends HttpServlet {
         Long userId = (Long) session.getAttribute("userId");
         LOGGER.log(Level.INFO, "Accessing feedback page for userId: {0}", userId);
         try {
-            List<Order> orders = orderDAO.getOrdersForFeedback(userId);
+            // Map userId -> customerId rồi mới lấy đơn theo customerId
+            long customerId = feedbackDAO.getCustomerIdByUserId(userId);
+            List<Order> orders = orderDAO.getOrdersForFeedback(customerId);
             request.setAttribute("orders", orders);
             request.getRequestDispatcher("WEB-INF/views/customer/feedback/feedbackForm.jsp").forward(request, response);
         } catch (Exception e) {
@@ -91,8 +96,10 @@ public class FeedbackServlet extends HttpServlet {
             if (!visibility.equals("Public") && !visibility.equals("Private")) {
                 visibility = "Public";
             }
-            // Lấy customerId từ userId
+
+            // Map userId -> customerId (đÃ đúng theo thiết kế)
             long customerId = feedbackDAO.getCustomerIdByUserId(userId);
+
             // Get product_id list from order_items
             List<Long> productIds = feedbackDAO.getProductIdsByOrderId(orderId);
             if (productIds.isEmpty()) {

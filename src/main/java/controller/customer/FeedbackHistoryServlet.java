@@ -1,5 +1,6 @@
 package controller.customer;
 
+import dao.FeedbackDAO;
 import dao.OrderDAO;
 import model.Order;
 import jakarta.servlet.ServletException;
@@ -8,6 +9,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
@@ -16,6 +18,7 @@ import java.util.logging.Logger;
 
 @WebServlet("/feedbackHistory")
 public class FeedbackHistoryServlet extends HttpServlet {
+
     private static final long serialVersionUID = 1L;
     private static final Logger LOGGER = Logger.getLogger(FeedbackHistoryServlet.class.getName());
     private OrderDAO orderDAO;
@@ -43,7 +46,8 @@ public class FeedbackHistoryServlet extends HttpServlet {
         Long userId = (Long) session.getAttribute("userId");
         LOGGER.log(Level.INFO, "Accessing feedback history page for userId: {0}", userId);
         try {
-            List<Order> orders = orderDAO.getOrdersWithFeedback(userId);
+            long customerId = new FeedbackDAO().getCustomerIdByUserId(userId);
+            List<Order> orders = orderDAO.getOrdersWithFeedback(customerId);
             request.setAttribute("orders", orders);
             request.getRequestDispatcher("WEB-INF/views/customer/feedback/feedbackHistory.jsp").forward(request, response);
         } catch (SQLException e) {
