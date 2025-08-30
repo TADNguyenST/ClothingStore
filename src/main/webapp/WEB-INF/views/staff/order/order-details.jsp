@@ -145,30 +145,34 @@
         border-radius:12px;
         color:#0f172a
     }
-      .content-area {
-        position: relative;
-        margin-left: 260px;
-        padding: 1.5rem;
-        width: calc(100% - 260px);
-        transition: all 0.5s ease;
-        min-height: 100vh;
+    .content-area{
+        position:relative;
+        margin-left:260px;
+        padding:1.5rem;
+        width:calc(100% - 260px);
+        transition:.5s;
+        min-height:100vh
     }
-    .sidebar.close ~ .content-area {
-        margin-left: 88px;
-        width: calc(100% - 88px);
+    .sidebar.close ~ .content-area{
+        margin-left:88px;
+        width:calc(100% - 88px)
     }
-    .sidebar.hidden ~ .content-area {
-        margin-left: 0;
-        width: 100%;
+    .sidebar.hidden ~ .content-area{
+        margin-left:0;
+        width:100%
     }
 </style>
 
-<!-- Sidebar + Header -->
-<jsp:include page="/WEB-INF/views/staff/staff-sidebar.jsp" />
+<!-- Sidebar: DÙNG BIẾN -->
+<jsp:include page="${sidebarJsp}" />
 <div class="content-area">
 
     <div class="crumb">
-        <a href="${cpath}/Staffdashboard?action=orderList&module=order" class="btn btn-ghost">
+        <c:url var="backUrl" value="${basePath}">
+            <c:param name="action" value="orderList"/>
+            <c:param name="module" value="order"/>
+        </c:url>
+        <a href="${backUrl}" class="btn btn-ghost">
             <i class="fa fa-arrow-left"></i> Back to Orders
         </a>
     </div>
@@ -209,7 +213,6 @@
         <div class="card">
             <div class="card-h">Summary & Status</div>
             <div class="card-b">
-                <!-- Summary -->
                 <div class="row"><span class="muted">Subtotal</span><span><fmt:formatNumber value="${order.subtotal}" type="number" groupingUsed="true"/> ₫</span></div>
                 <div class="row"><span class="muted">Discount</span><span class="muted">- <fmt:formatNumber value="${order.discountAmount}" type="number" groupingUsed="true"/> ₫</span></div>
                 <div class="row"><span class="muted">Shipping</span><span><fmt:formatNumber value="${order.shippingFee}" type="number" groupingUsed="true"/> ₫</span></div>
@@ -217,7 +220,6 @@
                 <div class="row" style="font-weight:800"><span>Total</span><span style="color:var(--brand)"><fmt:formatNumber value="${order.totalPrice}" type="number" groupingUsed="true"/> ₫</span></div>
 
                 <hr/>
-                <!-- Current status -->
                 <div class="row">
                     <span class="muted">Order Status</span>
                     <span class="chip chip-dark">${order.status}</span>
@@ -242,9 +244,7 @@
 
                 <hr/>
 
-                <!-- Status actions -->
                 <c:choose>
-                    <%-- Locked when customer canceled --%>
                     <c:when test="${statusLocked}">
                         <div class="notice" style="margin-bottom:10px">
                             This order was canceled by the customer. Order status is locked.
@@ -252,7 +252,8 @@
                         </div>
 
                         <c:if test="${canMarkRefunded}">
-                            <form method="post" action="${cpath}/StaffOrder" class="actions">
+                            <!-- POST tới actionUrl -->
+                            <form method="post" action="${actionUrl}" class="actions">
                                 <input type="hidden" name="action" value="markRefunded">
                                 <input type="hidden" name="orderId" value="${order.orderId}">
                                 <button class="btn btn-warn"><i class="fa fa-check-circle"></i> Mark as Refunded</button>
@@ -260,9 +261,9 @@
                         </c:if>
                     </c:when>
 
-                    <%-- Normal forward-only flow --%>
                     <c:otherwise>
-                        <form method="post" action="${cpath}/StaffOrder">
+                        <!-- POST tới actionUrl -->
+                        <form method="post" action="${actionUrl}">
                             <input type="hidden" name="action" value="updateStatus">
                             <input type="hidden" name="orderId" value="${order.orderId}">
                             <div class="muted" style="margin-bottom:6px">Update Order Status (forward only)</div>
@@ -281,7 +282,6 @@
             </div>
         </div>
 
-        <!-- Shipping Address -->
         <c:if test="${not empty order.recipientName}">
             <div class="card" style="grid-column:1 / -1">
                 <div class="card-h">Shipping Address</div>
@@ -292,5 +292,4 @@
             </div>
         </c:if>
     </div>
-
 </div>

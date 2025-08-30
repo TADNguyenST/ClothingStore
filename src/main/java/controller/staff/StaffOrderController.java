@@ -8,7 +8,7 @@ import model.Users;
 
 import java.io.IOException;
 
-@WebServlet(name = "StaffOrderController", urlPatterns = {"/StaffOrder"})
+@WebServlet(name = "StaffOrderController", urlPatterns = {"/StaffOrder", "/AdminOrder"})
 public class StaffOrderController extends HttpServlet {
 
     private OrderDAO orderDAO;
@@ -19,13 +19,73 @@ public class StaffOrderController extends HttpServlet {
     }
 
     @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        HttpSession session = req.getSession(false);
+        String servletPath = req.getServletPath();
+        String cpath = req.getContextPath();
+
+        Users staff = (session != null) ? (Users) session.getAttribute("staff") : null;
+        Users admin = (session != null) ? (Users) session.getAttribute("admin") : null;
+
+        boolean isStaff = staff != null
+                && "Staff".equalsIgnoreCase(staff.getRole())
+                && "Active".equalsIgnoreCase(staff.getStatus());
+        boolean isAdmin = admin != null
+                && "Admin".equalsIgnoreCase(admin.getRole())
+                && "Active".equalsIgnoreCase(admin.getStatus());
+
+        if ("/StaffOrder".equalsIgnoreCase(servletPath)) {
+            if (!isStaff) { // admin KHÔNG được “vào nhờ” URL Staff
+                resp.sendError(HttpServletResponse.SC_FORBIDDEN);
+                return;
+            }
+            resp.sendRedirect(cpath + "/Staffdashboard?action=orderList&module=order");
+            return;
+        }
+
+        if ("/AdminOrder".equalsIgnoreCase(servletPath)) {
+            if (!isAdmin) {
+                resp.sendRedirect(cpath + "/AdminLogin");
+                return;
+            }
+            resp.sendRedirect(cpath + "/Admindashboard?action=orderList&module=order");
+            return;
+        }
+
+        resp.sendError(HttpServletResponse.SC_NOT_FOUND);
+    }
+
+    @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
-        // Kiểm tra session & quyền
+
         HttpSession session = req.getSession(false);
-        Users user = (session != null) ? (Users) session.getAttribute("staff") : null;
-        if (user == null || !"Staff".equalsIgnoreCase(user.getRole()) || !"Active".equalsIgnoreCase(user.getStatus())) {
-            resp.sendRedirect(req.getContextPath() + "/StaffLogin");
+        String servletPath = req.getServletPath();
+        String cpath = req.getContextPath();
+
+        Users staff = (session != null) ? (Users) session.getAttribute("staff") : null;
+        Users admin = (session != null) ? (Users) session.getAttribute("admin") : null;
+
+        boolean isStaff = staff != null
+                && "Staff".equalsIgnoreCase(staff.getRole())
+                && "Active".equalsIgnoreCase(staff.getStatus());
+        boolean isAdmin = admin != null
+                && "Admin".equalsIgnoreCase(admin.getRole())
+                && "Active".equalsIgnoreCase(admin.getStatus());
+
+        // Bảo vệ theo URL (admin KHÔNG dùng Staff URL)
+        if ("/StaffOrder".equalsIgnoreCase(servletPath)) {
+            if (!isStaff) {
+                resp.sendError(HttpServletResponse.SC_FORBIDDEN);
+                return;
+            }
+        } else if ("/AdminOrder".equalsIgnoreCase(servletPath)) {
+            if (!isAdmin) {
+                resp.sendRedirect(cpath + "/AdminLogin");
+                return;
+            }
+        } else {
+            resp.sendError(HttpServletResponse.SC_FORBIDDEN);
             return;
         }
 
@@ -39,6 +99,12 @@ public class StaffOrderController extends HttpServlet {
             return;
         }
 
+        // Chọn dashboard ĐÚNG theo route
+        String dashBase = "/Staffdashboard";
+        if ("/AdminOrder".equalsIgnoreCase(servletPath)) {
+            dashBase = "/Admindashboard";
+        }
+
         try {
             if ("updateStatus".equalsIgnoreCase(action)) {
                 String newStatus = req.getParameter("status");
@@ -46,27 +112,22 @@ public class StaffOrderController extends HttpServlet {
                     resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing status");
                     return;
                 }
-                // Cho phép: PENDING -> PROCESSING/SHIPPED/CANCELED; PROCESSING -> SHIPPED/CANCELED; SHIPPED -> COMPLETED
-                // (Chi tiết rule đã xử lý trong OrderDAO.updateStatusByStaff)
-                orderDAO.updateStatusByStaff(orderId, newStatus.trim());
-                
+                orderDAO.updateStatusByStaff(orderId, newStatus.trim().toUpperCase());
+
             } else if ("markRefunded".equalsIgnoreCase(action)) {
-                // Hoàn tất refund
-                orderDAO.markRefundedByStaff(orderId, "Refund completed by staff");
+                orderDAO.markRefundedByStaff(orderId, "Refund completed by backoffice user");
 
             } else {
                 resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Unknown action");
                 return;
             }
 
-            // Redirect lại trang chi tiết
-            resp.sendRedirect(req.getContextPath()
-                    + "/Staffdashboard?action=orderDetails&module=order&id=" + orderId + "&updated=1");
+            resp.sendRedirect(cpath + dashBase
+                    + "?action=orderDetails&module=order&id=" + orderId + "&updated=1");
 
         } catch (Exception ex) {
-            // Có thể log thêm tại đây
-            resp.sendRedirect(req.getContextPath()
-                    + "/Staffdashboard?action=orderDetails&module=order&id=" + orderId + "&error=1");
+            resp.sendRedirect(cpath + dashBase
+                    + "?action=orderDetails&module=order&id=" + orderId + "&error=1");
         }
     }
 }

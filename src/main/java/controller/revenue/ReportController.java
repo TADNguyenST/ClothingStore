@@ -43,7 +43,9 @@ public class ReportController extends HttpServlet {
         // ==== Auth ====
         HttpSession session = request.getSession(false);
         Users currentUser = (session != null) ? (Users) session.getAttribute("admin") : null;
-        if (currentUser == null) currentUser = (session != null) ? (Users) session.getAttribute("staff") : null;
+        if (currentUser == null) {
+            currentUser = (session != null) ? (Users) session.getAttribute("staff") : null;
+        }
         if (currentUser == null) {
             response.sendRedirect(request.getContextPath() + "/AdminLogin");
             return;
@@ -51,49 +53,69 @@ public class ReportController extends HttpServlet {
 
         try {
             // ===== Params =====
-            String reportType       = trimOrNull(request.getParameter("type"));          // revenue | bestselling
-            String startDate        = trimOrNull(request.getParameter("startDate"));
-            String endDate          = trimOrNull(request.getParameter("endDate"));
-            String isAjaxRequest    = request.getParameter("ajax");
+            String reportType = trimOrNull(request.getParameter("type"));          // revenue | bestselling
+            String startDate = trimOrNull(request.getParameter("startDate"));
+            String endDate = trimOrNull(request.getParameter("endDate"));
+            String isAjaxRequest = request.getParameter("ajax");
 
-            String productSortBy    = trimOrNull(request.getParameter("productSortBy")); // quantity | revenue
+            String productSortBy = trimOrNull(request.getParameter("productSortBy")); // quantity | revenue
             String productSortOrder = trimOrNull(request.getParameter("productSortOrder")); // ASC | DESC
 
-            String orderSortBy      = trimOrNull(request.getParameter("orderSortBy"));   // date | total
-            String orderSortOrder   = trimOrNull(request.getParameter("orderSortOrder")); // ASC | DESC
+            String orderSortBy = trimOrNull(request.getParameter("orderSortBy"));   // date | total
+            String orderSortOrder = trimOrNull(request.getParameter("orderSortOrder")); // ASC | DESC
 
             // API phụ cho Customer/Items
-            String customerIdStr    = trimOrNull(request.getParameter("customerId"));
-            String orderIdStr       = trimOrNull(request.getParameter("orderId"));
+            String customerIdStr = trimOrNull(request.getParameter("customerId"));
+            String orderIdStr = trimOrNull(request.getParameter("orderId"));
 
-            if (reportType == null || reportType.isEmpty()) reportType = "revenue";
+            if (reportType == null || reportType.isEmpty()) {
+                reportType = "revenue";
+            }
 
             // Default date range: đầu tuần → hôm nay
             if (startDate == null || startDate.isEmpty() || endDate == null || endDate.isEmpty()) {
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-                Calendar cal = Calendar.getInstance();
-                cal.set(Calendar.DAY_OF_WEEK, cal.getFirstDayOfWeek());
-                startDate = sdf.format(cal.getTime());
-                endDate = sdf.format(new Date());
+
+                Calendar endCal = Calendar.getInstance();
+                endCal.set(Calendar.HOUR_OF_DAY, 0);
+                endCal.set(Calendar.MINUTE, 0);
+                endCal.set(Calendar.SECOND, 0);
+                endCal.set(Calendar.MILLISECOND, 0);
+
+                Calendar startCal = (Calendar) endCal.clone();
+                startCal.add(Calendar.DAY_OF_YEAR, -29);
+
+                startDate = sdf.format(startCal.getTime());
+                endDate = sdf.format(endCal.getTime());
             }
 
             // Product sort guard
-            if (productSortBy == null || productSortBy.isEmpty()) productSortBy = "revenue";
-            else productSortBy = productSortBy.equalsIgnoreCase("quantity") ? "quantity" : "revenue";
-            if (!"ASC".equalsIgnoreCase(productSortOrder) && !"DESC".equalsIgnoreCase(productSortOrder))
+            if (productSortBy == null || productSortBy.isEmpty()) {
+                productSortBy = "revenue";
+            } else {
+                productSortBy = productSortBy.equalsIgnoreCase("quantity") ? "quantity" : "revenue";
+            }
+            if (!"ASC".equalsIgnoreCase(productSortOrder) && !"DESC".equalsIgnoreCase(productSortOrder)) {
                 productSortOrder = "DESC";
-            else productSortOrder = productSortOrder.toUpperCase();
+            } else {
+                productSortOrder = productSortOrder.toUpperCase();
+            }
 
             // Orders sort guard → DAO hiểu 'date' hoặc 'total'
             if (orderSortBy == null || orderSortBy.isEmpty()) {
                 orderSortBy = "date";
             } else {
-                if ("totalPrice".equalsIgnoreCase(orderSortBy)) orderSortBy = "total";
-                else if (!"total".equalsIgnoreCase(orderSortBy)) orderSortBy = "date";
+                if ("totalPrice".equalsIgnoreCase(orderSortBy)) {
+                    orderSortBy = "total";
+                } else if (!"total".equalsIgnoreCase(orderSortBy)) {
+                    orderSortBy = "date";
+                }
             }
-            if (!"ASC".equalsIgnoreCase(orderSortOrder) && !"DESC".equalsIgnoreCase(orderSortOrder))
+            if (!"ASC".equalsIgnoreCase(orderSortOrder) && !"DESC".equalsIgnoreCase(orderSortOrder)) {
                 orderSortOrder = "DESC";
-            else orderSortOrder = orderSortOrder.toUpperCase();
+            } else {
+                orderSortOrder = orderSortOrder.toUpperCase();
+            }
 
             // ===== API phụ: Orders theo Customer =====
             if ("true".equals(isAjaxRequest) && customerIdStr != null) {
@@ -172,7 +194,7 @@ public class ReportController extends HttpServlet {
             request.setAttribute("pageTitle", "Overall Dashboard Report");
 
             request.getRequestDispatcher("/WEB-INF/views/staff/revenue/combined-report.jsp")
-                   .forward(request, response);
+                    .forward(request, response);
 
         } catch (SQLException e) {
             throw new ServletException("Database error in ReportController", e);
@@ -191,6 +213,7 @@ public class ReportController extends HttpServlet {
 
     // ===== DTO preload để đẩy ra JSP =====
     public static class PreloadedPayload {
+
         public String currentType;
         public String startDate;
         public String endDate;
@@ -205,12 +228,16 @@ public class ReportController extends HttpServlet {
         public ProductDual product;
 
         public static class ProductDual {
+
             public ProductOnly revenue;
             public ProductOnly bestselling;
         }
+
         public static class ProductOnly {
+
             public Object productKpis;
             public Object productReportData;
+
             public ProductOnly(Object kpis, Object data) {
                 this.productKpis = kpis;
                 this.productReportData = data;

@@ -1,6 +1,3 @@
-/*
- * StaffdashboardController - ĐÃ BỔ SUNG LOAD ORDER LIST & ORDER DETAILS
- */
 package controller.staff;
 
 import dao.OrderDAO;
@@ -22,7 +19,6 @@ import java.util.List;
 public class StaffdashboardController extends HttpServlet {
 
     private static final long serialVersionUID = 1L;
-
     private OrderDAO orderDAO;
 
     @Override
@@ -33,13 +29,19 @@ public class StaffdashboardController extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        // Kiểm tra session & quyền
+
+        // 1) Auth: chỉ Staff vào được
         HttpSession session = request.getSession(false);
         Users user = (session != null) ? (Users) session.getAttribute("staff") : null;
         if (user == null || !"Staff".equalsIgnoreCase(user.getRole()) || !"Active".equalsIgnoreCase(user.getStatus())) {
             response.sendRedirect(request.getContextPath() + "/StaffLogin");
             return;
         }
+
+        String cpath = request.getContextPath();
+        request.setAttribute("sidebarJsp", "/WEB-INF/views/staff/staff-sidebar.jsp");
+        request.setAttribute("basePath", "/Staffdashboard");      // KHÔNG cộng cpath
+        request.setAttribute("actionUrl", cpath + "/StaffOrder"); // CÓ cộng cpath
 
         String action = nvl(request.getParameter("action"), "dashboard");
         String module = nvl(request.getParameter("module"), "staff");
@@ -52,6 +54,7 @@ public class StaffdashboardController extends HttpServlet {
         }
 
         String pageTitle = "Staff Dashboard";
+        // Dùng CHUNG JSP của module order (đặt ở thư mục staff để tái sử dụng)
         String targetJspPath = "/WEB-INF/views/staff/dashboard/staff-dashbroad.jsp";
 
         try {
@@ -61,33 +64,29 @@ public class StaffdashboardController extends HttpServlet {
                         pageTitle = "Order List";
                         targetJspPath = "/WEB-INF/views/staff/order/order-list.jsp";
 
-                        // --- Đọc filter & phân trang ---
                         String q = trimToNull(request.getParameter("q"));
                         String status = trimToNull(request.getParameter("status"));
                         String pay = trimToNull(request.getParameter("pay"));
 
                         int page = parseIntOrDefault(request.getParameter("page"), 1);
                         int pageSize = parseIntOrDefault(request.getParameter("size"), 12);
-                        if (page < 1) {
-                            page = 1;
-                        }
+                        page = Math.max(page, 1);
                         if (pageSize < 1 || pageSize > 100) {
                             pageSize = 12;
                         }
 
                         int offset = (page - 1) * pageSize;
 
-                        // --- Query list + count ---
                         List<OrderHeader> orders = orderDAO.listOrdersForStaff(q, status, pay, offset, pageSize);
                         int total = orderDAO.countOrdersForStaff(q, status, pay);
                         int pageCount = (int) Math.ceil(total / (double) pageSize);
 
-                        // --- Push sang JSP ---
                         request.setAttribute("orders", orders);
                         request.setAttribute("page", page);
                         request.setAttribute("pageCount", Math.max(pageCount, 1));
                         request.setAttribute("total", total);
                         request.setAttribute("size", pageSize);
+
                     } else if ("orderDetails".equalsIgnoreCase(action)) {
                         pageTitle = "Order Details";
                         targetJspPath = "/WEB-INF/views/staff/order/order-details.jsp";
@@ -101,7 +100,6 @@ public class StaffdashboardController extends HttpServlet {
                         }
 
                         List<CartItem> items = orderDAO.loadItemsViewForOrder(orderId);
-                        // Safeguard totals nếu DAO chưa set
                         if (order.getSubtotal() == null) {
                             order.setSubtotal(BigDecimal.ZERO);
                         }
@@ -126,16 +124,8 @@ public class StaffdashboardController extends HttpServlet {
                     }
                     break;
                 }
-
-                case "staff": {
-                    // giữ nguyên dashboard mặc định
-                    pageTitle = "Staff Dashboard";
-                    break;
-                }
-
                 default: {
-                    pageTitle = "Page Not Found";
-                    targetJspPath = "/WEB-INF/views/common/404.jsp";
+                    pageTitle = "Staff Dashboard";
                     break;
                 }
             }

@@ -45,8 +45,6 @@
             a{
                 color:inherit
             }
-
-            /* Layout */
             .main-content{
                 margin-left:230px;
                 padding:24px;
@@ -58,7 +56,6 @@
                     padding:16px
                 }
             }
-
             .card{
                 background:var(--panel);
                 border-radius:var(--radius);
@@ -83,8 +80,6 @@
                 font-weight:500;
                 font-size:13px
             }
-
-            /* Filters */
             .filters{
                 display:flex;
                 gap:10px;
@@ -128,8 +123,6 @@
             .btn-ghost:hover{
                 background:#f9fafb
             }
-
-            /* Table */
             .table-wrap{
                 width:100%;
                 overflow:auto;
@@ -173,8 +166,6 @@
             .money{
                 font-weight:800
             }
-
-            /* Badges */
             .badge{
                 display:inline-block;
                 padding:6px 10px;
@@ -206,8 +197,6 @@
                 background:#fef3c7;
                 color:#92400e
             }
-
-            /* Pagination */
             .pager{
                 display:flex;
                 gap:6px;
@@ -222,7 +211,6 @@
                 border-radius:10px;
                 background:#fff;
                 font:700 13px Inter;
-                color:#ink;
                 display:inline-flex;
                 align-items:center;
                 justify-content:center;
@@ -241,32 +229,30 @@
                 font:700 12px Inter;
                 color:#111
             }
-            .content-area {
-                position: relative;
-                margin-left: 260px;
-                padding: 1.5rem;
-                width: calc(100% - 260px);
-                transition: all 0.5s ease;
-                min-height: 100vh;
+            .content-area{
+                position:relative;
+                margin-left:260px;
+                padding:1.5rem;
+                width:calc(100% - 260px);
+                transition:.5s;
+                min-height:100vh
             }
-            .sidebar.close ~ .content-area {
-                margin-left: 88px;
-                width: calc(100% - 88px);
+            .sidebar.close ~ .content-area{
+                margin-left:88px;
+                width:calc(100% - 88px)
             }
-            .sidebar.hidden ~ .content-area {
-                margin-left: 0;
-                width: 100%;
+            .sidebar.hidden ~ .content-area{
+                margin-left:0;
+                width:100%
             }
         </style>
     </head>
     <body>
 
-        <!-- Staff Sidebar -->
-        <jsp:include page="/WEB-INF/views/staff/staff-sidebar.jsp" />
+        <!-- Sidebar: dùng biến do Controller set -->
+        <jsp:include page="${sidebarJsp}" />
 
-        <!-- Header + Content -->
         <div class="content-area">
-
             <div class="card">
                 <div class="head">
                     <div>
@@ -276,8 +262,9 @@
                     <div class="count-chip">Total: ${total}</div>
                 </div>
 
-                <!-- Filters -->
-                <form class="filters" method="get" action="${cpath}/Staffdashboard">
+                <!-- Form action: dùng c:url để tự prepend context-path -->
+                <c:url var="listAction" value="${basePath}" />
+                <form class="filters" method="get" action="${listAction}">
                     <input type="hidden" name="action" value="orderList"/>
                     <input type="hidden" name="module" value="order"/>
 
@@ -291,7 +278,6 @@
                         </c:forEach>
                     </select>
 
-                    <!-- Staff only manages paid flows: no UNPAID/FAILED in the UI -->
                     <select class="sel" name="pay" title="Payment">
                         <option value="">Payment: All</option>
                         <c:forEach var="p" items="${paymentStatuses}">
@@ -301,7 +287,7 @@
 
                     <button class="btn btn-primary" type="submit"><i class="fa fa-search"></i> Search</button>
 
-                    <c:url var="resetUrl" value="/Staffdashboard">
+                    <c:url var="resetUrl" value="${basePath}">
                         <c:param name="action" value="orderList"/>
                         <c:param name="module" value="order"/>
                     </c:url>
@@ -324,7 +310,7 @@
                         </thead>
                         <tbody>
                             <c:forEach var="row" items="${orders}">
-                                <c:url var="detailUrl" value="/Staffdashboard">
+                                <c:url var="detailUrl" value="${basePath}">
                                     <c:param name="action" value="orderDetails"/>
                                     <c:param name="module" value="order"/>
                                     <c:param name="id" value="${row.orderId}"/>
@@ -372,7 +358,7 @@
                 <c:if test="${pageCount > 1}">
                     <div class="pager">
                         <c:forEach var="i" begin="1" end="${pageCount}">
-                            <c:url var="pageHref" value="/Staffdashboard">
+                            <c:url var="pageHref" value="${basePath}">
                                 <c:param name="action" value="orderList"/>
                                 <c:param name="module" value="order"/>
                                 <c:param name="q" value="${param.q}"/>

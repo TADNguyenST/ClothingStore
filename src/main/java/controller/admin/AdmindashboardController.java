@@ -1,41 +1,50 @@
 package controller.admin;
 
-import jakarta.servlet.annotation.WebServlet; // ✅ thêm dòng này
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import java.io.IOException;
+import dao.OrderDAO;
+import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.*;
+import model.CartItem;
+import model.OrderHeader;
+import model.Users;
 
-@WebServlet(name = "AdmindashboardController", urlPatterns = {"/Admindashboard"}) // ✅ thêm dòng này
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.util.List;
+
+@WebServlet(name = "AdmindashboardController", urlPatterns = {"/Admindashboard"})
 public class AdmindashboardController extends HttpServlet {
 
     private static final long serialVersionUID = 1L;
+    private OrderDAO orderDAO;
 
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        // ... (authentication and authorization part, if any) ...
+    public void init() {
+        orderDAO = new OrderDAO();
+    }
 
-        // ✅ Kiểm tra đăng nhập và role phải là Admin
-        jakarta.servlet.http.HttpSession session = request.getSession(false);
-        model.Users user = (session != null) ? (model.Users) session.getAttribute("admin") : null; // ✅ sửa "user" → "admin"
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
 
-        if (user == null || !"Admin".equalsIgnoreCase(user.getRole())) {
+        // ✅ Auth: chỉ Admin
+        HttpSession session = request.getSession(false);
+        Users admin = (session != null) ? (Users) session.getAttribute("admin") : null;
+        if (admin == null || !"Admin".equalsIgnoreCase(admin.getRole())
+                || !"Active".equalsIgnoreCase(String.valueOf(admin.getStatus()))) {
             response.sendRedirect(request.getContextPath() + "/AdminLogin");
             return;
         }
 
-        String action = request.getParameter("action");
-        String module = request.getParameter("module");
-        String id = request.getParameter("id");
+        // ✅ Biến môi trường để JSP dùng chung cho Staff/Admin
+        String cpath = request.getContextPath();
+        request.setAttribute("sidebarJsp", "/WEB-INF/includes/admin-sidebar.jsp");
+        request.setAttribute("basePath", "/Admindashboard");      // KHÔNG cộng cpath
+        request.setAttribute("actionUrl", cpath + "/AdminOrder"); // CÓ cộng cpath
 
-        if (action == null || action.isEmpty()) {
-            action = "dashboard";
-            module = "admin";
-        }
-        if (module == null || module.isEmpty()) {
-            module = "admin";
-        }
+        String action = nvl(request.getParameter("action"), "dashboard");
+        String module = nvl(request.getParameter("module"), "admin");
+        String id = request.getParameter("id");
 
         request.setAttribute("currentAction", action);
         request.setAttribute("currentModule", module);
@@ -44,212 +53,289 @@ public class AdmindashboardController extends HttpServlet {
         }
 
         String pageTitle = "Admin Dashboard";
-        String targetJspPath = "/WEB-INF/views/admin/dashboard/admin-dashboard.jsp"; // Default target JSP
+        String targetJspPath = "/WEB-INF/views/admin/dashboard/admin-dashboard.jsp"; // mặc định
 
-        // Determine page title and target JSP path
-        if (module != null && action != null) {
-            switch (module) {
-                case "admin":
-                    if ("dashboard".equals(action)) {
-                        pageTitle = "Admin Dashboard";
-                        targetJspPath = "/WEB-INF/views/admin/dashboard/admin-dashboard.jsp";
+        try {
+            if ("order".equalsIgnoreCase(module)) {
+                if ("orderList".equalsIgnoreCase(action)) {
+                    pageTitle = "Order List";
+                    // ♻️ Dùng lại JSP của staff/order
+                    targetJspPath = "/WEB-INF/views/staff/order/order-list.jsp";
+
+                    // --- Filters & paging ---
+                    String q = trimToNull(request.getParameter("q"));
+                    String status = trimToNull(request.getParameter("status"));
+                    String pay = trimToNull(request.getParameter("pay"));
+
+                    int page = parseIntOrDefault(request.getParameter("page"), 1);
+                    int pageSize = parseIntOrDefault(request.getParameter("size"), 12);
+                    page = Math.max(page, 1);
+                    if (pageSize < 1 || pageSize > 100) {
+                        pageSize = 12;
                     }
-                    break;
-                case "category":
-                    switch (action) {
-                        case "categoryList":
-                            pageTitle = "Category List";
-                            response.sendRedirect(request.getContextPath() + "/CategoryManager?action=list&module=category");
-                            return;
-                        case "categoryForm":
-                            pageTitle = "Category Form";
-                            response.sendRedirect(request.getContextPath() + "/CategoryManager?action=create&module=category");
-                            return;
-                        case "categoryDetails":
-                            pageTitle = "Category Details";
-                            response.sendRedirect(request.getContextPath() + "/CategoryManager?action=detail" + (id != null ? "&id=" + id : "") + "&module=category");
-                            return;
+
+                    int offset = (page - 1) * pageSize;
+
+                    // --- Load data (y chang Staff) ---
+                    List<OrderHeader> orders = orderDAO.listOrdersForStaff(q, status, pay, offset, pageSize);
+                    int total = orderDAO.countOrdersForStaff(q, status, pay);
+                    int pageCount = (int) Math.ceil(total / (double) pageSize);
+
+                    request.setAttribute("orders", orders);
+                    request.setAttribute("page", page);
+                    request.setAttribute("pageCount", Math.max(pageCount, 1));
+                    request.setAttribute("total", total);
+                    request.setAttribute("size", pageSize);
+
+                } else if ("orderDetails".equalsIgnoreCase(action)) {
+                    pageTitle = "Order Details";
+                    // ♻️ Dùng lại JSP của staff/order
+                    targetJspPath = "/WEB-INF/views/staff/order/order-details.jsp";
+
+                    long orderId = parseLongOrThrow(id, "Missing order id");
+                    OrderHeader order = orderDAO.findOrderHeaderForStaff(orderId);
+                    if (order == null) {
+                        request.setAttribute("pageTitle", "Order Not Found");
+                        request.getRequestDispatcher("/WEB-INF/views/common/404.jsp").forward(request, response);
+                        return;
                     }
-                    break;
-                case "brand":
-                    switch (action) {
-                        case "brandList":
-                            pageTitle = "Brand List";
-                            response.sendRedirect(request.getContextPath() + "/BrandManager?action=list&module=brand");
-                            break;
-                        case "brandForm":
-                            pageTitle = "Brand Form";
-                            response.sendRedirect(request.getContextPath() + "/BrandManager?action=create&module=brand");
-                            break;
-                        case "brandDetails":
-                            pageTitle = "Brand Details";
-                            response.sendRedirect(request.getContextPath() + "/BrandManager?action=detail" + (id != null ? "&id=" + id : "") + "&module=brand");
-                            break;
-                        default:
-                            pageTitle = "Page Not Found";
-                            targetJspPath = "/WEB-INF/views/common/404.jsp";
-                            break;
+
+                    List<CartItem> items = orderDAO.loadItemsViewForOrder(orderId);
+                    if (order.getSubtotal() == null) {
+                        order.setSubtotal(BigDecimal.ZERO);
                     }
-                    break;
-                case "mangestaff":
-                    switch (action) {
-                        case "staffList":
-                            pageTitle = "Staff Account Management";
-                            targetJspPath = "/WEB-INF/views/admin/mangestaff/staff-list.jsp";
-                            break;
-                        case "staffForm":
-                            pageTitle = "Staff Account Form";
-                            targetJspPath = "/WEB-INF/views/admin/mangestaff/staff-form.jsp";
-                            break;
-                        case "staffDetails":
-                            pageTitle = "Staff Account Details";
-                            targetJspPath = "/WEB-INF/views/admin/mangestaff/staff-details.jsp";
-                            break;
+                    if (order.getDiscountAmount() == null) {
+                        order.setDiscountAmount(BigDecimal.ZERO);
                     }
-                    break;
-                case "voucher":
-                    switch (action) {
-                        case "voucherList":
-                            pageTitle = "Voucher List";
-                            targetJspPath = "/vouchers";
-                            break;
-                        case "voucherForm":
-                            pageTitle = "Voucher Form";
-                            targetJspPath = "/WEB-INF/views/admin/voucher/voucher-form.jsp";
-                            break;
-                        case "sendVoucher":
-                            pageTitle = "Send Voucher";
-                            targetJspPath = "/WEB-INF/views/admin/voucher/send-voucher.jsp";
-                            break;
-                        case "voucherDetails":
-                            pageTitle = "Voucher Details";
-                            targetJspPath = "/WEB-INF/views/admin/voucher/voucher-details.jsp";
-                            break;
+                    if (order.getShippingFee() == null) {
+                        order.setShippingFee(BigDecimal.ZERO);
                     }
-                    break;
-                case "product":
-                    switch (action) {
-                        case "productList":
-                            pageTitle = "Product List";
-                            response.sendRedirect(request.getContextPath() + "/ProductManager?action=list");
-                            return;
-                        case "productForm":
-                            pageTitle = "Product Form";
-                            response.sendRedirect(request.getContextPath() + "/ProductManager?action=create");
-                            return;
-                        case "productDetails":
-                            pageTitle = "Product Details";
-                            response.sendRedirect(request.getContextPath() + "/ProductManager?action=detail&id=" + id);
-                            return;
+                    if (order.getTotalPrice() == null) {
+                        order.setTotalPrice(BigDecimal.ZERO);
                     }
-                    break;
-                case "order":
-                    switch (action) {
-                        case "orderList":
-                            pageTitle = "Order List";
-                            targetJspPath = "/WEB-INF/views/staff/order/order-list.jsp";
-                            break;
-                        case "orderDetails":
-                            pageTitle = "Order Details";
-                            targetJspPath = "/WEB-INF/views/staff/order/order-details.jsp";
-                            break;
-                    }
-                    break;
-                case "blog":
-                    switch (action) {
-                        case "blogList":
-                            pageTitle = "Blog Management";
-                            targetJspPath = "/StaffBlogListController";
-                            break;
-                        case "blogForm":
-                            pageTitle = "Blog Form";
-                            targetJspPath = "/StaffBlogController";
-                            break;
-                    }
-                    break;
-                case "customer":
-                    switch (action) {
-                        case "customerList":
-                            pageTitle = "Customer Management";
-                            targetJspPath = "/WEB-INF/views/staff/customer/customer-list.jsp";
-                            break;
-                        case "customerDetails":
-                            pageTitle = "Customer Details";
-                            targetJspPath = "/WEB-INF/views/staff/customer/customer-details.jsp";
-                            break;
-                        case "customerOrderHistory":
-                            pageTitle = "Customer Order History";
-                            targetJspPath = "/WEB-INF/views/staff/customer/customer-order-history.jsp";
-                            break;
-                    }
-                    break;
-                case "feedback":
-                    switch (action) {
-                        case "feedbackList":
-                            pageTitle = "Feedback Management";
-                            targetJspPath = "/WEB-INF/views/staff/feedback/feedback-list.jsp";
-                            break;
-                        case "viewFeedback":
-                            pageTitle = "View Feedback";
-                            targetJspPath = "/WEB-INF/views/staff/feedback/view-feedback.jsp";
-                            break;
-                        case "feedbackReplyForm":
-                            pageTitle = "Reply Feedback";
-                            targetJspPath = "/WEB-INF/views/staff/feedback/feedback-reply-form.jsp";
-                            break;
-                    }
-                    break;
-                case "revenue":
-                    switch (action) {
-                        case "bestSellingProducts":
-                            pageTitle = "Best Selling Products";
-                            targetJspPath = "/WEB-INF/views/staff/revenue/best-selling-products.jsp";
-                            break;
-                        case "revenueByProduct":
-                            pageTitle = "Revenue by Product";
-                            targetJspPath = "/WEB-INF/views/staff/revenue/revenue-by-product.jsp";
-                            break;
-                    }
-                    break;
-                case "stock":
-                    switch (action) {
-                        case "stockList":
-                            pageTitle = "Stock List";
-                            targetJspPath = "/Stock";
-                            break;
-                        case "stockmovement":
-                            pageTitle = "Import Stock";
-                            targetJspPath = "/StockMovement";
-                            break;
-                        case "purchaseorder":
-                            pageTitle = "Purchase Order List";
-                            targetJspPath = "/PurchaseOrderList";
-                            break;
-                    }
-                    break;
-                case "supplier":
-                    switch (action) {
-                        case "supplierList":
+
+                    request.setAttribute("order", order);
+                    request.setAttribute("items", items);
+                    request.setAttribute("nextStatuses",
+                            OrderDAO.getAllowedNextStatusesForStaff(order.getStatus(), order.getPaymentStatus()));
+                    request.setAttribute("statusLocked", "CANCELED".equalsIgnoreCase(order.getStatus()));
+                    request.setAttribute("canMarkRefunded",
+                            "CANCELED".equalsIgnoreCase(order.getStatus())
+                            && "REFUND_PENDING".equalsIgnoreCase(order.getPaymentStatus()));
+                } else {
+                    // action khác trong module order -> 404
+                    pageTitle = "Page Not Found";
+                    targetJspPath = "/WEB-INF/views/common/404.jsp";
+                }
+
+            } else {
+                // Giữ nguyên các module khác của bạn (rút gọn từ bản gửi)
+                switch (module) {
+                    case "admin":
+                        if ("dashboard".equalsIgnoreCase(action)) {
+                            pageTitle = "Admin Dashboard";
+                            targetJspPath = "/WEB-INF/views/admin/dashboard/admin-dashboard.jsp";
+                        }
+                        break;
+
+                    case "category":
+                        switch (action) {
+                            case "categoryList":
+                                response.sendRedirect(cpath + "/CategoryManager?action=list&module=category");
+                                return;
+                            case "categoryForm":
+                                response.sendRedirect(cpath + "/CategoryManager?action=create&module=category");
+                                return;
+                            case "categoryDetails":
+                                response.sendRedirect(cpath + "/CategoryManager?action=detail" + (id != null ? "&id=" + id : "") + "&module=category");
+                                return;
+                        }
+                        break;
+
+                    case "brand":
+                        switch (action) {
+                            case "brandList":
+                                response.sendRedirect(cpath + "/BrandManager?action=list&module=brand");
+                                return;
+                            case "brandForm":
+                                response.sendRedirect(cpath + "/BrandManager?action=create&module=brand");
+                                return;
+                            case "brandDetails":
+                                response.sendRedirect(cpath + "/BrandManager?action=detail" + (id != null ? "&id=" + id : "") + "&module=brand");
+                                return;
+                            default:
+                                pageTitle = "Page Not Found";
+                                targetJspPath = "/WEB-INF/views/common/404.jsp";
+                        }
+                        break;
+
+                    case "mangestaff":
+                        switch (action) {
+                            case "staffList":
+                                pageTitle = "Staff Account Management";
+                                targetJspPath = "/WEB-INF/views/admin/mangestaff/staff-list.jsp";
+                                break;
+                            case "staffForm":
+                                pageTitle = "Staff Account Form";
+                                targetJspPath = "/WEB-INF/views/admin/mangestaff/staff-form.jsp";
+                                break;
+                            case "staffDetails":
+                                pageTitle = "Staff Account Details";
+                                targetJspPath = "/WEB-INF/views/admin/mangestaff/staff-details.jsp";
+                                break;
+                        }
+                        break;
+
+                    case "voucher":
+                        switch (action) {
+                            case "voucherList":
+                                pageTitle = "Voucher List";
+                                targetJspPath = "/vouchers";
+                                break;
+                            case "voucherForm":
+                                pageTitle = "Voucher Form";
+                                targetJspPath = "/WEB-INF/views/admin/voucher/voucher-form.jsp";
+                                break;
+                            case "sendVoucher":
+                                pageTitle = "Send Voucher";
+                                targetJspPath = "/WEB-INF/views/admin/voucher/send-voucher.jsp";
+                                break;
+                            case "voucherDetails":
+                                pageTitle = "Voucher Details";
+                                targetJspPath = "/WEB-INF/views/admin/voucher/voucher-details.jsp";
+                                break;
+                        }
+                        break;
+
+                    case "product":
+                        switch (action) {
+                            case "productList":
+                                response.sendRedirect(cpath + "/ProductManager?action=list");
+                                return;
+                            case "productForm":
+                                response.sendRedirect(cpath + "/ProductManager?action=create");
+                                return;
+                            case "productDetails":
+                                response.sendRedirect(cpath + "/ProductManager?action=detail&id=" + id);
+                                return;
+                        }
+                        break;
+
+                    case "blog":
+                        switch (action) {
+                            case "blogList":
+                                pageTitle = "Blog Management";
+                                targetJspPath = "/StaffBlogListController";
+                                break;
+                            case "blogForm":
+                                pageTitle = "Blog Form";
+                                targetJspPath = "/StaffBlogController";
+                                break;
+                        }
+                        break;
+
+                    case "customer":
+                        switch (action) {
+                            case "customerList":
+                                pageTitle = "Customer Management";
+                                targetJspPath = "/WEB-INF/views/staff/customer/customer-list.jsp";
+                                break;
+                            case "customerDetails":
+                                pageTitle = "Customer Details";
+                                targetJspPath = "/WEB-INF/views/staff/customer/customer-details.jsp";
+                                break;
+                            case "customerOrderHistory":
+                                pageTitle = "Customer Order History";
+                                targetJspPath = "/WEB-INF/views/staff/customer/customer-order-history.jsp";
+                                break;
+                        }
+                        break;
+
+                    case "revenue":
+                        switch (action) {
+                            case "bestSellingProducts":
+                                pageTitle = "Best Selling Products";
+                                targetJspPath = "/WEB-INF/views/staff/revenue/best-selling-products.jsp";
+                                break;
+                            case "revenueByProduct":
+                                pageTitle = "Revenue by Product";
+                                targetJspPath = "/WEB-INF/views/staff/revenue/revenue-by-product.jsp";
+                                break;
+                        }
+                        break;
+
+                    case "stock":
+                        switch (action) {
+                            case "stockList":
+                                pageTitle = "Stock List";
+                                targetJspPath = "/Stock";
+                                break;
+                            case "stockmovement":
+                                pageTitle = "Import Stock";
+                                targetJspPath = "/StockMovement";
+                                break;
+                            case "purchaseorder":
+                                pageTitle = "Purchase Order List";
+                                targetJspPath = "/PurchaseOrderList";
+                                break;
+                        }
+                        break;
+
+                    case "supplier":
+                        if ("supplierList".equalsIgnoreCase(action)) {
                             pageTitle = "Supplier List";
                             targetJspPath = "/Supplier";
-                            break;
-                    }
-                    break;
-                default:
-                    pageTitle = "Page Not Found";
-                    targetJspPath = "/WEB-INF/views/common/404.jsp"; // Assuming you have a common 404 page
-                    break;
-            }
-        }
-        request.setAttribute("pageTitle", pageTitle);
+                        }
+                        break;
 
-        // Forward trực tiếp đến trang JSP cụ thể
+                    default:
+                        pageTitle = "Page Not Found";
+                        targetJspPath = "/WEB-INF/views/common/404.jsp";
+                }
+            }
+
+        } catch (Exception ex) {
+            throw new ServletException(ex);
+        }
+
+        request.setAttribute("pageTitle", pageTitle);
         request.getRequestDispatcher(targetJspPath).forward(request, response);
     }
 
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
         request.setCharacterEncoding("UTF-8");
         response.setCharacterEncoding("UTF-8");
         doGet(request, response);
+    }
+
+    // Helpers
+    private static String nvl(String s, String dft) {
+        return (s == null || s.isEmpty()) ? dft : s;
+    }
+
+    private static String trimToNull(String s) {
+        if (s == null) {
+            return null;
+        }
+        String t = s.trim();
+        return t.isEmpty() ? null : t;
+    }
+
+    private static int parseIntOrDefault(String s, int dft) {
+        try {
+            return Integer.parseInt(s);
+        } catch (Exception e) {
+            return dft;
+        }
+    }
+
+    private static long parseLongOrThrow(String s, String msg) {
+        try {
+            return Long.parseLong(s);
+        } catch (Exception e) {
+            throw new IllegalArgumentException(msg);
+        }
     }
 }

@@ -188,6 +188,14 @@
             </li>
 
             <li>
+                <a href="${pageContext.request.contextPath}/Admindashboard?action=orderList&module=order"
+                   class="${requestScope.currentModule == 'order' && requestScope.currentAction == 'orderList' ? 'active' : ''}">
+                    <i class='bx bx-cart-alt'></i>
+                    <span class="link-name">Order Management</span>
+                </a>
+            </li>
+
+            <li>
                 <a href="${pageContext.request.contextPath}/CustomerManagement">
                     <i class='bx bx-group'></i>
                     <span class="link-name">Customer Management</span>
