@@ -187,7 +187,6 @@
                             <%   }
                        } %>
 
-                            <li class="nav-item"><a class="nav-link" href="${pageContext.request.contextPath}/ProductList/sale">Sale</a></li>
                             <li class="nav-item"><a class="nav-link" href="${pageContext.request.contextPath}/VoucherPublic">Voucher</a></li>
                             <li class="nav-item"><a class="nav-link" href="${pageContext.request.contextPath}/feedback">Feedback</a></li>
                         </ul>

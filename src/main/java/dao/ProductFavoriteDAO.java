@@ -111,4 +111,27 @@ public class ProductFavoriteDAO {
 
         return ids;
     }
+    public boolean exists(int customerId, int productId) throws Exception {
+    String sql = "SELECT 1 FROM product_favorites WHERE customer_id = ? AND product_id = ?"; // tên bảng theo schema của bạn
+     try ( Connection conn = new DBContext().getConnection();
+         PreparedStatement ps = conn.prepareStatement(sql)) {
+        ps.setInt(1, customerId);
+        ps.setInt(2, productId);
+        try (ResultSet rs = ps.executeQuery()) {
+            return rs.next();
+        }
+    }
+}
+
+public int countByUser(int customerId) throws Exception {
+    String sql = "SELECT COUNT(*) FROM product_favorites WHERE customer_id = ?";
+      try ( Connection conn = new DBContext().getConnection();
+         PreparedStatement ps = conn.prepareStatement(sql)) {
+        ps.setInt(1, customerId);
+        try (ResultSet rs = ps.executeQuery()) {
+            return rs.next() ? rs.getInt(1) : 0;
+        }
+    }
+}
+
 }
