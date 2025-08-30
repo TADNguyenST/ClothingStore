@@ -53,7 +53,7 @@
         e.printStackTrace();
         request.setAttribute("categoryError", "Error loading category name: " + e.getMessage());
     }
-    Set<Integer> wishlistProductIds = (Set<Integer>) request.getAttribute("wishlistProductIds");
+   Set<?> wishlistProductIds = (Set<?>) request.getAttribute("wishlistProductIds");
 %>
 
 <jsp:include page="/WEB-INF/views/common/header.jsp" />
@@ -200,16 +200,34 @@
         <div class="col-lg-3 col-md-6 col-sm-6 col-12">
             <div class="product-card">
                 <!-- Wishlist -->
-                <div class="wishlist-icon">
-                    <form action="<%= request.getContextPath()%>/wishlist" method="post">
-                        <input type="hidden" name="action" value="add">
-                        <input type="hidden" name="productId" value="<%= product.getProductId()%>">
-                        <button type="submit"
-                                class="wishlist-icon-circle <%= (wishlistProductIds != null && wishlistProductIds.contains(product.getProductId().intValue())) ? "active" : ""%>">
-                            <i class="fas fa-heart"></i>
-                        </button>
-                    </form>
-                </div>
+<!-- Wishlist -->
+<div class="wishlist-icon">
+  <%
+    boolean wished = false;
+    try {
+      if (wishlistProductIds != null && product.getProductId() != null) {
+        // Hỗ trợ cả Set<Long> lẫn Set<Integer>
+        wished = wishlistProductIds.contains(product.getProductId())
+              || wishlistProductIds.contains(product.getProductId().intValue());
+      }
+    } catch (Exception ignore) {}
+  %>
+
+  <form class="js-wishlist-form"
+        action="<%= request.getContextPath() %>/wishlist"
+        method="post">
+    <input type="hidden" name="action" value="toggle">
+    <input type="hidden" name="productId" value="<%= product.getProductId() %>">
+    <c:if test="${not empty sessionScope.csrfToken}">
+      <input type="hidden" name="csrf" value="${sessionScope.csrfToken}">
+    </c:if>
+    <button type="submit"
+            class="wishlist-icon-circle <%= wished ? "active" : "" %>"
+            aria-pressed="<%= wished %>">
+      <i class="fas fa-heart"></i>
+    </button>
+  </form>
+</div>
 
                 <!-- Image + OOS badge -->
                 <div class="product-image">
@@ -249,5 +267,117 @@
         %>
     </div>
 </div>
+<!-- Modal: Added to Wishlist -->
+<!-- Wishlist Modal (đồng bộ với home) -->
+<div class="modal fade" id="wishlistModal" tabindex="-1" aria-labelledby="wishlistModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header">
+        <h5 class="modal-title" id="wishlistModalLabel">Wishlist</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="d-flex align-items-center gap-3">
+          <span id="wishlistModalIcon" class="fs-3 text-success"><i class="fa-solid fa-heart"></i></span>
+          <div>
+            <div id="wishlistModalMain" class="fw-semibold">Added to your wishlist</div>
+            <div id="wishlistModalSub" class="text-muted small">Product name here</div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <a href="${pageContext.request.contextPath}/wishlist?action=view" class="btn btn-primary">View wishlist</a>
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Continue shopping</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <jsp:include page="/WEB-INF/views/common/footer.jsp" />
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  function showWishlistModal({ added, productName, autoCloseMs = 1500 }) {
+    const modalEl  = document.getElementById('wishlistModal');
+    const titleEl  = document.getElementById('wishlistModalLabel');
+    const mainEl   = document.getElementById('wishlistModalMain');
+    const subEl    = document.getElementById('wishlistModalSub');
+    const iconWrap = document.getElementById('wishlistModalIcon');
+
+    if (!modalEl || !window.bootstrap || !bootstrap.Modal) {
+      alert((added ? 'Added to wishlist: ' : 'Removed from wishlist: ') + (productName || ''));
+      return;
+    }
+    titleEl.textContent = 'Wishlist';
+    mainEl.textContent  = added ? 'Added to your wishlist' : 'Removed from your wishlist';
+    subEl.textContent   = productName || '';
+    iconWrap.classList.remove('text-success','text-secondary');
+    iconWrap.classList.add(added ? 'text-success' : 'text-secondary');
+    iconWrap.innerHTML  = added ? '<i class="fa-solid fa-heart"></i>' : '<i class="fa-regular fa-heart"></i>';
+
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl, { backdrop: 'static', keyboard: true });
+    modal.show();
+
+    if (autoCloseMs) {
+      clearTimeout(modalEl._autoCloseTimer);
+      modalEl._autoCloseTimer = setTimeout(() => modal.hide(), autoCloseMs);
+    }
+  }
+
+  document.querySelectorAll('form.js-wishlist-form').forEach(form => {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = form.querySelector('.wishlist-icon-circle');
+      if (!btn || btn.dataset.loading === '1') return;
+
+      const url = form.getAttribute('action');
+      const fd  = new FormData(form);
+
+      const isWishedNow = btn.classList.contains('active');
+      if ((fd.get('action')||'').toLowerCase() === 'toggle') {
+        fd.set('action', isWishedNow ? 'remove' : 'add');
+      }
+      let nextWished = fd.get('action') === 'add';
+      const productName = btn.closest('.product-card')?.querySelector('.product-title')?.textContent?.trim() || '';
+
+      const body = new URLSearchParams();
+      fd.forEach((v,k)=>body.append(k,v));
+
+      try {
+        btn.dataset.loading = '1';
+        btn.disabled = true;
+
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Accept':'application/json', 'Content-Type':'application/x-www-form-urlencoded; charset=UTF-8' },
+          body: body.toString(),
+          credentials: 'same-origin',
+          cache: 'no-store'
+        });
+
+        if (res.redirected && res.url.includes('/Login')) { window.location.href = res.url; return; }
+
+        if (res.headers.get('content-type')?.includes('application/json')) {
+          const data = await res.json();
+          if (typeof data.wished === 'boolean') nextWished = data.wished;
+          if (typeof data.count === 'number' && typeof window.updateWishlistCount === 'function') {
+            window.updateWishlistCount(data.count);
+          }
+          if (data.ok === false) throw new Error('server');
+        } else {
+          await res.text(); // swallow
+        }
+
+        btn.classList.toggle('active', nextWished);
+        btn.setAttribute('aria-pressed', String(nextWished));
+        showWishlistModal({ added: nextWished, productName });
+      } catch (err) {
+        console.error(err);
+        alert('Network error. Please try again.');
+      } finally {
+        btn.disabled = false;
+        delete btn.dataset.loading;
+      }
+    });
+  });
+});
+</script>

@@ -10,15 +10,18 @@ import jakarta.servlet.http.HttpServletResponse;
 import model.Feedback;
 import model.Product;
 import model.ProductVariant;
-
+import dao.ProductFavoriteDAO;   
+import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.sql.SQLException;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 @WebServlet(name = "ProductDetailController", urlPatterns = {"/ProductDetail"})
 public class ProductDetailController extends HttpServlet {
@@ -29,12 +32,13 @@ public class ProductDetailController extends HttpServlet {
 
     private ProductDAO productDAO;
     private FeedbackDAO feedbackDAO;
-
+     private ProductFavoriteDAO favoriteDAO;
     @Override
     public void init() {
         try {
             productDAO = new ProductDAO();
-            feedbackDAO = new FeedbackDAO(); // Thêm FeedbackDAO
+            feedbackDAO = new FeedbackDAO(); 
+            favoriteDAO = new ProductFavoriteDAO();
         } catch (Exception e) {
             throw new RuntimeException("Initialization failed", e);
         }
@@ -44,6 +48,22 @@ public class ProductDetailController extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         response.setContentType("text/html;charset=UTF-8");
+        HttpSession session = request.getSession(false);
+Long customerId = null;
+if (session != null) {
+    Object uid = session.getAttribute("userId");
+    if (uid instanceof Long)       customerId = (Long) uid;
+    else if (uid instanceof Integer) customerId = ((Integer) uid).longValue();
+}
+
+// --- lấy danh sách wishlist & convert Integer -> Long ---
+Set<Long> wishlistProductIds = Collections.emptySet();
+if (customerId != null) {
+    Set<Integer> rawIds = favoriteDAO.getWishlistProductIds(customerId);
+    wishlistProductIds = rawIds.stream()
+                               .map(Integer::longValue)
+                               .collect(Collectors.toSet());
+}
 
         try {
             String productIdStr = request.getParameter("productId");
@@ -98,7 +118,7 @@ public class ProductDetailController extends HttpServlet {
 
             // TODO: thay bằng dữ liệu wishlist thực tế
 
-            Set<Long> wishlistProductIds = new HashSet<>();
+//            Set<Long> wishlistProductIds = new HashSet<>();
 
             request.setAttribute("wishlistProductIds", wishlistProductIds);
             request.setAttribute("product", product);

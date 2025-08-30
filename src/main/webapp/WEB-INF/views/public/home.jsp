@@ -13,9 +13,12 @@
         pageTitle = "Welcome to ClothingStore";
     }
     List<Product> newProducts = (List<Product>) request.getAttribute("newProducts");
-    List<Product> bestSellers = (List<Product>) request.getAttribute("bestSellers"); // bổ sung
+    List<Product> bestSellers = (List<Product>) request.getAttribute("bestSellers");
     Map<Long, Integer> availableMap = (Map<Long, Integer>) request.getAttribute("availableMap");
-    Set<Integer> wishlistProductIds = (Set<Integer>) request.getAttribute("wishlistProductIds");
+
+    // Cho phép chứa cả Set<Integer> hoặc Set<Long> để tránh mismatch kiểu
+    Set<?> wishlistProductIds = (Set<?>) request.getAttribute("wishlistProductIds");
+
     NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(new Locale("vi", "VN"));
     request.setAttribute("pageTitle", pageTitle);
 
@@ -161,6 +164,7 @@
         overflow: hidden;
         box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         transition: transform 0.3s ease, box-shadow 0.3s ease;
+        position: relative;
     }
     .product-card:hover {
         transform: translateY(-5px);
@@ -238,6 +242,7 @@
         text-align: center;
         margin-top: 2rem;
     }
+
     .wishlist-icon {
         position: absolute;
         top: 10px;
@@ -306,7 +311,7 @@
             <% if (showMenCategory) { %>
             <div class="col-md-6">
                 <div class="category-card">
-                    <img src="https://images.unsplash.com/photo-1532453288672-3a27e9be9efd?q=80&w=2070&auto=format&fit=crop" alt="Men's Collection">
+                    <img src="https://images.unsplash.com/photo-1532453288672-3a27e9be9efd?q=80&w=2070&auto=format&fit=crop" alt="Men's Collection" loading="lazy" decoding="async">
                     <div class="content">
                         <h3>Men's Collection</h3>
                         <a href="<%= request.getContextPath()%>/ProductList?parentCategoryId=<%= menCategoryId%>" class="btn btn-outline-light">Explore Men</a>
@@ -317,7 +322,7 @@
             <% if (showWomenCategory) { %>
             <div class="col-md-6">
                 <div class="category-card">
-                    <img src="https://images.unsplash.com/photo-1529139574466-a303027c1d8b?q=80&w=2070&auto=format&fit=crop" alt="Women's Collection">
+                    <img src="https://images.unsplash.com/photo-1529139574466-a303027c1d8b?q=80&w=2070&auto=format&fit=crop" alt="Women's Collection" loading="lazy" decoding="async">
                     <div class="content">
                         <h3>Women's Collection</h3>
                         <a href="<%= request.getContextPath()%>/ProductList?parentCategoryId=<%= womenCategoryId%>" class="btn btn-outline-light">Explore Women</a>
@@ -353,19 +358,33 @@
                     } else {
                         try { available = product.getQuantity(); } catch (Exception ex) { available = 0; }
                     }
+
+                    boolean wished = false;
+                    try {
+                        if (wishlistProductIds != null && product.getProductId() != null) {
+                            // khớp cả Long lẫn Integer trong set
+                            Integer pidInt = product.getProductId().intValue();
+                            wished = wishlistProductIds.contains(product.getProductId()) || wishlistProductIds.contains(pidInt);
+                        }
+                    } catch (Exception ignore) {}
             %>
             <div class="col-lg-3 col-md-6 col-sm-6 col-12">
                 <div class="product-card">
                     <div class="wishlist-icon">
-                        <form action="<%= request.getContextPath()%>/wishlist" method="post">
-                            <input type="hidden" name="action" value="add">
+                        <form class="js-wishlist-form" action="<%= request.getContextPath()%>/wishlist" method="post">
+                            <input type="hidden" name="action" value="toggle">
                             <input type="hidden" name="productId" value="<%= product.getProductId()%>">
-                            <button type="submit" class="wishlist-icon-circle <%= (wishlistProductIds != null && wishlistProductIds.contains(product.getProductId())) ? "active" : ""%>">
+                            <c:if test="${not empty sessionScope.csrfToken}">
+                                <input type="hidden" name="csrf" value="${sessionScope.csrfToken}">
+                            </c:if>
+                            <button type="submit"
+                                    class="wishlist-icon-circle <%= wished ? "active" : "" %>"
+                                    aria-pressed="<%= wished %>">
                                 <i class="fas fa-heart"></i>
                             </button>
                         </form>
                     </div>
-                    <img src="<%= imageUrl%>" alt="<%= name%>">
+                    <img src="<%= imageUrl%>" alt="<%= name%>" loading="lazy" decoding="async">
                     <div class="card-body">
                         <a href="<%= request.getContextPath()%>/ProductDetail?productId=<%= product.getProductId()%>" class="product-title"><%= name%></a>
                         <p class="product-price"><%= price%></p>
@@ -393,11 +412,11 @@
     <div class="container">
         <h2>Exclusive Offers Await</h2>
         <p>Discover unbeatable deals on our curated collections. Shop now to save big!</p>
-        <a href="${pageContext.request.contextPath}/ProductList/sale" class="btn btn-light">Explore Deals</a>
+        <a href="${pageContext.request.contextPath}/ProductList?sale=true" class="btn btn-light">Explore Deals</a>
     </div>
 </div>
 
-<!-- ✅ Best Sellers (bổ sung từ code của bạn) -->
+<!-- Best Sellers -->
 <div class="product-section">
     <div class="container">
         <h2 class="section-title">Best Sellers</h2>
@@ -411,19 +430,31 @@
                     int available = 0;
                     try { available = product.getQuantity(); } catch (Exception ex) { available = 0; }
 
+                    boolean wished = false;
+                    try {
+                        if (wishlistProductIds != null && product.getProductId() != null) {
+                            Integer pidInt = product.getProductId().intValue();
+                            wished = wishlistProductIds.contains(product.getProductId()) || wishlistProductIds.contains(pidInt);
+                        }
+                    } catch (Exception ignore) {}
             %>
             <div class="col-lg-3 col-md-6 col-sm-6 col-12">
                 <div class="product-card">
                     <div class="wishlist-icon">
-                        <form action="<%= request.getContextPath()%>/wishlist" method="post">
-                            <input type="hidden" name="action" value="add">
+                        <form class="js-wishlist-form" action="<%= request.getContextPath()%>/wishlist" method="post">
+                            <input type="hidden" name="action" value="toggle">
                             <input type="hidden" name="productId" value="<%= product.getProductId()%>">
-                            <button type="submit" class="wishlist-icon-circle <%= (wishlistProductIds != null && wishlistProductIds.contains(product.getProductId())) ? "active" : ""%>">
+                            <c:if test="${not empty sessionScope.csrfToken}">
+                                <input type="hidden" name="csrf" value="${sessionScope.csrfToken}">
+                            </c:if>
+                            <button type="submit"
+                                    class="wishlist-icon-circle <%= wished ? "active" : "" %>"
+                                    aria-pressed="<%= wished %>">
                                 <i class="fas fa-heart"></i>
                             </button>
                         </form>
                     </div>
-                    <img src="<%= imageUrl%>" alt="<%= name%>">
+                    <img src="<%= imageUrl%>" alt="<%= name%>" loading="lazy" decoding="async">
                     <div class="card-body">
                         <a href="<%= request.getContextPath()%>/ProductDetail?productId=<%= product.getProductId()%>" class="product-title"><%= name%></a>
                         <p class="product-price"><%= price%></p>
@@ -445,14 +476,159 @@
         </div>
     </div>
 </div>
+<!-- Wishlist Modal -->
+<div class="modal fade" id="wishlistModal" tabindex="-1" aria-labelledby="wishlistModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header">
+        <h5 class="modal-title" id="wishlistModalLabel">Wishlist</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="d-flex align-items-center gap-3">
+          <span id="wishlistModalIcon" class="fs-3 text-success"><i class="fa-solid fa-heart"></i></span>
+          <div>
+            <div id="wishlistModalMain" class="fw-semibold">Added to your wishlist</div>
+            <div id="wishlistModalSub" class="text-muted small">Product name here</div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <a href="${pageContext.request.contextPath}/wishlist?action=view" class="btn btn-primary">View wishlist</a>
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Continue shopping</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <jsp:include page="/WEB-INF/views/common/footer.jsp" />
 
+
 <script>
-    // chỉ đồng bộ badge giỏ hàng
-    document.addEventListener('DOMContentLoaded', function () {
-        if (typeof window.updateCartCount === 'function') {
-            window.updateCartCount();
+document.addEventListener('DOMContentLoaded', () => {
+  if (typeof window.updateCartCount === 'function') window.updateCartCount();
+
+  // Helper: hiển thị modal
+  function showWishlistModal({ added, productName, autoCloseMs = 5000 }) {
+    const modalEl   = document.getElementById('wishlistModal');
+    const titleEl   = document.getElementById('wishlistModalLabel');
+    const mainEl    = document.getElementById('wishlistModalMain');
+    const subEl     = document.getElementById('wishlistModalSub');
+    const iconWrap  = document.getElementById('wishlistModalIcon');
+
+    if (!modalEl || !window.bootstrap || !bootstrap.Modal) {
+      // fallback an toàn nếu chưa có bootstrap.js
+      alert((added ? 'Added to wishlist: ' : 'Removed from wishlist: ') + (productName || ''));
+      return;
+    }
+
+    // Nội dung
+    titleEl.textContent = 'Wishlist';
+    mainEl.textContent  = added ? 'Added to your wishlist' : 'Removed from your wishlist';
+    subEl.textContent   = productName || '';
+
+    // Icon/màu
+    iconWrap.classList.remove('text-success','text-secondary');
+    iconWrap.classList.add(added ? 'text-success' : 'text-secondary');
+    iconWrap.innerHTML = added ? '<i class="fa-solid fa-heart"></i>' : '<i class="fa-regular fa-heart"></i>';
+
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl, { backdrop: 'static', keyboard: true });
+    modal.show();
+
+    // Tự đóng sau 1.5s (có thể đổi thời gian hoặc bỏ nếu muốn người dùng tự đóng)
+    if (autoCloseMs && autoCloseMs > 0) {
+      clearTimeout(modalEl._autoCloseTimer);
+      modalEl._autoCloseTimer = setTimeout(() => modal.hide(), autoCloseMs);
+    }
+  }
+
+  document.querySelectorAll('form.js-wishlist-form').forEach(form => {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const btn = form.querySelector('button.wishlist-icon-circle');
+      if (!btn || btn.dataset.loading === '1') return;
+
+      const url = form.getAttribute('action'); // KHÔNG dùng form.action vì trùng name="action"
+      const fd  = new FormData(form);
+
+      // Nếu form đặt action="toggle" → map sang add/remove theo trạng thái hiện tại
+      const isToggle    = (fd.get('action') || '').toLowerCase() === 'toggle';
+      const isWishedNow = btn.classList.contains('active');
+      if (isToggle) {
+        fd.set('action', isWishedNow ? 'remove' : 'add');
+      }
+      let nextWished = isToggle ? !isWishedNow : (fd.get('action') === 'add');
+
+      // Lấy tên sản phẩm để hiển thị modal
+      const productName =
+        btn.closest('.product-card')?.querySelector('.product-title')?.textContent?.trim() || '';
+
+      // Gửi dạng URL-encoded để Servlet đọc getParameter()
+      const body = new URLSearchParams();
+      fd.forEach((v, k) => body.append(k, v));
+
+      try {
+        btn.dataset.loading = '1';
+        btn.disabled = true;
+
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+          },
+          body: body.toString(),
+          credentials: 'same-origin',
+          cache: 'no-store'
+        });
+
+        // Nếu bị chuyển hướng tới login
+        if (res.redirected && res.url.includes('/Login')) {
+          window.location.href = res.url;
+          return;
         }
+
+        let ok = res.ok, count = null;
+        const ct = res.headers.get('content-type') || '';
+        if (ct.includes('application/json')) {
+          const data = await res.json();
+          ok = !!data.ok;
+          if ('wished' in data) nextWished = !!data.wished; // ưu tiên trạng thái từ server
+          if ('count'  in data) count = data.count;
+        } else {
+          // Server trả HTML (error/redirect) → đọc text để tránh lỗi parse
+          await res.text();
+        }
+
+        if (!ok) throw new Error('server');
+
+        // Cập nhật UI trái tim
+        btn.classList.toggle('active', nextWished);
+        btn.setAttribute('aria-pressed', String(nextWished));
+
+        // Badge wishlist (nếu có)
+        if (typeof window.updateWishlistCount === 'function' && count != null) {
+          window.updateWishlistCount(count);
+        } else {
+          const badge = document.querySelector('[data-role="wishlist-count"]');
+          if (badge && count != null) badge.textContent = count;
+        }
+
+        // ✅ Hiển thị modal thông báo
+        showWishlistModal({ added: nextWished, productName });
+
+      } catch (err) {
+        console.error(err);
+        alert('Network error. Please try again.');
+      } finally {
+        btn.disabled = false;
+        delete btn.dataset.loading;
+      }
     });
+  });
+});
 </script>
+
+
+
